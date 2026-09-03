@@ -19,8 +19,9 @@ repeats.
 
 ## Status
 
-Early scaffold. Architecture is decided; `agent.py` isn't written yet. See
-[roadmap.md](roadmap.md).
+`agent.py` runs the loop end to end against any registered FLE task. Not yet run against a
+live cluster on this machine — see [roadmap.md](roadmap.md) for what's left (first live run,
+task selection, spend guardrails).
 
 ## How it works
 
@@ -41,16 +42,21 @@ Requires:
 - `ANTHROPIC_API_KEY` set — the agent loop calls Claude via the Anthropic API.
 
 ```bash
-pip install factorio-learning-environment
+pip install -r requirements.txt
+fle cluster start                 # brings up the headless Factorio container(s)
+python3 agent.py --list-envs      # see available tasks
 ```
 
 ## Develop
 
 ```bash
-python3 agent.py          # run the agent loop against a local FLE cluster
+python3 agent.py --env-id <task_id>       # e.g. one of the iron_ore_throughput tasks
+python3 agent.py                          # defaults to an iron-themed task if none given
 ```
 
-(Not yet implemented — see [roadmap.md](roadmap.md).)
+Each run writes a JSONL transcript (code, observation, reward per step) to `runs/`.
+`--model` (default `claude-sonnet-5`), `--max-steps`, `--max-tokens` are all overridable —
+see `python3 agent.py --help`.
 
 ## Credit
 

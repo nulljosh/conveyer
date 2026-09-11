@@ -1,9 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-<rect width="200" height="200" rx="36" fill="#1c1d22"/>
-<path d="M40 130h120v10a2 2 0 0 1-2 2H42a2 2 0 0 1-2-2z" fill="#3d7ab5"/>
-<path d="M46 88h60v40H46z" fill="#3d7ab5" opacity=".85"/>
-<path d="M46 78h60v10H46z" fill="#3d7ab5"/>
-<path d="M118 100h10l-16-16-16 16h10v20h12z" fill="#e0c060"/>
-<circle cx="150" cy="118" r="16" fill="none" stroke="#7fb2e0" stroke-width="6"/>
-<path d="M150 106v-8m0 40v-8m-12-12h-8m40 0h-8" stroke="#7fb2e0" stroke-width="6" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#1a1a1a"/>
+  <!-- belt rails -->
+  <rect x="4" y="16" width="56" height="6" rx="2" fill="#e8a33d"/>
+  <rect x="4" y="42" width="56" height="6" rx="2" fill="#e8a33d"/>
+  <g fill="#1a1a1a">
+    <rect x="8" y="16" width="4" height="6"/><rect x="16" y="16" width="4" height="6"/>
+    <rect x="24" y="16" width="4" height="6"/><rect x="32" y="16" width="4" height="6"/>
+    <rect x="40" y="16" width="4" height="6"/><rect x="48" y="16" width="4" height="6"/>
+    <rect x="8" y="42" width="4" height="6"/><rect x="16" y="42" width="4" height="6"/>
+    <rect x="24" y="42" width="4" height="6"/><rect x="32" y="42" width="4" height="6"/>
+    <rect x="40" y="42" width="4" height="6"/><rect x="48" y="42" width="4" height="6"/>
+  </g>
+  <!-- inserter face, dizzy -->
+  <circle cx="32" cy="32" r="12" fill="#5B9BD5"/>
+  <circle cx="27" cy="30" r="4" fill="#fff"/>
+  <circle cx="37" cy="30" r="4" fill="#fff"/>
+  <g stroke="#111" stroke-width="1.8" stroke-linecap="round">
+    <path d="M25 28l4 4M29 28l-4 4"/>
+    <path d="M35 28l4 4M39 28l-4 4"/>
+  </g>
+  <path d="M32 36 q0 5 3 5.5 q-2 2.2 -5 0.5 Z" fill="#e8767a"/>
 </svg>

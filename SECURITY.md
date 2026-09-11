@@ -9,7 +9,7 @@ bounty and no formal SLA.
 
 ## Scope
 
-Conveyor runs arbitrary Claude-generated Python against a local FLE instance and a local
+Conveyer runs arbitrary Claude-generated Python against a local FLE instance and a local
 Docker-hosted Factorio server. There is no hosted deployment, no user data, and no network
 service exposed by this repo itself.
 

@@ -1,4 +1,4 @@
-# Conveyor
+# Conveyer
 
 Claude plays Factorio via [FLE](https://github.com/JackHopkins/factorio-learning-environment)
 (Factorio Learning Environment), not a from-scratch RCON bridge. FLE already gives a Gym-style

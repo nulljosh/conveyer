@@ -78,8 +78,8 @@ def main() -> None:
         return
 
     env_id = args.env_id or pick_default_env()
-    print(f"[conveyor] environment: {env_id}")
-    print(f"[conveyor] model: {args.model}")
+    print(f"[conveyer] environment: {env_id}")
+    print(f"[conveyer] model: {args.model}")
 
     log_dir = Path(args.log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -143,14 +143,14 @@ def main() -> None:
             )
 
             if terminated or truncated:
-                print(f"[conveyor] episode ended at step {step}")
+                print(f"[conveyer] episode ended at step {step}")
                 break
     except KeyboardInterrupt:
-        print("\n[conveyor] interrupted")
+        print("\n[conveyer] interrupted")
     finally:
         log_file.close()
         env.close()
-        print(f"[conveyor] transcript: {log_path}")
+        print(f"[conveyer] transcript: {log_path}")
 
 
 if __name__ == "__main__":

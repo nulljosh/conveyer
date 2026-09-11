@@ -1,19 +1,19 @@
 <img src="icon.svg" width="80" style="border-radius:18px">
 
-# Conveyor
+# Conveyer
 
-![version](https://img.shields.io/badge/version-v0.1.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) [![GitHub](https://img.shields.io/badge/GitHub-nulljosh%2Fconveyor-black?logo=github)](https://github.com/nulljosh/conveyor)
+![version](https://img.shields.io/badge/version-v0.1.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) [![GitHub](https://img.shields.io/badge/GitHub-nulljosh%2Fconveyer-black?logo=github)](https://github.com/nulljosh/conveyer)
 
 Claude plays Factorio.
 
-Conveyor is an agent loop that puts Claude in control of a real Factorio game through the
+Conveyer is an agent loop that puts Claude in control of a real Factorio game through the
 game's own Lua mod API and RCON console — no pixels, no vision model, just full structured
 game state (entities, inventories, recipes, research, logistics) in and Python code out.
 
 It's built on [FLE](https://github.com/JackHopkins/factorio-learning-environment) (Factorio
 Learning Environment), an existing open-source Gym-style environment that already solved the
 hard plumbing: the Lua/RCON bridge, Docker orchestration of headless Factorio servers, and
-structured observations. Conveyor is the agent loop on top: it feeds Claude the environment's
+structured observations. Conveyer is the agent loop on top: it feeds Claude the environment's
 output as an observation, gets back a Python snippet as the next action, executes it, and
 repeats.
 

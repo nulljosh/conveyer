@@ -24,6 +24,11 @@ Realistic timeframe per milestone — these get much harder to reach in order, n
       iteration. Not a session goal, ever — track it, don't chase it.
 
 ## Today (remaining usage this session)
+- [x] `scripts/tui.py`: cheap ASCII live view over RCON (positions only, no render/screenshot
+      load) — real drill/furnace/character positions confirmed showing correctly.
+- [x] `scripts/watch.sh`: raw play-by-play tail of the latest run transcript, no game
+      connection needed at all.
+
 Basic-base task chain, in dependency order, with real status as of this session:
 - [x] Place drill on real ore (`nearest(Resource.IronOre)` + `place_entity`) — done repeatedly,
       reliable once the coordinate/prototype-name bugs were fixed.

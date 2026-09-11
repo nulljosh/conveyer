@@ -29,9 +29,17 @@ Real entity-placement counts pulled straight from `runs/`. Regenerate after a ru
 
 ## Watch it live
 
-The headless server is a normal Factorio multiplayer server — you don't need any custom render
-pipeline to watch. Open your own Factorio client (Steam or otherwise), go to Multiplayer →
-Connect to address, and connect in.
+Two ways, cheapest first:
+
+**Terminal (near-zero cost)** — `python3 scripts/tui.py` polls player/entity positions over
+RCON every few seconds and draws an ASCII map. No game client, no extra load on an already
+CPU-strained Box64 container. Also `scripts/watch.sh` for a raw text play-by-play of the
+latest run's transcript, no game connection at all.
+
+**Real Factorio client (expensive)** — the headless server is a normal Factorio multiplayer
+server. Open your own client (Steam or otherwise), go to Multiplayer → Connect to address, and
+connect in. A live connected client adds real CPU load on top of Box64 emulation — expect
+"server not responding" hiccups on constrained hardware. Fine on real server space.
 
 Two gotchas on colima specifically:
 

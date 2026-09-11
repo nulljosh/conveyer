@@ -98,6 +98,10 @@ printed earlier — e.g. `Position(x=16.0, y=71.0)` — never `drill.position` o
 attribute of the very variable you are trying to fetch; that variable doesn't exist yet in \
 this snippet. Then use those fresh local variables for the rest of the snippet. This is not \
 optional — it is the single most common cause of failure.
+- `place_entity` places an item FROM the player's inventory — you can't place something you \
+don't have. If placement fails with a list of item counts in the error, that's your \
+inventory contents, not a placement reason — it means you don't have that entity. Use \
+`craft_item(Prototype.X, count=1)` first (check `inspect_inventory()` if unsure), then place.
 - Use print() and assert to inspect state and verify results — you cannot see the screen, only \
 what your code prints or raises.
 - Don't repeat the previous snippet after an error; read the traceback, fix the specific problem, \

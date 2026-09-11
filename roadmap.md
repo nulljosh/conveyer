@@ -20,6 +20,20 @@ History of what already shipped is at the bottom.
       whatever `pick_default_env()` guesses, once the base-building loop is reliable.
 
 ## Next few weeks
+- [ ] **Gap analysis vs. [AI Player v3](https://mods.factorio.com/mod/ai-player-v3)** (found
+      2026-09-11 researching similar projects) — the closest comparable to conveyer, worth
+      adopting from rather than reinventing:
+  - Their architecture: a fixed library of deterministic skills (mine, build, defend, etc.)
+    plus primitive actions, with a small LLM acting only as a *router* choosing which skill
+    and parameters to use. Conveyer generates raw Python from scratch every turn — far more
+    surface area for syntax/API mistakes (most of this session was patching exactly that).
+  - Their LLM only classifies/picks — can be much smaller/cheaper than a model that has to
+    write correct code every time. Explains why their approach is more reliable per-step.
+  - They likely have skills for combat/defense already; conveyer has none (currently pinned to
+    the peaceful `default_lab_scenario`, no biters to worry about).
+  - Plan: fork/vendor their skill library as an alternative or complementary action layer —
+    keep FLE's raw-code path for flexibility, add their skills as a fallback/primary path when
+    reliability matters more than generality.
 - [ ] Try a bigger/better model now that the plumbing and prompt are proven — either a bigger
       local model if hosted with real GPU, or a cheap hosted API (OpenRouter) for comparison.
 - [ ] Expand past one throughput task to FLE's broader task suite / benchmark comparison.

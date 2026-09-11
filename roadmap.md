@@ -25,9 +25,24 @@ Sub-bullets are the real, current blow-by-blow status.
    - [ ] Verify real output via `inspect_inventory()` — the actual "smelted+assembled" finish
          line
 7. [ ] First full automated loop running unattended, no manual prompt fixes — **weeks**
+   - [ ] N consecutive clean runs with zero prompt intervention (target: 5) — this is the real
+         bar, not one lucky run
+   - [ ] Power grid automated end to end (boiler → steam engine → poles), not just placed once
+   - [ ] Belt/inserter throughput actually sustained over a multi-minute window, not just
+         "placed and connected"
 8. [ ] First research completed — **weeks**
+   - [ ] Automation science packs produced continuously (needs 5-7 working first)
+   - [ ] Lab placed, powered, and fed packs via belt/inserter
+   - [ ] `set_research(...)` called and progress observed via `get_research_progress()`
 9. [ ] First monster encounter/kill (open_world only) — **weeks**
+   - [ ] Base expands far enough to reach biter territory (lab scenario has none; open_world
+         does, but spawn area is typically peaceful)
+   - [ ] Agent has a weapon crafted/equipped — nothing in the current prompt teaches combat
+         API calls at all, this needs its own system-prompt section from scratch
 10. [ ] First rocket launched — **months+**, not a session goal, ever
+    - [ ] Would require automating every prior milestone plus oil processing, plastics,
+          rocket parts, and a satellite — realistically needs a bigger model or many more
+          sessions of prompt-tightening than an 8B local model + one Claude session can do
 
 ## Tooling shipped
 - [x] `scripts/tui.py`: cheap ASCII live view over RCON (positions only, no render/screenshot

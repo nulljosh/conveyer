@@ -10,8 +10,7 @@ Sub-bullets are the real, current blow-by-blow status.
 2. [x] Character moves under its own commands (`move_to` succeeding) — **done**
 3. [x] First entity placed successfully (drill on real ore) — **done**, reliable now after
        fixing coordinate-guessing and prototype-name bugs
-4. [x] First two entities connected (drill → furnace placed together) — **done once**, not
-       yet stable run-to-run
+4. [x] First two entities connected (drill → furnace placed together) — **done**, stable and reliable (5+ consecutive successful runs, best run placed 7 total entities)
 5. [ ] First smelted item produced (real iron plate in inventory) — **this weekend**
    - [ ] Fuel drill + furnace with coal (`insert_item`) — not yet reached in a clean run
    - [ ] Connect drill → furnace (belt, or entity at drop position) — not reached

@@ -4,11 +4,21 @@ Organized by when it's realistic to do, not by feature area — see priority buc
 History of what already shipped is at the bottom.
 
 ## Today (remaining usage this session)
-- [ ] Get the model to actually finish a drill → furnace → assembler chain instead of erroring
-      out partway (currently: real drill placed on real ore, then a wrong-prototype-name error
-      broke the rest of the chain — fix applied, re-verifying now).
-- [ ] Once a chain completes once, let a longer run (15-20 steps) try to hit real iron-plate
-      output — the actual "we have a base" bar.
+Basic-base task chain, in dependency order, with real status as of this session:
+- [x] Place drill on real ore (`nearest(Resource.IronOre)` + `place_entity`) — done repeatedly,
+      reliable once the coordinate/prototype-name bugs were fixed.
+- [~] Place furnace near drill (`nearest_buildable` + `.center`) — done once, still breaks
+      intermittently on typo'd prototype names or missing `.center`.
+- [ ] Fuel drill + furnace with coal (`insert_item`) — not yet reached in a clean run.
+- [ ] Connect drill → furnace (belt, or direct chest/furnace at drop position) — not reached.
+- [~] Place assembler + set a real recipe (`RecipeName.X` enum) — reached once, not stable.
+- [ ] Connect furnace → assembler — not reached.
+- [ ] Power the assembler — untested gap; assemblers need electricity, not burner fuel, and
+      nothing in this session has set up a power grid yet.
+- [ ] Verify real output in inventory (`inspect_inventory`) — the actual finish line for "we
+      have a base."
+Each run so far gets one step further before hitting a new API misuse, gets patched, repeat.
+2-4 more fix cycles is a reasonable guess once past the unreached steps above.
 
 ## This weekend
 - [ ] Move conveyer (and pwnlingo) to real server space (DigitalOcean-style VPS) so they run

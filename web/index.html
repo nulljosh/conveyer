@@ -65,7 +65,7 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
 <section>
   <div class="container">
     <h2>How it works</h2>
-    <p>Every turn is the same: the model gets what happened last, printed output, or a real error, as its observation, and writes back a short Python snippet. <code>agent.py</code> runs that through <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a>'s gym environment against the Lua/RCON bridge inside a headless Factorio server, and whatever comes back becomes the next observation. No hardcoded plan. It reads what's real and decides what's next.</p>
+    <p>Every turn, the model sees what happened last and writes back a short Python snippet. <code>agent.py</code> runs it through <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a>'s gym environment into a real headless Factorio server. No hardcoded plan. It reads what's real and decides what's next.</p>
     <p>Runs on a local model by default. No API key, no cloud bill.</p>
   </div>
 </section>

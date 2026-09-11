@@ -16,6 +16,11 @@ The hard part was already solved by [FLE](https://github.com/JackHopkins/factori
 structured observations. Conveyer is the loop on top: feed the model what happened, get back
 what to do next, run it, repeat.
 
+FLE's own [0.3.0 benchmark](https://jackhopkins.github.io/factorio-learning-environment/versions/0.3.0.html)
+ranks Claude ahead of GPT, Gemini, and Grok at this, and still finds every frontier model
+loses track of what it's actually built and leans on manual crafting instead of real
+automation. That's the gap conveyer is trying to close, one working belt at a time.
+
 ## Status
 
 It works. A model has placed a real mining drill on real iron ore inside a real running

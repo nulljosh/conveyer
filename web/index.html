@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conveyer — Claude plays Factorio</title>
-<meta name="description" content="Conveyer puts Claude in control of a real Factorio game through the game's own Lua mod API and RCON console. No pixels, no vision model — structured game state in, Python code out.">
+<title>Conveyer, Claude plays Factorio</title>
+<meta name="description" content="Conveyer puts Claude in control of a real Factorio game through the game's own Lua mod API and RCON console. No pixels, no vision model, structured game state in, Python code out.">
 <meta name="theme-color" content="#3d7ab5">
-<meta property="og:title" content="Conveyer — Claude plays Factorio">
+<meta property="og:title" content="Conveyer, Claude plays Factorio">
 <meta property="og:description" content="An agent loop built on FLE: Claude gets structured game state, writes Python, and the game runs it.">
 <meta property="og:type" content="website">
 <link rel="icon" href="icon.svg">
@@ -52,20 +52,20 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
   <div class="container">
   <img src="icon.svg" alt="">
   <h1>An LLM plays Factorio. For real.</h1>
-  <p class="lede">Full structured game state in — entities, inventories, recipes, research — Python code out. No pixels, no vision model, just a model driving a real, running Factorio server through its own Lua/RCON API.</p>
+  <p class="lede">Full structured game state in, entities, inventories, recipes, research, Python code out. No pixels, no vision model, just a model driving a real, running Factorio server through its own Lua/RCON API.</p>
   <a class="btn" href="https://github.com/nulljosh/conveyer">View on GitHub</a>
   <a class="btn-ghost" href="https://github.com/nulljosh/conveyer#setup">Run it</a>
   <div class="video-demo">
     <iframe width="100%" height="100%" src="https://www.youtube-nocookie.com/embed/6YPqoARpYuQ?autoplay=1&mute=1&loop=1&playlist=6YPqoARpYuQ&controls=0&modestbranding=1&playsinline=1" title="Conveyer demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
   </div>
-  <p class="demo-caption">Recorded run — live in-browser preview coming this weekend.</p>
+  <p class="demo-caption">Recorded run, live in-browser preview coming this weekend.</p>
   </div>
 </div>
 
 <section>
   <div class="container">
     <h2>How it works</h2>
-    <p>Every turn is the same: the model gets what happened last — printed output, or a real error — as its observation, and writes back a short Python snippet. <code>agent.py</code> runs that through <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a>'s gym environment against the Lua/RCON bridge inside a headless Factorio server, and whatever comes back becomes the next observation. No hardcoded plan. It reads what's real and decides what's next.</p>
+    <p>Every turn is the same: the model gets what happened last, printed output, or a real error, as its observation, and writes back a short Python snippet. <code>agent.py</code> runs that through <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a>'s gym environment against the Lua/RCON bridge inside a headless Factorio server, and whatever comes back becomes the next observation. No hardcoded plan. It reads what's real and decides what's next.</p>
     <p>Runs on a local model by default. No API key, no cloud bill.</p>
   </div>
 </section>
@@ -74,18 +74,18 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
   <div class="container">
     <h2>Progress</h2>
     <img src="progress.svg" width="100%" alt="Entities placed per run">
-    <p style="margin-top:1rem">Real entity-placement counts pulled from every run's transcript — not a fabricated curve.</p>
+    <p style="margin-top:1rem">Real entity-placement counts pulled from every run's transcript, not a fabricated curve.</p>
     <ol style="padding-left:1.2rem">
-      <li>Character exists and can be spectated live — <strong>done</strong></li>
-      <li>Character moves under its own commands — <strong>done</strong></li>
-      <li>First entity placed on real ore — <strong>done</strong></li>
-      <li>Two entities connected (drill → furnace) — <strong>done once</strong>, not stable yet</li>
-      <li>First real iron plate smelted — needs fuel + belt connection working reliably</li>
-      <li>First item assembled — needs power grid + craft-before-place, in progress</li>
-      <li>Full loop running unattended, no manual fixes — the real reliability bar</li>
-      <li>First research completed — needs a stable base producing science packs</li>
-      <li>First monster encounter (open_world only) — needs combat API + base expansion</li>
-      <li>First rocket launched — the real finish line, months+ away, not a session goal</li>
+      <li>Character exists and can be spectated live, <strong>done</strong></li>
+      <li>Character moves under its own commands, <strong>done</strong></li>
+      <li>First entity placed on real ore, <strong>done</strong></li>
+      <li>Two entities connected (drill → furnace), <strong>done once</strong>, not stable yet</li>
+      <li>First real iron plate smelted, needs fuel + belt connection working reliably</li>
+      <li>First item assembled, needs power grid + craft-before-place, in progress</li>
+      <li>Full loop running unattended, no manual fixes, the real reliability bar</li>
+      <li>First research completed, needs a stable base producing science packs</li>
+      <li>First monster encounter (open_world only), needs combat API + base expansion</li>
+      <li>First rocket launched, the real finish line, months+ away, not a session goal</li>
     </ol>
     <p style="margin-top:1rem"><a href="https://github.com/nulljosh/conveyer/blob/main/roadmap.md">Full roadmap with real blow-by-blow status →</a></p>
   </div>

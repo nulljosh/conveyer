@@ -8,7 +8,7 @@ returns a Python snippet. That snippet is executed inside the FLE gym env
 and the result becomes the next observation. Repeats until the task
 terminates, truncates, or --max-steps is hit.
 
-Requires a running FLE cluster (`fle cluster start`) and ANTHROPIC_API_KEY set.
+Requires a running FLE cluster (`fle cluster start`) and Ollama running locally.
 """
 
 import argparse
@@ -87,7 +87,7 @@ def main() -> None:
     log_file = log_path.open("w")
 
     client = OpenAI(base_url=args.ollama_host, api_key="ollama")
-    env = gym.make(env_id)
+    env = gym.make(env_id, run_idx=0)
 
     try:
         obs, info = env.reset(options={"game_state": None})

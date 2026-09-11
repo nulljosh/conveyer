@@ -42,15 +42,33 @@ h2 { font-size: 1.4rem; margin-bottom: .9rem; letter-spacing: -0.01em; }
 p { margin-bottom: 1rem; }
 code { background: var(--bg2); padding: .1em .4em; border-radius: 5px; font-size: .92em; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: center; }
-.term { text-align: left; margin: 2rem auto 0; max-width: 620px; background: #1c1d22; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+.term { text-align: left; background: #1c1d22; border-radius: 0 0 12px 12px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
 .term-bar { display: flex; gap: 6px; padding: .7rem .9rem; background: #26272e; }
 .term-bar span { width: 11px; height: 11px; border-radius: 50%; background: #4a4b53; }
-.term-body { padding: 1.1rem 1.2rem 1.3rem; font: .82rem/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #d7d8dd; min-height: 220px; white-space: pre-wrap; }
+.term-body { padding: 1.1rem 1.2rem 1.3rem; font: .82rem/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #d7d8dd; min-height: 160px; white-space: pre-wrap; }
 .term-body .obs { color: #8a8d99; }
 .term-body .kw { color: #7fb2e0; }
 .cursor { display: inline-block; width: .55em; height: 1.1em; background: #d7d8dd; vertical-align: text-bottom; animation: blink 1s step-end infinite; }
 @keyframes blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .cursor { animation: none; } }
+
+/* ponytail: a small animated factory grid, not a real render of the game —
+   shows the same four steps the terminal narrates so a visitor who skims
+   sees a factory being built, not just text. Swap for a real screen
+   recording once the demo has one. */
+.factory-wrap { max-width: 620px; margin: 2rem auto 0; box-shadow: 0 12px 30px rgba(0,0,0,.18); border-radius: 12px; overflow: hidden; }
+.factory { position: relative; aspect-ratio: 12 / 6; background: #2b2f26; border-radius: 12px 12px 0 0; overflow: hidden;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0, rgba(255,255,255,.04) 1px, transparent 1px, transparent calc(100%/12)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0, rgba(255,255,255,.04) 1px, transparent 1px, transparent calc(100%/6)); }
+.ftile { position: absolute; width: calc(100%/12); height: calc(100%/6); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .4s ease, transform .4s ease; transform: scale(.6); }
+.ftile.on { opacity: 1; transform: scale(1); }
+.ftile svg { width: 62%; height: 62%; }
+.f-ore { background: radial-gradient(circle, rgba(180,120,70,.55) 0%, transparent 70%); opacity: 1 !important; transform: none !important; }
+.f-furnace svg { fill: #d98a3d; } .f-furnace { background: rgba(217,138,61,.15); }
+.f-inserter svg { fill: #e0c060; } .f-inserter { background: rgba(224,192,96,.12); }
+.f-belt svg { fill: #7fa5c0; } .f-belt { background: rgba(127,165,192,.12); }
+.f-chest svg { fill: #b98450; } .f-chest { background: rgba(185,132,80,.15); }
 </style>
 </head>
 <body>
@@ -61,9 +79,18 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
   <p class="lede">Full structured game state in — entities, inventories, recipes, research — Python code out. No pixels, no vision model, just Claude driving a real Factorio server through its own Lua/RCON API.</p>
   <a class="btn" href="https://github.com/nulljosh/conveyer">View on GitHub</a>
   <a class="btn-ghost" href="https://github.com/nulljosh/conveyer#setup">Run it</a>
-  <div class="term" aria-hidden="true">
-    <div class="term-bar"><span></span><span></span><span></span></div>
-    <div class="term-body" id="termBody"></div>
+  <div class="factory-wrap" aria-hidden="true">
+    <div class="factory" id="factory">
+      <div class="ftile f-ore" style="left:0%;top:16.6%"></div>
+      <div class="ftile f-ore" style="left:8.3%;top:16.6%"></div>
+      <div class="ftile f-ore" style="left:0%;top:33.3%"></div>
+      <div class="ftile f-ore" style="left:8.3%;top:33.3%"></div>
+      <div class="ftile f-ore" style="left:0%;top:50%"></div>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span></span><span></span><span></span></div>
+      <div class="term-body" id="termBody"></div>
+    </div>
   </div>
   </div>
 </div>
@@ -84,6 +111,35 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
 
 <script>
 (function(){
+  var FURNACE = '<svg viewBox="0 0 24 24"><path d="M6 3h12v4H6zM4 9h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm4 4v5h8v-5z"/></svg>';
+  var INSERTER = '<svg viewBox="0 0 24 24"><path d="M3 11h11.2l-3.1-3.1 1.4-1.4L18 12l-5.5 5.5-1.4-1.4 3.1-3.1H3z"/></svg>';
+  var BELT = '<svg viewBox="0 0 24 24"><path d="M2 10h16.2l-2.6-2.6 1.4-1.4 5 5-5 5-1.4-1.4 2.6-2.6H2z"/></svg>';
+  var CHEST = '<svg viewBox="0 0 24 24"><path d="M4 6h16v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zm0 5h16v2H4zm7-8h2v3h-2z"/></svg>';
+  var factory = document.getElementById('factory');
+  var placed = [];
+  function place(cls, icon, left, top){
+    var d = document.createElement('div');
+    d.className = 'ftile ' + cls;
+    d.style.left = left + '%'; d.style.top = top + '%';
+    d.innerHTML = icon;
+    factory.appendChild(d);
+    placed.push(d);
+    requestAnimationFrame(function(){ d.classList.add('on'); });
+  }
+  function resetFactory(){
+    placed.forEach(function(d){ d.remove(); });
+    placed = [];
+  }
+  var factoryActions = [
+    function(){},
+    function(){ place('f-furnace', FURNACE, 25, 25); },
+    function(){ place('f-inserter', INSERTER, 33.3, 25); },
+    function(){
+      place('f-belt', BELT, 41.6, 25); place('f-belt', BELT, 50, 25);
+      place('f-belt', BELT, 58.3, 25); place('f-belt', BELT, 66.6, 25);
+      place('f-chest', CHEST, 75, 25);
+    }
+  ];
   var steps = [
     { plan: "Check current inventory.", code: "print(inspect_inventory())", obs: "{iron-plate: 8, coal: 12}" },
     { plan: "Place a stone furnace near the iron patch.", code: "place_entity('stone-furnace', position=nearest(Resource.IronOre))", obs: "Entity(name='stone-furnace', position=(12.5, -4.0))" },
@@ -110,10 +166,12 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
   function showObs(){
     var s = steps[i];
     render(esc(s.plan + "\n\n\`\`\`python\n" + s.code + "\n\`\`\`") + '\n\n<span class="obs">' + esc(s.obs) + '</span>', false);
+    factoryActions[i]();
     setTimeout(next, 2200);
   }
   function next(){
     i = (i + 1) % steps.length;
+    if (i === 0) { resetFactory(); }
     typeStep();
   }
   typeStep();

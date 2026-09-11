@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 
 import gym
-from anthropic import Anthropic
+from openai import OpenAI
 
 from fle.env.gym_env.action import Action
 from fle.env.gym_env.registry import list_available_environments, get_environment_info
@@ -63,7 +63,8 @@ def pick_default_env() -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-id", help="FLE gym environment id (default: an iron-themed task, or the first registered one)")
-    parser.add_argument("--model", default="claude-sonnet-5", help="Anthropic model id")
+    parser.add_argument("--model", default="qwen2.5-coder:14b", help="Ollama model tag (ollama list to see available)")
+    parser.add_argument("--ollama-host", default="http://localhost:11434/v1", help="Ollama's OpenAI-compatible endpoint")
     parser.add_argument("--max-steps", type=int, default=50)
     parser.add_argument("--max-tokens", type=int, default=1024)
     parser.add_argument("--list-envs", action="store_true", help="List available environments and exit")
@@ -85,7 +86,7 @@ def main() -> None:
     log_path = log_dir / f"{int(time.time())}-{env_id}.jsonl"
     log_file = log_path.open("w")
 
-    client = Anthropic()
+    client = OpenAI(base_url=args.ollama_host, api_key="ollama")
     env = gym.make(env_id)
 
     try:
@@ -100,15 +101,12 @@ def main() -> None:
         ]
 
         for step in range(1, args.max_steps + 1):
-            response = client.messages.create(
+            response = client.chat.completions.create(
                 model=args.model,
                 max_tokens=args.max_tokens,
-                system=SYSTEM_PROMPT,
-                messages=messages,
+                messages=[{"role": "system", "content": SYSTEM_PROMPT}, *messages],
             )
-            reply_text = "".join(
-                block.text for block in response.content if block.type == "text"
-            )
+            reply_text = response.choices[0].message.content or ""
             code = extract_code(reply_text)
             messages.append({"role": "assistant", "content": reply_text})
 

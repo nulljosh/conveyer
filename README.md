@@ -20,43 +20,35 @@ repeats.
 ## Status
 
 `agent.py` runs the loop end to end against any registered FLE task. Not yet run against a
-live cluster on this machine — see [roadmap.md](roadmap.md) for what's left (first live run,
-task selection, spend guardrails).
+live cluster on this machine — see [roadmap.md](roadmap.md).
 
 ## How it works
 
 <img src="architecture.svg" width="600">
 
 Each turn: Claude gets the stdout/stderr from the last action as its observation and returns
-a Python snippet. `agent.py` sends that snippet into FLE, which runs it against the Lua/RCON
-bridge inside the Factorio server container, and the result becomes the next observation.
+a Python snippet. `agent.py` runs that snippet through FLE against the Factorio server
+container and feeds the result back as the next observation.
 
 ## Setup
 
-Requires:
+Needs a licensed copy of Factorio (≥2.0.73) and Docker Desktop (FLE's headless server runs in
+containers it orchestrates — macOS has no native headless binary).
 
-- A licensed copy of Factorio (≥2.0.73).
-- Docker Desktop — FLE runs the actual headless Factorio server(s) in containers it
-  orchestrates itself. This is also the practical path on macOS, since Factorio's official
-  headless binary is Linux-only.
-- `ANTHROPIC_API_KEY` set — the agent loop calls Claude via the Anthropic API.
+Runs against a local [Ollama](https://ollama.com) model by default — no API key. Pull a
+code-capable model first: `ollama pull qwen2.5-coder:14b`. To use Claude instead, pass
+`--model claude-sonnet-5` and set `ANTHROPIC_API_KEY` (needs swapping the client back in
+`agent.py`).
 
 ```bash
 pip install -r requirements.txt
-fle cluster start                 # brings up the headless Factorio container(s)
-python3 agent.py --list-envs      # see available tasks
-```
-
-## Develop
-
-```bash
-python3 agent.py --env-id <task_id>       # e.g. one of the iron_ore_throughput tasks
-python3 agent.py                          # defaults to an iron-themed task if none given
+fle cluster start                    # headless Factorio container(s)
+python3 agent.py --list-envs         # see available tasks
+python3 agent.py --env-id <task_id>  # run one; defaults to an iron-themed task
 ```
 
 Each run writes a JSONL transcript (code, observation, reward per step) to `runs/`.
-`--model` (default `claude-sonnet-5`), `--max-steps`, `--max-tokens` are all overridable —
-see `python3 agent.py --help`.
+`--model`, `--max-steps`, `--max-tokens` are overridable — see `--help`.
 
 ## Credit
 

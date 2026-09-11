@@ -3,46 +3,37 @@
 Organized by when it's realistic to do, not by feature area — see priority buckets below.
 History of what already shipped is at the bottom.
 
-## In-game milestones (the fun tracker)
-Realistic timeframe per milestone — these get much harder to reach in order, not linearly:
-1. [x] Character exists and can be spectated live — **done today**
-2. [ ] Character moves around under its own commands (`move_to` succeeding) — **today**, likely
-3. [ ] First entity placed successfully (drill on real ore) — **today**, already happened once
-4. [ ] First two entities connected (drill → furnace) — **today**, happened once, not stable yet
-5. [ ] First smelted item produced (real iron plate in an inventory) — **this weekend**, needs
-      the fuel/connect chain working reliably, not just once
-6. [ ] First assembled item produced (iron gear wheel via assembler) — **this weekend**, needs
-      power/electricity working, which nothing has touched yet
-7. [ ] First full automated loop running unattended, no manual prompt fixes — **weeks**, this
-      is the real reliability bar, not a one-off success
-8. [ ] First research completed — **weeks**, needs a stable base first
-9. [ ] First monster encounter/kill (open_world only) — **weeks**, needs the base to actually
-      expand into biter territory, not just survive near spawn
-10. [ ] First rocket launched (the actual "won Factorio" condition) — **months+**, FLE's own
-      benchmark shows frontier models struggle with long-horizon factory optimization; an 8B
-      local model realistically may not get here without a much bigger model or years of
-      iteration. Not a session goal, ever — track it, don't chase it.
+## In-game milestones (the single source of truth for progress)
+Realistic timeframe per milestone — these get much harder to reach in order, not linearly.
+Sub-bullets are the real, current blow-by-blow status.
+1. [x] Character exists and can be spectated live — **done**
+2. [x] Character moves under its own commands (`move_to` succeeding) — **done**
+3. [x] First entity placed successfully (drill on real ore) — **done**, reliable now after
+       fixing coordinate-guessing and prototype-name bugs
+4. [x] First two entities connected (drill → furnace placed together) — **done once**, not
+       yet stable run-to-run
+5. [ ] First smelted item produced (real iron plate in inventory) — **this weekend**
+   - [ ] Fuel drill + furnace with coal (`insert_item`) — not yet reached in a clean run
+   - [ ] Connect drill → furnace (belt, or entity at drop position) — not reached
+6. [ ] First assembled item produced (iron gear wheel via assembler) — **this weekend**
+   - [~] Place assembler + set recipe (`RecipeName.X` enum) — reached once, not stable
+   - [ ] Craft the assembler item before placing it — found 2026-09-11, `place_entity` needs
+         the item in inventory first; fix applied, not yet re-verified
+   - [ ] Connect furnace → assembler — not reached
+   - [ ] Power the assembler — untested; needs electricity, not burner fuel, and nothing has
+         set up a power grid yet
+   - [ ] Verify real output via `inspect_inventory()` — the actual "smelted+assembled" finish
+         line
+7. [ ] First full automated loop running unattended, no manual prompt fixes — **weeks**
+8. [ ] First research completed — **weeks**
+9. [ ] First monster encounter/kill (open_world only) — **weeks**
+10. [ ] First rocket launched — **months+**, not a session goal, ever
 
-## Today (remaining usage this session)
+## Tooling shipped
 - [x] `scripts/tui.py`: cheap ASCII live view over RCON (positions only, no render/screenshot
       load) — real drill/furnace/character positions confirmed showing correctly.
 - [x] `scripts/watch.sh`: raw play-by-play tail of the latest run transcript, no game
       connection needed at all.
-
-Basic-base task chain, in dependency order, with real status as of this session:
-- [x] Place drill on real ore (`nearest(Resource.IronOre)` + `place_entity`) — done repeatedly,
-      reliable once the coordinate/prototype-name bugs were fixed.
-- [~] Place furnace near drill (`nearest_buildable` + `.center`) — done once, still breaks
-      intermittently on typo'd prototype names or missing `.center`.
-- [ ] Fuel drill + furnace with coal (`insert_item`) — not yet reached in a clean run.
-- [ ] Connect drill → furnace (belt, or direct chest/furnace at drop position) — not reached.
-- [~] Place assembler + set a real recipe (`RecipeName.X` enum) — reached once, not stable.
-- [ ] Connect furnace → assembler — not reached.
-- [ ] Power the assembler — untested gap; assemblers need electricity, not burner fuel, and
-      nothing in this session has set up a power grid yet.
-- [ ] Verify real output in inventory (`inspect_inventory`) — the actual finish line for "we
-      have a base."
-Each run so far gets one step further before hitting a new API misuse, gets patched, repeat.
 2-4 more fix cycles is a reasonable guess once past the unreached steps above.
 
 ## This weekend

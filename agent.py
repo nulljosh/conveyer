@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 
 import gym
-from openai import OpenAI
+import httpx
 
 from fle.env.gym_env.action import Action
 from fle.env.gym_env.registry import list_available_environments, get_environment_info
@@ -106,7 +106,7 @@ def main() -> None:
     log_path = log_dir / f"{int(time.time())}-{env_id}.jsonl"
     log_file = log_path.open("w")
 
-    client = OpenAI(base_url=args.ollama_host, api_key="ollama")
+    ollama_url = args.ollama_host.replace("/v1", "") + "/api/chat"
     env = gym.make(env_id, run_idx=0)
 
     try:
@@ -121,12 +121,19 @@ def main() -> None:
         ]
 
         for step in range(1, args.max_steps + 1):
-            response = client.chat.completions.create(
-                model=args.model,
-                max_tokens=args.max_tokens,
-                messages=[{"role": "system", "content": SYSTEM_PROMPT}, *messages],
-            )
-            reply_text = response.choices[0].message.content or ""
+            response = httpx.post(
+                ollama_url,
+                json={
+                    "model": args.model,
+                    "think": False,  # qwen3 etc. burn the whole token budget on hidden
+                    # reasoning otherwise, leaving nothing in the response
+                    "stream": False,
+                    "options": {"num_predict": args.max_tokens},
+                    "messages": [{"role": "system", "content": SYSTEM_PROMPT}, *messages],
+                },
+                timeout=180,
+            ).json()
+            reply_text = response["message"]["content"]
             code = extract_code(reply_text)
             messages.append({"role": "assistant", "content": reply_text})
 

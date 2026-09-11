@@ -65,6 +65,9 @@ position=pos)`, never `pos.position`. Only actual entities (what `place_entity`/
 return) have a `.position` attribute.
 - There is no `Prototype.Furnace` — use `Prototype.StoneFurnace` (or SteelFurnace/\
 ElectricFurnace).
+- `set_entity_recipe(entity, recipe)` takes a `RecipeName` enum member, NEVER a raw string. \
+`set_entity_recipe(assembler, "iron-gear-wheel")` fails with "Invalid entity type" — use \
+`set_entity_recipe(assembler, RecipeName.IronGearWheel)` instead.
 - After an error, do NOT start over by re-finding a new ore patch and placing a second drill \
 elsewhere — that wastes the base you already have. Look up what you already placed with \
 `get_entity(Prototype.X, position=...)` at its known position (print positions so you have \

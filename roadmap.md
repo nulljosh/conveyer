@@ -36,15 +36,22 @@
       ("Cannot place burner-mining-drill at x=0 y=0 — terrain unplaceable"), and the model
       reads them and retries with a different position each step. The full loop — model →
       FLE → RCON → live Factorio → error → model → retry — works.
-- [ ] Model was guessing raw (x, y) coordinates instead of using `nearest()`/
-      `nearest_buildable()` to find real ore/open ground — added an explicit rule for this,
-      not yet re-verified.
-- [ ] Actually landing a placed entity + real production (not just "the loop runs") — this is
-      model capability, not plumbing. FLE's own benchmarks show even frontier models are weak
-      at this; an 8B local model will need many more iterations, if it gets there at all.
+- [x] Coordinate-guessing fix worked: model used `nearest(Resource.IronOre)` and successfully
+      placed a real `BurnerMiningDrill` on real ore (x=16, y=71).
+- [x] Found + fixed: model tried `Prototype.Furnace` (doesn't exist, should be
+      `Prototype.StoneFurnace`) and, worse, restarted from scratch each step instead of
+      continuing on what it already placed. Added explicit rules for both.
+- [ ] Actual base — drill → furnace → assembler chain producing real iron plates, not just one
+      entity placed — this is model capability, not plumbing. FLE's own benchmarks show even
+      frontier models are weak at this; an 8B local model will need many iterations.
 - [ ] Pick a first bounded task deliberately (e.g. `iron_ore_throughput`) rather than whatever
       `pick_default_env()` guesses.
 
 ## Later
+- [ ] Live mirror on the landing page (conveyer.heyitsmejosh.com) showing the actual running
+      game, not the canned terminal-transcript demo — needs the local game state exposed to
+      the public web (screenshots/video pushed somewhere, or a small backend). Planned for
+      this weekend alongside moving conveyer + pwnlingo to real server space so they can run
+      when the Mac is off.
 - [ ] Expand to FLE's broader task suite / benchmark comparison
 - [ ] Guardrails on run length / API spend per session

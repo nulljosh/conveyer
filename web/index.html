@@ -57,7 +57,11 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
    sees a factory being built, not just text. Swap for a real screen
    recording once the demo has one. */
 .factory-wrap { max-width: 620px; margin: 2rem auto 0; box-shadow: 0 12px 30px rgba(0,0,0,.18); border-radius: 12px; overflow: hidden; }
-.video-demo { max-width: 620px; margin: 2rem auto 0; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+.video-demo { position: relative; max-width: 620px; margin: 2rem auto 0; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+.term-overlay { position: absolute; left: 12px; bottom: 12px; width: min(280px, 60%); border-radius: 8px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,.4); opacity: .96; }
+.term-overlay .term-bar { padding: .4rem .6rem; }
+.term-overlay .term-bar span { width: 7px; height: 7px; }
+.term-overlay .term-body { padding: .6rem .7rem .8rem; font-size: .65rem; line-height: 1.5; min-height: 70px; }
 .video-demo iframe { display: block; }
 .demo-caption { text-align: center; font-size: .85rem; color: var(--text2); margin-top: .75rem; }
 .factory { position: relative; aspect-ratio: 12 / 6; background: #2b2f26; border-radius: 12px 12px 0 0; overflow: hidden;
@@ -83,7 +87,11 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
   <a class="btn" href="https://github.com/nulljosh/conveyer">View on GitHub</a>
   <a class="btn-ghost" href="https://github.com/nulljosh/conveyer#setup">Run it</a>
   <div class="video-demo">
-    <iframe width="100%" height="100%" src="https://www.youtube-nocookie.com/embed/6YPqoARpYuQ" title="Conveyer demo" frameborder="0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    <iframe width="100%" height="100%" src="https://www.youtube-nocookie.com/embed/6YPqoARpYuQ?autoplay=1&mute=1&loop=1&playlist=6YPqoARpYuQ&controls=0&modestbranding=1&playsinline=1" title="Conveyer demo" frameborder="0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    <div class="term-overlay">
+      <div class="term-bar"><span></span><span></span><span></span></div>
+      <div class="term-body" id="termBody"></div>
+    </div>
   </div>
   <p class="demo-caption">Recorded run — live in-browser preview coming this weekend.</p>
   </div>

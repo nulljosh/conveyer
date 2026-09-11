@@ -75,8 +75,8 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
 <div class="hero">
   <div class="container">
   <img src="icon.svg" alt="">
-  <h1>Claude plays Factorio.</h1>
-  <p class="lede">Full structured game state in — entities, inventories, recipes, research — Python code out. No pixels, no vision model, just Claude driving a real Factorio server through its own Lua/RCON API.</p>
+  <h1>An LLM plays Factorio. For real.</h1>
+  <p class="lede">Full structured game state in — entities, inventories, recipes, research — Python code out. No pixels, no vision model, just a model driving a real, running Factorio server through its own Lua/RCON API.</p>
   <a class="btn" href="https://github.com/nulljosh/conveyer">View on GitHub</a>
   <a class="btn-ghost" href="https://github.com/nulljosh/conveyer#setup">Run it</a>
   <div class="factory-wrap" aria-hidden="true">
@@ -98,8 +98,8 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
 <section>
   <div class="container">
     <h2>How it works</h2>
-    <p>Each turn, Claude receives the stdout/stderr from its last action as an observation and returns a Python snippet. <code>agent.py</code> runs that snippet through <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a>'s gym environment against the Lua/RCON bridge inside a headless Factorio server container, and the result becomes the next observation.</p>
-    <p>Runs on a local model by default — no API key required.</p>
+    <p>Every turn is the same: the model gets what happened last — printed output, or a real error — as its observation, and writes back a short Python snippet. <code>agent.py</code> runs that through <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a>'s gym environment against the Lua/RCON bridge inside a headless Factorio server, and whatever comes back becomes the next observation. No hardcoded plan. It reads what's real and decides what's next.</p>
+    <p>Runs on a local model by default. No API key, no cloud bill.</p>
   </div>
 </section>
 

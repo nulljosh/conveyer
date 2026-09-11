@@ -51,7 +51,14 @@ worked examples:
 
 Rules:
 - Reply with a short plan in plain text, then exactly one ```python code fence with the code to run.
+- Write code as TOP-LEVEL statements that execute immediately, not function definitions you \
+never call. If you do wrap something in a function for clarity, call it in the same snippet. \
+A snippet that only defines things and prints nothing produces an empty, useless observation.
 - Keep each snippet small and focused (roughly 30 lines or fewer) so failures are easy to localize.
+- Never guess a raw (x, y) for `place_entity`. Find a real position first — `nearest(Resource.\
+IronOre)` for ore patches, `nearest_buildable(Prototype.X, building_box, near_position)` for \
+open, buildable ground — then place there. A guessed coordinate is very likely on unplaceable \
+terrain or already occupied.
 - Use print() and assert to inspect state and verify results — you cannot see the screen, only \
 what your code prints or raises.
 - Don't repeat the previous snippet after an error; read the traceback, fix the specific problem, \

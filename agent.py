@@ -74,7 +74,10 @@ got it from.
 furnace at `drill.position`) — that tile is occupied. Always call `nearest_buildable(...)` for \
 each new entity to get a free adjacent spot, using the previous entity's real `.position` as \
 the search anchor.
-got it from.
+- `place_entity` fails with "too far away" if the player isn't within ~10 tiles of the target \
+position. ALWAYS `move_to(target_position)` (the actual position you're about to place at, \
+found via `nearest`/`nearest_buildable`) immediately before that `place_entity` call — never \
+move to an arbitrary point like `Position(x=0, y=0)`.
 - If your last snippet errored, do not resubmit the exact same code again. Change the specific \
 line the traceback points to before rerunning.
 - There is no `Prototype.Furnace` — use `Prototype.StoneFurnace` (or SteelFurnace/\

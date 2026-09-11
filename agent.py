@@ -59,6 +59,12 @@ A snippet that only defines things and prints nothing produces an empty, useless
 IronOre)` for ore patches, `nearest_buildable(Prototype.X, building_box, near_position)` for \
 open, buildable ground — then place there. A guessed coordinate is very likely on unplaceable \
 terrain or already occupied.
+- There is no `Prototype.Furnace` — use `Prototype.StoneFurnace` (or SteelFurnace/\
+ElectricFurnace).
+- After an error, do NOT start over by re-finding a new ore patch and placing a second drill \
+elsewhere — that wastes the base you already have. Look up what you already placed with \
+`get_entity(Prototype.X, position=...)` at its known position (print positions so you have \
+them to reuse), fix only the failing line, and keep building on it.
 - Use print() and assert to inspect state and verify results — you cannot see the screen, only \
 what your code prints or raises.
 - Don't repeat the previous snippet after an error; read the traceback, fix the specific problem, \

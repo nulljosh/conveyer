@@ -1,57 +1,54 @@
 # Roadmap
 
-## Setup
-- [x] Docker via colima (not Docker Desktop) — works on macOS, but this machine is 16 GB and
-      colima + a live Factorio server + anything else heavy caused one full OOM/reboot. Keep
-      `fle cluster start -n 1`.
-- [x] `pip install -r requirements.txt` — must pin `a2a-sdk==0.2.16`, FLE 0.4.3 breaks on the
-      1.x line (`TextPart` import removed). `fle --list-envs` confirmed 13+ registered
-      throughput tasks.
-- [x] No `ANTHROPIC_API_KEY` needed — `agent.py` runs on local Ollama. `qwen2.5-coder:14b` was
-      too heavy (CPU-only, laggy machine) and `1.5b-base` is a base model with no instruction
-      tuning (produces incoherent garbage). Settled on `qwen3:8b` — but its "thinking" mode
-      silently burns the whole token budget on hidden reasoning via the OpenAI-compat endpoint;
-      had to switch `agent.py` to Ollama's native `/api/chat` with `think: false` to get it to
-      actually answer.
-- [x] `FACTORIO_USERNAME`/`FACTORIO_TOKEN` from factorio.com/profile (sign in with Steam if
-      linked there, then reveal the token) — `fle cluster start` needs this to pull the
-      headless server, Steam login alone doesn't cover it.
-- [x] `fle cluster start -n 1` — pulled `factoriotools/factorio:2.0.73`, container
-      `cluster-factorio_0-1` running.
+Organized by when it's realistic to do, not by feature area — see priority buckets below.
+History of what already shipped is at the bottom.
 
-## Agent loop
-- [x] `agent.py`: REPL loop over FLE's gym env — sends the model's code, captures
-      stdout/stderr, feeds it back as the next observation.
-- [x] Logging: JSONL transcript per run in `runs/`
-- [x] First live run against the real cluster surfaced a real bug: FLE 0.4.3's
-      `make_factorio_env` requires `run_idx` — `gym.make(env_id, run_idx=0)`, not
-      `gym.make(env_id)`. Fixed.
-- [x] Container auto-discovery fails under colima (`NetworkSettings.Ports` comes back empty) —
-      worked around with explicit `FACTORIO_SERVER_ADDRESS`/`FACTORIO_SERVER_PORT` in `.env`.
-- [x] Factorio container crash-loops under colima's bind mounts — RESOLVED 2026-09-11: root
-      cause was repo under `/tmp` (colima doesn't mount /tmp by default). Moved to
-      ~/Documents/Code/conveyer, container boots clean now.
-- [x] **Verified end to end 2026-09-11**: model writes real FLE API code (not hallucinated
-      Lua), it executes against the live server, errors come back from the actual game
-      ("Cannot place burner-mining-drill at x=0 y=0 — terrain unplaceable"), and the model
-      reads them and retries with a different position each step. The full loop — model →
-      FLE → RCON → live Factorio → error → model → retry — works.
-- [x] Coordinate-guessing fix worked: model used `nearest(Resource.IronOre)` and successfully
-      placed a real `BurnerMiningDrill` on real ore (x=16, y=71).
-- [x] Found + fixed: model tried `Prototype.Furnace` (doesn't exist, should be
-      `Prototype.StoneFurnace`) and, worse, restarted from scratch each step instead of
-      continuing on what it already placed. Added explicit rules for both.
-- [ ] Actual base — drill → furnace → assembler chain producing real iron plates, not just one
-      entity placed — this is model capability, not plumbing. FLE's own benchmarks show even
-      frontier models are weak at this; an 8B local model will need many iterations.
-- [ ] Pick a first bounded task deliberately (e.g. `iron_ore_throughput`) rather than whatever
-      `pick_default_env()` guesses.
+## Today (remaining usage this session)
+- [ ] Get the model to actually finish a drill → furnace → assembler chain instead of erroring
+      out partway (currently: real drill placed on real ore, then a wrong-prototype-name error
+      broke the rest of the chain — fix applied, re-verifying now).
+- [ ] Once a chain completes once, let a longer run (15-20 steps) try to hit real iron-plate
+      output — the actual "we have a base" bar.
 
-## Later
-- [ ] Live mirror on the landing page (conveyer.heyitsmejosh.com) showing the actual running
-      game, not the canned terminal-transcript demo — needs the local game state exposed to
-      the public web (screenshots/video pushed somewhere, or a small backend). Planned for
-      this weekend alongside moving conveyer + pwnlingo to real server space so they can run
-      when the Mac is off.
-- [ ] Expand to FLE's broader task suite / benchmark comparison
-- [ ] Guardrails on run length / API spend per session
+## This weekend
+- [ ] Move conveyer (and pwnlingo) to real server space (DigitalOcean-style VPS) so they run
+      when the Mac is off — native Linux also sidesteps colima entirely.
+- [ ] Live mirror on the landing page (conveyer.heyitsmejosh.com): the actual running game
+      state, not the canned terminal-transcript demo. Needs the server's game state exposed to
+      the public web — screenshots/video pushed somewhere, or a small backend endpoint.
+- [ ] Pick a first bounded FLE task deliberately (e.g. `iron_ore_throughput`) rather than
+      whatever `pick_default_env()` guesses, once the base-building loop is reliable.
+
+## Next few weeks
+- [ ] Try a bigger/better model now that the plumbing and prompt are proven — either a bigger
+      local model if hosted with real GPU, or a cheap hosted API (OpenRouter) for comparison.
+- [ ] Expand past one throughput task to FLE's broader task suite / benchmark comparison.
+- [ ] Guardrails on run length / spend per session once this isn't fully local-and-free anymore
+      (matters the moment it's not just a local Ollama model).
+
+## Months+ / open-ended
+- [ ] General "plays well unsupervised" ambition — FLE's own benchmark shows even frontier
+      models are weak at long-horizon factory optimization. Not a near-term goal; scope any
+      further work as bounded subgoals (a specific throughput target), not "beat the game."
+
+## Shipped
+- [x] Landing page live at conveyer.heyitsmejosh.com, repo renamed conveyor → conveyer to match.
+- [x] No `ANTHROPIC_API_KEY` needed — runs on local Ollama. Settled on `qwen3:8b` after
+      `qwen2.5-coder:14b` (too heavy, laggy machine) and `1.5b-base` (non-instruct, produced
+      garbage) both failed. qwen3's "thinking" mode silently burns the token budget through the
+      OpenAI-compat endpoint — switched `agent.py` to Ollama's native `/api/chat` with
+      `think: false`.
+- [x] `a2a-sdk` pinned to `0.2.16` — FLE 0.4.3 breaks on the 1.x line (`TextPart` import gone).
+- [x] `gym.make(env_id, run_idx=0)` — FLE 0.4.3 requires `run_idx`, agent.py didn't pass it.
+- [x] Colima only mounts `$HOME` by default — repo was under `/tmp`, causing every bind-mount
+      permission/missing-file error and a crash loop. Moved to `~/Documents/Code/conveyer`;
+      resolved outright.
+- [x] `FACTORIO_USERNAME`/`FACTORIO_TOKEN` from factorio.com/profile (Steam-linked account,
+      reveal the token) — needed to pull the headless server via `fle cluster start`.
+- [x] **Verified end to end**: model writes real FLE API code (not hallucinated Lua), it
+      executes against the live server, real game errors come back, model reads and retries.
+- [x] Model successfully placed a real `BurnerMiningDrill` on real iron ore after a rule
+      against guessing raw coordinates (use `nearest()`/`nearest_buildable()` instead).
+- [x] Fixed a wrong `Prototype.Furnace` reference (real name: `StoneFurnace`) and a
+      restart-from-scratch pattern where the model abandoned its own placed entities after any
+      error instead of continuing to build on them.

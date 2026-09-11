@@ -22,6 +22,11 @@
 - [x] First live run against the real cluster surfaced a real bug: FLE 0.4.3's
       `make_factorio_env` requires `run_idx` — `gym.make(env_id, run_idx=0)`, not
       `gym.make(env_id)`. Fixed.
+- [x] Container auto-discovery fails under colima (`NetworkSettings.Ports` comes back empty) —
+      worked around with explicit `FACTORIO_SERVER_ADDRESS`/`FACTORIO_SERVER_PORT` in `.env`.
+- [x] Factorio container crash-loops under colima's bind mounts — RESOLVED 2026-09-11: root
+      cause was repo under `/tmp` (colima doesn't mount /tmp by default). Moved to
+      ~/Documents/Code/conveyer, container boots clean now.
 - [ ] Confirm a full bounded run (a few steps) completes cleanly end to end.
 - [ ] Pick a first bounded task deliberately (e.g. `iron_ore_throughput`) rather than whatever
       `pick_default_env()` guesses.

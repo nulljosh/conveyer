@@ -35,6 +35,13 @@ eval harness pattern rather than inventing a new protocol.
   background agent sessions stacked at once caused a full OOM crash and reboot. Keep `fle
   cluster start -n 1`, close what you don't need running, and don't stack another heavy task
   (video encoding, more Docker containers) on top of a live run.
+- **Colima's `docker inspect` under-reports ports.** `NetworkSettings.Ports` comes back `{}`
+  even though the mapping is real (`HostConfig.PortBindings` has it) — a colima/VZ quirk.
+  FLE's container auto-discovery (`fle/commons/cluster_ips.py`) reads the empty field and
+  fails with "No Factorio containers available". Workaround: set `FACTORIO_SERVER_ADDRESS` and
+  `FACTORIO_SERVER_PORT` explicitly (see `.env`) to skip discovery. RESOLVED 2026-09-11: the
+  real issue was that the repo was under `/tmp`, which colima doesn't mount by default. Moved
+  the repo to ~/Documents/Code/conveyer and the container boots clean.
 
 ## Non-goals
 

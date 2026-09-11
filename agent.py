@@ -59,6 +59,10 @@ A snippet that only defines things and prints nothing produces an empty, useless
 IronOre)` for ore patches, `nearest_buildable(Prototype.X, building_box, near_position)` for \
 open, buildable ground — then place there. A guessed coordinate is very likely on unplaceable \
 terrain or already occupied.
+- `nearest(...)` returns a `Position` directly — it does NOT have a `.position` attribute. \
+Use its return value as-is: `pos = nearest(Resource.IronOre)`, then `place_entity(..., \
+position=pos)`, never `pos.position`. Only actual entities (what `place_entity`/`get_entity` \
+return) have a `.position` attribute.
 - There is no `Prototype.Furnace` — use `Prototype.StoneFurnace` (or SteelFurnace/\
 ElectricFurnace).
 - After an error, do NOT start over by re-finding a new ore patch and placing a second drill \

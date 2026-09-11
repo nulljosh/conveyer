@@ -4,23 +4,23 @@
 
 ![version](https://img.shields.io/badge/version-v0.1.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) [![GitHub](https://img.shields.io/badge/GitHub-nulljosh%2Fconveyer-black?logo=github)](https://github.com/nulljosh/conveyer)
 
-Claude plays Factorio.
+An LLM plays Factorio. For real. On a real server.
 
-Conveyer is an agent loop that puts Claude in control of a real Factorio game through the
-game's own Lua mod API and RCON console — no pixels, no vision model, just full structured
-game state (entities, inventories, recipes, research, logistics) in and Python code out.
+Not a vision model squinting at pixels. It gets the actual game state — entities, inventories,
+recipes, research, the works — as structured data, and writes Python back. Place a drill,
+connect a belt, set a recipe. The game runs it. The game tells it what happened. It writes the
+next line.
 
-It's built on [FLE](https://github.com/JackHopkins/factorio-learning-environment) (Factorio
-Learning Environment), an existing open-source Gym-style environment that already solved the
-hard plumbing: the Lua/RCON bridge, Docker orchestration of headless Factorio servers, and
-structured observations. Conveyer is the agent loop on top: it feeds Claude the environment's
-output as an observation, gets back a Python snippet as the next action, executes it, and
-repeats.
+The hard part was already solved by [FLE](https://github.com/JackHopkins/factorio-learning-environment)
+(Factorio Learning Environment) — the Lua/RCON bridge, the Docker orchestration, the
+structured observations. Conveyer is the loop on top: feed the model what happened, get back
+what to do next, run it, repeat.
 
 ## Status
 
-`agent.py` runs the loop end to end against any registered FLE task. Not yet run against a
-live cluster on this machine — see [roadmap.md](roadmap.md).
+It works. A model has placed a real mining drill on real iron ore inside a real running
+Factorio server and kept building from there. Full base still in progress — see
+[roadmap.md](roadmap.md) for exactly where things stand and what's next.
 
 ## How it works
 
@@ -53,9 +53,8 @@ Each run writes a JSONL transcript (code, observation, reward per step) to `runs
 ## Credit
 
 Built on [FLE](https://github.com/JackHopkins/factorio-learning-environment)
-(Hopkins, Bakler, Khan et al.) rather than a from-scratch RCON bridge — it already has the
-task suite, benchmark harness, and native Anthropic support that would otherwise need
-rebuilding.
+(Hopkins, Bakler, Khan et al.), not a from-scratch RCON bridge. Why rebuild a task suite and a
+benchmark harness that already exists and already works.
 
 ## License
 

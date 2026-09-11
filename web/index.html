@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conveyer — Claude plays Factorio</title>
+<meta name="description" content="Conveyer puts Claude in control of a real Factorio game through the game's own Lua mod API and RCON console. No pixels, no vision model — structured game state in, Python code out.">
+<meta name="theme-color" content="#3d7ab5">
+<meta property="og:title" content="Conveyer — Claude plays Factorio">
+<meta property="og:description" content="An agent loop built on FLE: Claude gets structured game state, writes Python, and the game runs it.">
+<meta property="og:type" content="website">
+<link rel="icon" href="icon.svg">
+<style>
+@import url("https://heyitsmejosh.com/tokens.css");
+:root {
+  --accent: #3d7ab5; --link: #2c5f92; --accent-soft: #eaf1f8; --on-accent: #fff;
+  --bg: #fff; --bg2: #f7f7f8; --text: #1c1d22; --text2: #5c5f6a; --border: #e6e7ea;
+  --font-body: -apple-system, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121316; --bg2: #1a1b1f; --text: #ececf0; --text2: rgba(236,236,240,.62);
+  --border: rgba(236,236,240,.12); --accent-soft: #16232e; --link: #7fb2e0; } }
+:root[data-theme="dark"] {
+  --bg: #121316; --bg2: #1a1b1f; --text: #ececf0; --text2: rgba(236,236,240,.62);
+  --border: rgba(236,236,240,.12); --accent-soft: #16232e; --link: #7fb2e0; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; }
+.container { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
+.hero { background: var(--accent-soft); padding: 4.5rem 0 3.5rem; text-align: center; }
+.hero img { width: 72px; height: 72px; border-radius: 18px; margin-bottom: 1.25rem; }
+h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 1rem; }
+.lede { font-size: 1.2rem; color: var(--text2); max-width: 34em; margin: 0 auto 2rem; }
+.btn { display: inline-block; background: var(--accent); color: var(--on-accent); padding: .8rem 1.4rem; border-radius: 10px; font-weight: 600; }
+.btn:hover { text-decoration: none; opacity: .92; }
+.btn-ghost { display: inline-block; padding: .8rem 1.4rem; border-radius: 10px; font-weight: 600; border: 1px solid var(--border); color: var(--text); margin-left: .6rem; }
+.btn-ghost:hover { text-decoration: none; background: var(--bg2); }
+section { padding: 3.5rem 0; border-bottom: 1px solid var(--border); }
+h2 { font-size: 1.4rem; margin-bottom: .9rem; letter-spacing: -0.01em; }
+p { margin-bottom: 1rem; }
+code { background: var(--bg2); padding: .1em .4em; border-radius: 5px; font-size: .92em; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: center; }
+.term { text-align: left; margin: 2rem auto 0; max-width: 620px; background: #1c1d22; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+.term-bar { display: flex; gap: 6px; padding: .7rem .9rem; background: #26272e; }
+.term-bar span { width: 11px; height: 11px; border-radius: 50%; background: #4a4b53; }
+.term-body { padding: 1.1rem 1.2rem 1.3rem; font: .82rem/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #d7d8dd; min-height: 220px; white-space: pre-wrap; }
+.term-body .obs { color: #8a8d99; }
+.term-body .kw { color: #7fb2e0; }
+.cursor { display: inline-block; width: .55em; height: 1.1em; background: #d7d8dd; vertical-align: text-bottom; animation: blink 1s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cursor { animation: none; } }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="container">
+  <img src="icon.svg" alt="">
+  <h1>Claude plays Factorio.</h1>
+  <p class="lede">Full structured game state in — entities, inventories, recipes, research — Python code out. No pixels, no vision model, just Claude driving a real Factorio server through its own Lua/RCON API.</p>
+  <a class="btn" href="https://github.com/nulljosh/conveyer">View on GitHub</a>
+  <a class="btn-ghost" href="https://github.com/nulljosh/conveyer#setup">Run it</a>
+  <div class="term" aria-hidden="true">
+    <div class="term-bar"><span></span><span></span><span></span></div>
+    <div class="term-body" id="termBody"></div>
+  </div>
+  </div>
+</div>
+
+<section>
+  <div class="container">
+    <h2>How it works</h2>
+    <p>Each turn, Claude receives the stdout/stderr from its last action as an observation and returns a Python snippet. <code>agent.py</code> runs that snippet through <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a>'s gym environment against the Lua/RCON bridge inside a headless Factorio server container, and the result becomes the next observation.</p>
+    <p>Runs on a local model by default — no API key required.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    Built on <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a> · MIT 2026, Joshua Trommel · unaffiliated with Wube Software
+  </div>
+</footer>
+
+<script>
+(function(){
+  var steps = [
+    { plan: "Check current inventory.", code: "print(inspect_inventory())", obs: "{iron-plate: 8, coal: 12}" },
+    { plan: "Place a stone furnace near the iron patch.", code: "place_entity('stone-furnace', position=nearest(Resource.IronOre))", obs: "Entity(name='stone-furnace', position=(12.5, -4.0))" },
+    { plan: "Feed the furnace with a burner inserter.", code: "place_entity('burner-inserter', direction=Direction.UP)\ninsert_item('coal', target=furnace, quantity=10)", obs: "reward=0.4  inserter placed, 10 coal loaded" },
+    { plan: "Connect output to a chest with a transport belt.", code: "connect_entities(furnace, chest, connection_type='transport-belt')", obs: "reward=1.0  belt laid, 6 segments" }
+  ];
+  var el = document.getElementById('termBody');
+  var i = 0, phase = 0; // 0 = plan+code typing, 1 = obs shown, pause
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function render(text, showCursor){
+    el.innerHTML = text + (showCursor ? '<span class="cursor"></span>' : '');
+  }
+  function typeStep(){
+    var s = steps[i];
+    var full = s.plan + "\n\n\`\`\`python\n" + s.code + "\n\`\`\`";
+    var pos = 0;
+    (function tick(){
+      pos += 3;
+      render(esc(full.slice(0, pos)), true);
+      if (pos < full.length) { setTimeout(tick, 12); }
+      else { setTimeout(showObs, 500); }
+    })();
+  }
+  function showObs(){
+    var s = steps[i];
+    render(esc(s.plan + "\n\n\`\`\`python\n" + s.code + "\n\`\`\`") + '\n\n<span class="obs">' + esc(s.obs) + '</span>', false);
+    setTimeout(next, 2200);
+  }
+  function next(){
+    i = (i + 1) % steps.length;
+    typeStep();
+  }
+  typeStep();
+})();
+</script>
+</body>
+</html>

@@ -25,9 +25,29 @@ from fle.env.gym_env.action import Action
 from fle.env.gym_env.registry import list_available_environments, get_environment_info
 from fle.commons.models.game_state import GameState
 
-SYSTEM_PROMPT = """You are an AI agent playing Factorio. You interact with the game through a \
+# FLE exposes a fixed Python API (place_entity, connect_entities, Prototype.*, ...), not the
+# raw Lua `game.surfaces[...]` API — a model that hasn't seen it will hallucinate the wrong
+# syntax. fle/env/tools/agent.md is FLE's own reference for that API; ship it as-is instead of
+# re-describing it and drifting out of sync with whatever FLE version is installed.
+_AGENT_MD = Path(__file__).resolve()
+for _p in Path(__import__("fle").__file__).parent.rglob("agent.md"):
+    if _p.parent.name == "tools":
+        _AGENT_MD = _p
+        break
+
+SYSTEM_PROMPT = f"""You are an AI agent playing Factorio. You interact with the game through a \
 Python REPL: your messages are Python programs, and what you receive back is the stdout/stderr \
 from running them against the live game.
+
+You have a fixed set of tool functions and types available in every snippet — do NOT use the \
+raw Lua `game.surfaces[...]` / `game.players[...]` API, it does not exist here. Use functions \
+like `place_entity`, `place_entity_next_to`, `connect_entities`, `get_entity`, `get_entities`, \
+`nearest`, `nearest_buildable`, `move_to`, `craft_item`, `insert_item`, `extract_item`, \
+`inspect_inventory`, `rotate_entity`, `harvest_resource`, `set_entity_recipe`, `sleep`, `print`, \
+and the `Prototype`, `Direction`, `Position`, `BuildingBox`, `RecipeName` types. Reference and \
+worked examples:
+
+{_AGENT_MD.read_text() if _AGENT_MD.name == "agent.md" else "(agent.md not found — check the FLE install)"}
 
 Rules:
 - Reply with a short plan in plain text, then exactly one ```python code fence with the code to run.

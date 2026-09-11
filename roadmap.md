@@ -3,6 +3,18 @@
 Organized by when it's realistic to do, not by feature area — see priority buckets below.
 History of what already shipped is at the bottom.
 
+## In-game milestones (the fun tracker)
+1. [x] Character exists and can be spectated live (real Factorio client connects and sees it)
+2. [ ] Character moves around under the agent's own commands (`move_to` succeeding)
+3. [ ] First entity placed successfully (drill on real ore)
+4. [ ] First two entities connected (drill → furnace)
+5. [ ] First smelted item produced (real iron plate in an inventory)
+6. [ ] First assembled item produced (iron gear wheel or similar via assembler)
+7. [ ] First full automated loop running unattended (mine → smelt → craft, no manual fixes)
+8. [ ] First research completed
+9. [ ] First monster encounter/kill (open_world only — lab scenario has none)
+10. [ ] First rocket launched (the actual "won Factorio" condition)
+
 ## Today (remaining usage this session)
 Basic-base task chain, in dependency order, with real status as of this session:
 - [x] Place drill on real ore (`nearest(Resource.IronOre)` + `place_entity`) — done repeatedly,

@@ -117,7 +117,7 @@ def pick_default_env() -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-id", help="FLE gym environment id (default: an iron-themed task, or the first registered one)")
-    parser.add_argument("--model", default="qwen2.5-coder:14b", help="Ollama model tag (ollama list to see available)")
+    parser.add_argument("--model", default="qwen3:8b", help="Ollama model tag (ollama list to see available)")
     parser.add_argument("--ollama-host", default="http://localhost:11434/v1", help="Ollama's OpenAI-compatible endpoint")
     parser.add_argument("--max-steps", type=int, default=50)
     parser.add_argument("--max-tokens", type=int, default=1024)
@@ -155,18 +155,25 @@ def main() -> None:
         ]
 
         for step in range(1, args.max_steps + 1):
-            response = httpx.post(
-                ollama_url,
-                json={
-                    "model": args.model,
-                    "think": False,  # qwen3 etc. burn the whole token budget on hidden
-                    # reasoning otherwise, leaving nothing in the response
-                    "stream": False,
-                    "options": {"num_predict": args.max_tokens},
-                    "messages": [{"role": "system", "content": SYSTEM_PROMPT}, *messages],
-                },
-                timeout=180,
-            ).json()
+            try:
+                response = httpx.post(
+                    ollama_url,
+                    json={
+                        "model": args.model,
+                        "think": False,  # qwen3 etc. burn the whole token budget on hidden
+                        # reasoning otherwise, leaving nothing in the response
+                        "stream": False,
+                        "options": {"num_predict": args.max_tokens},
+                        "messages": [{"role": "system", "content": SYSTEM_PROMPT}, *messages],
+                    },
+                    timeout=180,
+                ).json()
+            except httpx.ConnectError:
+                raise SystemExit(
+                    f"Could not reach Ollama at {ollama_url} — is `ollama serve` running?"
+                )
+            if "message" not in response:
+                raise SystemExit(f"Ollama error: {response.get('error', response)}")
             reply_text = response["message"]["content"]
             code = extract_code(reply_text)
             messages.append({"role": "assistant", "content": reply_text})

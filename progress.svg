@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="480" height="120">
+<rect width="480" height="120" fill="none"/>
+<polyline points="16.0,104.0 53.3,104.0 90.7,104.0 128.0,104.0 165.3,104.0 202.7,104.0 240.0,16.0 277.3,91.4 314.7,104.0 352.0,66.3 389.3,91.4 426.7,78.9 464.0,53.7" fill="none" stroke="#3d7ab5" stroke-width="2"/>
+<circle cx="16.0" cy="104.0" r="3" fill="#3d7ab5"/><circle cx="53.3" cy="104.0" r="3" fill="#3d7ab5"/><circle cx="90.7" cy="104.0" r="3" fill="#3d7ab5"/><circle cx="128.0" cy="104.0" r="3" fill="#3d7ab5"/><circle cx="165.3" cy="104.0" r="3" fill="#3d7ab5"/><circle cx="202.7" cy="104.0" r="3" fill="#3d7ab5"/><circle cx="240.0" cy="16.0" r="3" fill="#3d7ab5"/><circle cx="277.3" cy="91.4" r="3" fill="#3d7ab5"/><circle cx="314.7" cy="104.0" r="3" fill="#3d7ab5"/><circle cx="352.0" cy="66.3" r="3" fill="#3d7ab5"/><circle cx="389.3" cy="91.4" r="3" fill="#3d7ab5"/><circle cx="426.7" cy="78.9" r="3" fill="#3d7ab5"/><circle cx="464.0" cy="53.7" r="3" fill="#3d7ab5"/>
+<text x="16" y="118" font-family="ui-monospace,monospace" font-size="10" fill="#8a8d99">entities placed per run (13 runs)</text>
+</svg>

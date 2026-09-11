@@ -63,6 +63,12 @@ terrain or already occupied.
 Use its return value as-is: `pos = nearest(Resource.IronOre)`, then `place_entity(..., \
 position=pos)`, never `pos.position`. Only actual entities (what `place_entity`/`get_entity` \
 return) have a `.position` attribute.
+- `nearest_buildable(...)` returns a bounding-box-like object with a `.center` attribute — it \
+is NOT itself a `Position`. You MUST use `.center`: `box = nearest_buildable(...)` then \
+`place_entity(..., position=box.center)`, never `place_entity(..., position=box)` directly. \
+If you see "position argument must be a Position object", this is almost always the bug.
+- If your last snippet errored, do not resubmit the exact same code again. Change the specific \
+line the traceback points to before rerunning.
 - There is no `Prototype.Furnace` — use `Prototype.StoneFurnace` (or SteelFurnace/\
 ElectricFurnace).
 - `set_entity_recipe(entity, recipe)` takes a `RecipeName` enum member, NEVER a raw string. \

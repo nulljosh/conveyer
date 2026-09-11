@@ -42,6 +42,16 @@ eval harness pattern rather than inventing a new protocol.
   `FACTORIO_SERVER_PORT` explicitly (see `.env`) to skip discovery. RESOLVED 2026-09-11: the
   real issue was that the repo was under `/tmp`, which colima doesn't mount by default. Moved
   the repo to ~/Documents/Code/conveyer and the container boots clean.
+- **Colima's default networking doesn't reliably forward UDP to `127.0.0.1`.** A real Factorio
+  client trying to spectate the headless server got "Could not establish network communication
+  with server" even though `nc -u -zv` "succeeded" (UDP is connectionless, that check doesn't
+  prove a real round-trip works). Fixed by starting colima with `--network-address` for a real
+  routable VM IP (`colima status` → `address:`) and connecting to that instead of `127.0.0.1`.
+- **The Factorio image version is hardcoded in the installed `fle` package**, not `agent.py` —
+  `fle/cluster/docker-compose.yml` (+ `run-envs.sh`/`run_envs.py`) pin
+  `factoriotools/factorio:2.0.73`. A real Factorio client refuses to connect on any version
+  mismatch, so watching live means sed-replacing that pin to match your client's exact version
+  and restarting the cluster.
 
 ## Non-goals
 

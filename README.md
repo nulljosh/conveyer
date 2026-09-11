@@ -29,10 +29,22 @@ Real entity-placement counts pulled straight from `runs/`. Regenerate after a ru
 
 ## Watch it live
 
-The headless server is a normal Factorio multiplayer server — you don't need any custom
-render pipeline to watch. Open your own Factorio client (Steam or otherwise), go to
-Multiplayer → Connect to address, and enter `127.0.0.1:34197`. Client version has to match the
-server's (`factoriotools/factorio:2.0.73`).
+The headless server is a normal Factorio multiplayer server — you don't need any custom render
+pipeline to watch. Open your own Factorio client (Steam or otherwise), go to Multiplayer →
+Connect to address, and connect in.
+
+Two gotchas on colima specifically:
+
+- **`127.0.0.1` doesn't reliably forward UDP** under colima's default (shared) networking —
+  the game connection silently fails ("Could not establish network communication with
+  server"). Fix: start colima with a routable VM address (`colima start --network-address`)
+  and connect to that instead — `colima status` prints it (`address: ...`). Worked reliably at
+  `192.168.64.2:34197`.
+- **Versions must match exactly.** Factorio refuses to connect otherwise. Check your client's
+  version (top-left of the main menu) and set FLE's cluster to the matching
+  `factoriotools/factorio:<version>` image — it's hardcoded in `fle/cluster/docker-compose.yml`
+  (and `run-envs.sh`/`run_envs.py`) inside the installed `fle` package, not something
+  `agent.py` controls.
 
 ## How it works
 

@@ -70,6 +70,11 @@ If you see "position argument must be a Position object", this is almost always 
 also applies to the `near_position` argument of `nearest_buildable` itself — pass \
 `furnace.position` (the placed entity's real position), never the `nearest_buildable` box you \
 got it from.
+- NEVER place a second entity at the exact same position as one you already placed (e.g. a \
+furnace at `drill.position`) — that tile is occupied. Always call `nearest_buildable(...)` for \
+each new entity to get a free adjacent spot, using the previous entity's real `.position` as \
+the search anchor.
+got it from.
 - If your last snippet errored, do not resubmit the exact same code again. Change the specific \
 line the traceback points to before rerunning.
 - There is no `Prototype.Furnace` — use `Prototype.StoneFurnace` (or SteelFurnace/\

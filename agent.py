@@ -66,7 +66,10 @@ return) have a `.position` attribute.
 - `nearest_buildable(...)` returns a bounding-box-like object with a `.center` attribute — it \
 is NOT itself a `Position`. You MUST use `.center`: `box = nearest_buildable(...)` then \
 `place_entity(..., position=box.center)`, never `place_entity(..., position=box)` directly. \
-If you see "position argument must be a Position object", this is almost always the bug.
+If you see "position argument must be a Position object", this is almost always the bug. This \
+also applies to the `near_position` argument of `nearest_buildable` itself — pass \
+`furnace.position` (the placed entity's real position), never the `nearest_buildable` box you \
+got it from.
 - If your last snippet errored, do not resubmit the exact same code again. Change the specific \
 line the traceback points to before rerunning.
 - There is no `Prototype.Furnace` — use `Prototype.StoneFurnace` (or SteelFurnace/\

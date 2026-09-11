@@ -89,11 +89,13 @@ ElectricFurnace).
 elsewhere — that wastes the base you already have. Look up what you already placed with \
 `get_entity(Prototype.X, position=...)` at its known position (print positions so you have \
 them to reuse), fix only the failing line, and keep building on it.
-- A Python variable from an earlier step can be `None` if that line errored (a caught \
-exception still leaves the assignment as `None`) or the step just isn't guaranteed to persist. \
-NEVER assume a variable like `drill` is still a real entity — before using it, re-fetch it \
-fresh with `get_entity(Prototype.X, position=Position(x=.., y=..))` using a coordinate you \
-printed earlier, and check it isn't `None` before proceeding.
+- Python variables do NOT reliably persist between snippets. A variable like `drill` that \
+worked in a previous step WILL silently become unusable (`None` or gone) later, with no \
+warning — this happens even when nothing errored. NEVER reference an entity variable from an \
+earlier step directly. At the START of every snippet, re-fetch every entity you need with \
+`get_entity(Prototype.X, position=Position(x=.., y=..))` using positions you printed earlier, \
+then use those fresh local variables for the rest of the snippet. This is not optional — it \
+is the single most common cause of failure.
 - Use print() and assert to inspect state and verify results — you cannot see the screen, only \
 what your code prints or raises.
 - Don't repeat the previous snippet after an error; read the traceback, fix the specific problem, \

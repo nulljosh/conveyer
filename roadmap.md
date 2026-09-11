@@ -14,8 +14,12 @@ History of what already shipped is at the bottom.
 - [ ] Move conveyer (and pwnlingo) to real server space (DigitalOcean-style VPS) so they run
       when the Mac is off — native Linux also sidesteps colima entirely.
 - [ ] Live mirror on the landing page (conveyer.heyitsmejosh.com): the actual running game
-      state, not the canned terminal-transcript demo. Needs the server's game state exposed to
-      the public web — screenshots/video pushed somewhere, or a small backend endpoint.
+      state, not a static demo video. Reuse pwnlingo's pattern (status app + Playwright runner
+      + public tunnel, e.g. pwnlingo-status.heyitsmejosh.com) rather than building this from
+      scratch — it already solves "expose a locally-running agent's live state to the web."
+- [ ] Bidirectional control: let a viewer send an instruction into the running agent loop
+      between steps, not just watch. Small addition once the status-app pattern above is
+      wired up — an endpoint that queues a user message into the next turn's context.
 - [ ] Pick a first bounded FLE task deliberately (e.g. `iron_ore_throughput`) rather than
       whatever `pick_default_env()` guesses, once the base-building loop is reliable.
 

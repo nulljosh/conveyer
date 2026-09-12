@@ -57,11 +57,6 @@ Sub-bullets are the real, current blow-by-blow status.
           sessions of prompt-tightening than an 8B local model + one Claude session can do
 
 ## Tooling shipped
-- [x] `scripts/tui.py`: cheap ASCII live view over RCON (positions only, no render/screenshot
-      load), real drill/furnace/character positions confirmed showing correctly.
-- [x] `scripts/watch.sh`: raw play-by-play tail of the latest run transcript, no game
-      connection needed at all.
-2-4 more fix cycles is a reasonable guess once past the unreached steps above.
 
 **2026-09-12 session: local-model attempt hit a hard wall, not a code bug.**
 - Fixed two real bugs in `agent.py`: (1) system prompt didn't warn about `place_entity_next_to(entity, source.position, spacing=0)` placing ON the source's own footprint, guaranteed collision; (2) no repeat-guard, so a bad model could resubmit byte-identical code forever after an error — added a 2-repeat abort.
@@ -100,25 +95,6 @@ Sub-bullets are the real, current blow-by-blow status.
       whatever `pick_default_env()` guesses, once the base-building loop is reliable.
 
 ## Next few weeks
-- [x] **Gap analysis vs. [AI Player v3](https://mods.factorio.com/mod/ai-player-v3)** (found
-      2026-09-11 researching similar projects) → **decision made 2026-09-12: adopt their
-      skill-router architecture as the primary path, not just a fallback.** See milestone 5
-      above for the concrete refactor plan. Findings that drove the call:
-  - Their architecture: a fixed library of deterministic skills (mine, build, defend, etc.)
-    plus primitive actions, with a small LLM acting only as a *router* choosing which skill
-    and parameters to use. Conveyer generated raw Python from scratch every turn, far more
-    surface area for syntax/API mistakes (most of the 2026-09-12 session was patching exactly
-    that, and small local models never recovered from their own broken snippets, see the
-    session note above).
-  - Their LLM only classifies/picks, can be much smaller/cheaper than a model that has to
-    write correct code every time. Explains why their approach is more reliable per-step.
-  - They likely have skills for combat/defense already; conveyer has none (currently pinned to
-    the peaceful `default_lab_scenario`, no biters to worry about). Not in scope for the first
-    skill set (`mine`, `smelt`, `craft`, `place`, `build_power`), add later if `open_world` is
-    ever targeted.
-  - Reversed the original plan (skills as fallback, raw-code path kept as primary): the raw
-    Python path was the reliability problem, not a strength worth preserving, so skills become
-    primary and the raw-code path can be dropped once skills cover what it did.
 - [ ] Try a bigger/better model now that the plumbing and prompt are proven, either a bigger
       local model if hosted with real GPU, or a cheap hosted API (OpenRouter) for comparison.
 - [ ] Expand past one throughput task to FLE's broader task suite / benchmark comparison.
@@ -129,25 +105,3 @@ Sub-bullets are the real, current blow-by-blow status.
 - [ ] General "plays well unsupervised" ambition, FLE's own benchmark shows even frontier
       models are weak at long-horizon factory optimization. Not a near-term goal; scope any
       further work as bounded subgoals (a specific throughput target), not "beat the game."
-
-## Shipped
-- [x] Landing page live at conveyer.heyitsmejosh.com, repo renamed conveyor → conveyer to match.
-- [x] No `ANTHROPIC_API_KEY` needed, runs on local Ollama. Settled on `qwen3:8b` after
-      `qwen2.5-coder:14b` (too heavy, laggy machine) and `1.5b-base` (non-instruct, produced
-      garbage) both failed. qwen3's "thinking" mode silently burns the token budget through the
-      OpenAI-compat endpoint, switched `agent.py` to Ollama's native `/api/chat` with
-      `think: false`.
-- [x] `a2a-sdk` pinned to `0.2.16`, FLE 0.4.3 breaks on the 1.x line (`TextPart` import gone).
-- [x] `gym.make(env_id, run_idx=0)`, FLE 0.4.3 requires `run_idx`, agent.py didn't pass it.
-- [x] Colima only mounts `$HOME` by default, repo was under `/tmp`, causing every bind-mount
-      permission/missing-file error and a crash loop. Moved to `~/Documents/Code/conveyer`;
-      resolved outright.
-- [x] `FACTORIO_USERNAME`/`FACTORIO_TOKEN` from factorio.com/profile (Steam-linked account,
-      reveal the token), needed to pull the headless server via `fle cluster start`.
-- [x] **Verified end to end**: model writes real FLE API code (not hallucinated Lua), it
-      executes against the live server, real game errors come back, model reads and retries.
-- [x] Model successfully placed a real `BurnerMiningDrill` on real iron ore after a rule
-      against guessing raw coordinates (use `nearest()`/`nearest_buildable()` instead).
-- [x] Fixed a wrong `Prototype.Furnace` reference (real name: `StoneFurnace`) and a
-      restart-from-scratch pattern where the model abandoned its own placed entities after any
-      error instead of continuing to build on them.

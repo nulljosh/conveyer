@@ -5,15 +5,28 @@ Claude plays Factorio via [FLE](https://github.com/JackHopkins/factorio-learning
 Python API over Factorio's Lua mod API + RCON console, plus Docker orchestration of the
 headless server(s). Don't rebuild that layer.
 
-## Architecture
+## Architecture (mid-refactor 2026-09-12, see roadmap.md)
 
-Claude API (Anthropic) → `agent.py` (REPL loop) → FLE (Python env, manages the Lua/RCON
-bridge) → Factorio server (Docker, headless) → game state.
+Claude API (Anthropic) → `agent.py` (REPL loop) → **skill layer** → FLE (Python env, manages
+the Lua/RCON bridge) → Factorio server (Docker, headless) → game state.
 
-Each turn is code-synthesis, not discrete actions: Claude receives the previous action's
-stdout/stderr as its observation and returns a Python snippet; `agent.py` executes that
-snippet inside FLE and feeds the result back as the next observation. This mirrors FLE's own
-eval harness pattern rather than inventing a new protocol.
+**The LLM no longer writes Python.** Old approach had the model synthesize a raw code
+snippet every turn (see roadmap.md's 2026-09-12 local-model postmortem for why that failed:
+small models get stuck re-guessing broken snippets instead of fixing them, and even
+frontier models were pure surface-area for API/syntax mistakes). New approach, borrowed from
+[AI Player v3](https://mods.factorio.com/mod/ai-player-v3): a fixed library of deterministic
+Python skills (`mine()`, `smelt()`, `craft()`, `place()`, `build_power()`, ...) built once on
+top of FLE's primitives, each validating its own inputs and verifying success against real
+game state (inventory/entity checks via FLE) before returning. The LLM only picks a skill
+name + structured JSON parameters each turn; it never emits code. `agent.py` parses that
+JSON, dispatches to the matching skill function, and feeds the skill's structured result
+(success/failure + reason, not raw stdout) back as the next observation.
+
+Keep FLE itself untouched, it's still the only thing talking to the Lua/RCON bridge. The
+skill layer is a thin dispatch table in front of it, not a replacement for it.
+
+First goal for this architecture: reliably complete iron ore + coal → iron plate → iron gear,
+end to end, driven entirely by skill calls (no raw code).
 
 ## Platform gotchas
 

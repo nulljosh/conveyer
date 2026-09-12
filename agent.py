@@ -106,6 +106,13 @@ inventory contents, not a placement reason — it means you don't have that enti
 what your code prints or raises.
 - Don't repeat the previous snippet after an error; read the traceback, fix the specific problem, \
 and continue from the current game state.
+- If the SAME category of error repeats across steps even though you changed the position each \
+time (e.g. always "already occupied by incompatible entities" at a drill), the bug is \
+conceptual, not positional — stop trying new ore patches/coordinates and fix the actual call.
+- `place_entity_next_to(entity, source.position, spacing=0)` anchored at an entity's OWN \
+position with `spacing=0` places the new entity ON TOP of that entity's footprint, guaranteeing \
+"already occupied by incompatible entities". Use `spacing=1` or more, or anchor at the \
+entity's `drop_position`/`pickup_position` instead of its `position`.
 - Prefer automated solutions (belts, inserters, assemblers) over one-off manual actions once a \
 pattern repeats.
 """
@@ -170,6 +177,8 @@ def main() -> None:
             }
         ]
 
+        last_code = None
+        repeat_count = 0
         for step in range(1, args.max_steps + 1):
             try:
                 response = httpx.post(
@@ -182,17 +191,37 @@ def main() -> None:
                         "options": {"num_predict": args.max_tokens},
                         "messages": [{"role": "system", "content": SYSTEM_PROMPT}, *messages],
                     },
-                    timeout=180,
+                    timeout=300,
                 ).json()
             except httpx.ConnectError:
                 raise SystemExit(
                     f"Could not reach Ollama at {ollama_url} — is `ollama serve` running?"
                 )
+            except httpx.TimeoutException:
+                # ponytail: a huge/growing context can make CPU prefill take arbitrarily
+                # long; trimming history is cheaper than a bigger timeout. Drop the oldest
+                # turn (keep the first, which carries the goal) and retry once.
+                print("[conveyer] Ollama timed out, trimming history and retrying")
+                if len(messages) > 3:
+                    messages = [messages[0]] + messages[3:]
+                continue
             if "message" not in response:
                 raise SystemExit(f"Ollama error: {response.get('error', response)}")
             reply_text = response["message"]["content"]
             code = extract_code(reply_text)
             messages.append({"role": "assistant", "content": reply_text})
+
+            # ponytail: local models sometimes ignore the "don't repeat" prompt rule and
+            # resubmit byte-identical code after an error, forever. Enforce it in code
+            # instead of hoping the model follows the instruction.
+            if code == last_code:
+                repeat_count += 1
+            else:
+                repeat_count = 0
+            last_code = code
+            if repeat_count >= 2:
+                print(f"[conveyer] same snippet repeated {repeat_count + 1}x, stopping episode")
+                break
 
             print(f"\n--- step {step} ---\n{code}\n")
 

@@ -50,6 +50,29 @@ Sub-bullets are the real, current blow-by-blow status.
       connection needed at all.
 2-4 more fix cycles is a reasonable guess once past the unreached steps above.
 
+**2026-09-12 session: local-model attempt hit a hard wall, not a code bug.**
+- Fixed two real bugs in `agent.py`: (1) system prompt didn't warn about `place_entity_next_to(entity, source.position, spacing=0)` placing ON the source's own footprint, guaranteed collision; (2) no repeat-guard, so a bad model could resubmit byte-identical code forever after an error — added a 2-repeat abort.
+- Tried qwen3:8b, qwen2.5-coder:14b, qwen2.5-coder:1.5b-base, llama3.1:8b via Ollama, all on
+  this 16GB Mac alongside the Factorio Docker cluster (which is itself tiny, ~450MB/2% CPU,
+  never the problem):
+  - qwen3:8b and qwen2.5-coder:14b: correct format but got stuck in dead loops re-guessing ore
+    coordinates for a conceptually broken snippet instead of fixing the actual bug; 14b also
+    caused a real prefill hang (30+ min single response) that crashed available RAM to ~80MB.
+  - qwen2.5-coder:1.5b-base: wrong model variant (base, not instruct) — doesn't follow the
+    chat/tool format at all, just hallucinates JSON.
+  - llama3.1:8b: only one that ran without hanging, but left just ~200-500MB RAM headroom
+    the whole time, too risky to leave unattended.
+- **Conclusion: FLE's own docs assume a capable model (Claude/GPT-tier), not an 8B local
+  one.** The raw-code-generation interface (write arbitrary Python every turn) needs real
+  reasoning to debug its own mistakes; small local models keep repeating the same wrong
+  fix. This matches the "Gap analysis vs. AI Player v3" note below — a skill-library
+  router needs much less from the model than raw code synthesis does.
+- Next real options, in order of effort: (a) run one short Claude-driven episode (needs an
+  `ANTHROPIC_API_KEY` — none found on this machine, would need to be added) to validate the
+  goal is reachable at all before investing in the skill-library rewrite; (b) build the
+  skill-library layer from the AI Player v3 gap analysis so a small local model only has to
+  route, not write code.
+
 ## This weekend
 - [ ] Move conveyer (and pwnlingo) to real server space (DigitalOcean-style VPS) so they run
       when the Mac is off, native Linux also sidesteps colima entirely.

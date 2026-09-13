@@ -49,13 +49,35 @@ Sub-bullets are the real, current blow-by-blow status.
          and ingredients are present, so this isn't a one-off fluke reading.
    - [x] Sustained, not a one-off: collected 10+ more plates from the same furnace after
          walking away for 2 minutes with zero further input — real throughput, not a fluke.
-   - [~] Rebuilt the full chain 4 times in one session (each `runner.py` code change forces
-         a world reset — `skills.py` hot-reloads without one, but the runner process itself
-         doesn't). Every rebuild succeeded, ~3-5 min each once the recipe is known. That's
-         real evidence toward "N consecutive clean runs" but not the same as one unattended
-         session running 5x back to back without a human/Claude re-driving it — **realistic
-         next step: automate the rebuild sequence itself as a script, not repeated manual
-         skill calls**, before claiming this bar is met.
+   - [~] Rebuilt the full chain 4 times by hand in one session (each `runner.py` code
+         change forces a world reset — `skills.py` hot-reloads without one, but the runner
+         process itself doesn't). Every hand-driven rebuild succeeded, ~3-5 min each once
+         the recipe is known. Real evidence, but not the same as unattended.
+   - [ ] **`bootstrap.py` (scripts the whole sequence end to end, no human/Claude re-driving)
+         built this session, 0/5 clean unattended passes so far — 5 attempts, 5 failures,
+         each one a real bug found and fixed in turn:**
+         1. Fixed 35s smelt sleep, too short for 15 ore (~48s needed) — cascading 0-plate failure.
+         2. Fixed 55s sleep, still too short once the actual full plate budget (~27 for all
+            downstream crafts) was counted properly.
+         3. Bumped ore *feed* quantity to 25 without bumping the *harvest* quantity that fed
+            it — feed silently caps at whatever you actually have, doesn't error on asking
+            for more. Real lesson: silent capping on quantity mismatches hides bugs, worth a
+            skill-level assert if anyone touches `feed`/`collect` again.
+         4. **Root cause of all the smelt-timing guesses**: the furnace was fully draining
+            its ore just fine — the bug was assuming wall-clock seconds map 1:1 to game
+            ticks. They don't reliably, likely because Box64 (x64-on-arm64 emulation running
+            the whole headless server) doesn't guarantee real-time tick rate under load.
+            **General fix, not just this script: poll game state (`peek` until
+            `NO_INGREDIENTS`/`WORKING`) instead of guessing a sleep duration, anywhere
+            timing matters.** Rewrote `wait_for_smelt()` this way — confirmed it correctly
+            measured 90s for that batch, which no fixed guess had matched.
+         5. Two `StoneFurnace` crafts (one hand-fed, one for `auto_feed`) need 10 stone
+            total; harvest quantity was exactly 10, zero margin, and came up short (stone
+            patches have shown flaky pathing all session — see milestone 3). **Known
+            one-line fix for next session, not yet applied**: bump `harvest Stone` to 15 in
+            `bootstrap.py`.
+   - [ ] Once `bootstrap.py` passes once unattended, run `--runs 5` for the real "N
+         consecutive clean runs" bar — not attempted yet, blocked on the above.
    - [ ] Power grid automated end to end (boiler → steam engine → poles) — **harder than
          assumed**, see the research-gate note below. Revised timeframe: **days, not
          hours**, pending that investigation.

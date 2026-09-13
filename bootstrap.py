@@ -36,12 +36,30 @@ def step(payload: dict, retries: int = 3) -> dict:
     return parsed
 
 
+def wait_for_smelt(furnace_pos: str, max_wait: int = 180) -> None:
+    """Poll the furnace instead of guessing a sleep duration — the game's real
+    tick rate under Box64 emulation isn't guaranteed to match wall-clock time,
+    which is exactly what caused every earlier version of this function
+    (fixed 35s/55s/85s sleeps) to under- or over-shoot and desync the whole
+    rest of the run."""
+    waited = 0
+    while waited < max_wait:
+        time.sleep(5)
+        waited += 5
+        r = step({"skill": "peek", "params": {"prototype": "StoneFurnace", "position": furnace_pos}})
+        obs = r.get("observation", "")
+        if "NO_INGREDIENTS" in obs or "in={}" in obs:
+            print(f"  smelting done after {waited}s (furnace drained)", flush=True)
+            return
+    print(f"  smelting wait maxed out at {max_wait}s, proceeding anyway", flush=True)
+
+
 def run_once(run_idx: int) -> bool:
     print(f"\n=== run {run_idx}: bootstrap -> automated chain ===", flush=True)
 
     step({"skill": "harvest", "params": {"resource": "Stone", "quantity": 10}})
     step({"skill": "harvest", "params": {"resource": "Coal", "quantity": 40}})
-    step({"skill": "harvest", "params": {"resource": "IronOre", "quantity": 15}})
+    step({"skill": "harvest", "params": {"resource": "IronOre", "quantity": 25}})
 
     step({"skill": "craft", "params": {"item_prototype": "StoneFurnace", "count": 1}})
     r = step({"skill": "place", "params": {"prototype": "StoneFurnace", "near_position": "x=0,y=0", "direction": "UP"}})
@@ -50,11 +68,8 @@ def run_once(run_idx: int) -> bool:
     step({"skill": "feed", "params": {"item_prototype": "Coal", "target_prototype": "StoneFurnace", "target_position": furnace_pos, "quantity": 20}})
     step({"skill": "feed", "params": {"item_prototype": "IronOre", "target_prototype": "StoneFurnace", "target_position": furnace_pos, "quantity": 25}})
 
-    # Full plate budget: 9 gear (18 plate) + drill(3) + inserter(1) + 5 belt-crafts(5) = 27,
-    # plus slack. 25 ore * 3.2s/ore ~= 80s. (First attempt fed only 15 ore/waited 35-55s —
-    # not enough for either the smelt time or the total plate the crafts below need.)
     print("  smelting...", flush=True)
-    time.sleep(85)
+    wait_for_smelt(furnace_pos)
     step({"skill": "collect", "params": {"item_prototype": "IronPlate", "source_position": furnace_pos, "quantity": 30}})
 
     step({"skill": "craft", "params": {"item_prototype": "IronGearWheel", "count": 9}})
@@ -86,10 +101,15 @@ def run_once(run_idx: int) -> bool:
         target_furnace_pos = "x=-12.0,y=-48.0"
 
     print("  waiting to confirm automated delivery...", flush=True)
-    time.sleep(20)
-    check = step({"skill": "peek", "params": {"prototype": "StoneFurnace", "position": target_furnace_pos}})
-    obs = check.get("observation", "")
-    working = "WORKING" in obs
+    working = False
+    obs = ""
+    for _ in range(6):  # up to 60s, checking every 10s
+        time.sleep(10)
+        check = step({"skill": "peek", "params": {"prototype": "StoneFurnace", "position": target_furnace_pos}})
+        obs = check.get("observation", "")
+        if "WORKING" in obs:
+            working = True
+            break
     print(f"  RESULT: {'PASS' if working else 'FAIL'} — {obs}", flush=True)
     return working
 

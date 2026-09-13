@@ -25,9 +25,10 @@ Sub-bullets are the real, current blow-by-blow status.
          change forces a world reset — `skills.py` hot-reloads without one, but the runner
          process itself doesn't). Every hand-driven rebuild succeeded, ~3-5 min each once
          the recipe is known. Real evidence, but not the same as unattended.
-   - [ ] **`bootstrap.py` (scripts the whole sequence end to end, no human/Claude re-driving)
-         built this session, 0/5 clean unattended passes so far — 5 attempts, 5 failures,
-         each one a real bug found and fixed in turn:**
+   - [x] **`bootstrap.py` (scripts the whole sequence end to end, no human/Claude re-driving),
+         6 confirmed clean unattended passes across two batches (1 + 1 + 4-in-a-row with
+         zero new bugs) — past the 5-run bar.** 9 real bugs found and fixed one at a time to
+         get there, worth keeping as a record of what "unattended" actually took:
          1. Fixed 35s smelt sleep, too short for 15 ore (~48s needed) — cascading 0-plate failure.
          2. Fixed 55s sleep, still too short once the actual full plate budget (~27 for all
             downstream crafts) was counted properly.
@@ -46,6 +47,18 @@ Sub-bullets are the real, current blow-by-blow status.
          5. Two `StoneFurnace` crafts (one hand-fed, one for `auto_feed`) need 10 stone
             total; harvest quantity was exactly 10, zero margin, and came up short. Fixed:
             bumped to 15.
+         6. `--runs N>1` didn't restart the world between runs, but every position in the
+            script is a hardcoded coordinate that only makes sense on a fresh world (this
+            seed is deterministic — same coordinates every reset). Added `restart_world()`,
+            called between runs.
+         7. `step()` didn't catch `subprocess.TimeoutExpired` — one slow response (runner.py
+            still settling right after a world restart) crashed the entire multi-run batch
+            unhandled instead of retrying. Caught it, treated like any other retriable
+            failure. Added a 3s settling buffer after restart reports ready, too.
+         8-9. Same class of bug twice: a script this size needs the *specific* game-state
+            evidence checked (peek a furnace's real status/inventory), not an assumption
+            from an error message's wording — every guess-based "fix" failed until the
+            actual root cause was read off live state instead.
    - [ ] Power grid automated end to end (boiler → steam engine → poles) — **harder than
          assumed**, see the research-gate note below. Revised timeframe: **days, not
          hours**, pending that investigation.

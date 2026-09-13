@@ -20,11 +20,17 @@ STEP_SH = Path(__file__).parent / "step.sh"
 
 def step(payload: dict, retries: int = 3) -> dict:
     for attempt in range(retries):
-        result = subprocess.run(
-            [str(STEP_SH), json.dumps(payload)], capture_output=True, text=True, timeout=30
-        )
         try:
+            result = subprocess.run(
+                [str(STEP_SH), json.dumps(payload)], capture_output=True, text=True, timeout=45
+            )
             parsed = json.loads(result.stdout)
+        except subprocess.TimeoutExpired:
+            # step.sh itself waits up to 30s internally — a subprocess-level
+            # timeout means runner.py was genuinely unresponsive (e.g. still
+            # settling right after a world restart), not a game-logic error.
+            # This must be retried like any other failure, not crash the batch.
+            parsed = {"ok": False, "error": "step.sh subprocess timed out (runner.py unresponsive)"}
         except json.JSONDecodeError:
             parsed = {"ok": False, "error": result.stdout or result.stderr}
         msg = parsed.get("observation") or parsed.get("error", "")
@@ -52,6 +58,36 @@ def wait_for_smelt(furnace_pos: str, max_wait: int = 180) -> None:
             print(f"  smelting done after {waited}s (furnace drained)", flush=True)
             return
     print(f"  smelting wait maxed out at {max_wait}s, proceeding anyway", flush=True)
+
+
+RUNNER_DIR = Path(__file__).parent
+
+
+def restart_world() -> None:
+    """Kill and relaunch runner.py to get a fresh world — same deterministic
+    seed, same coordinates every time, but the placed entities are gone."""
+    print("  restarting world for next run...", flush=True)
+    subprocess.run(["pkill", "-f", "runner.py"], capture_output=True)
+    time.sleep(1)
+    for f in ("runner_cmd.json", "runner_result.json", "runner_seq.txt", "status.json"):
+        (RUNNER_DIR / f).unlink(missing_ok=True)
+    log = open("/tmp/conveyer_bootstrap_runner.log", "a")
+    subprocess.Popen(
+        [sys.executable, "runner.py", "--env-id", "open_play"],
+        cwd=RUNNER_DIR, stdout=log, stderr=log, start_new_session=True,
+    )
+    for _ in range(30):  # up to 30s for the env to reset and register actions
+        time.sleep(1)
+        try:
+            state = json.loads((RUNNER_DIR / "runner_result.json").read_text())
+            if state.get("ready"):
+                time.sleep(3)  # small settling buffer — "ready" fires the instant
+                # env.reset() returns, but the RCON connection/Lua state can still
+                # be finishing setup for a moment after that
+                return
+        except (FileNotFoundError, json.JSONDecodeError):
+            continue
+    print("  WARNING: runner.py didn't report ready within 30s, proceeding anyway", flush=True)
 
 
 def run_once(run_idx: int) -> bool:
@@ -121,6 +157,10 @@ def main() -> None:
 
     results = []
     for i in range(1, args.runs + 1):
+        if i > 1:
+            # Every run assumes a fresh world (fixed deterministic coordinates
+            # for this seed) — restart the world between runs, not just skills.
+            restart_world()
         results.append(run_once(i))
 
     print(f"\n=== {sum(results)}/{len(results)} runs confirmed automated delivery ===")

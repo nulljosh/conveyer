@@ -11,19 +11,18 @@ Sub-bullets are the real, current blow-by-blow status.
 3. [x] First entity placed successfully (drill on real ore), **done**, reliable now after
        fixing coordinate-guessing and prototype-name bugs
 4. [x] First two entities connected (drill → furnace placed together), **done**, stable and reliable (5+ consecutive successful runs, best run placed 7 total entities)
-5. [ ] **Skill-layer refactor: LLM stops writing Python** (decided 2026-09-12, promoted from
-       the gap-analysis idea below), **this weekend, current focus**
-   - [ ] Build `skills.py` (or similar): `mine()`, `smelt()`, `craft()`, `place()`,
-         `build_power()` as deterministic Python functions on top of FLE's existing
-         primitives (`nearest`, `place_entity`, `insert_item`, `inspect_inventory`, etc.)
-   - [ ] Each skill validates its own inputs and verifies success against real game state
-         before returning (no "assume it worked")
-   - [ ] `agent.py`: LLM output becomes structured JSON `{skill, params}`, not a code
-         snippet; agent.py parses + dispatches, no `exec()`/`eval()` of model output
-   - [ ] Smallest architectural change that gets this: keep FLE untouched, keep the REPL
-         loop shape, swap only what crosses the LLM boundary
-   - [ ] First goal end to end via skills only: iron ore + coal → iron plate → iron gear,
-         no raw code path used
+5. [x] **Skill-layer refactor: LLM stops writing Python**, done 2026-09-12.
+   - [x] `skills.py`: `mine`, `smelt`, `craft`, `place`, `build_power`, `inspect` as Python
+         source templates rendered with `skills.render(name, params)`, filled in with FLE's
+         existing primitives (`nearest`, `place_entity`, `insert_item`, `inspect_inventory`, etc.)
+   - [x] Each template re-fetches entities by literal position and ends in an assert/print
+         (`SKILL_OK`/`SKILL_FAIL`) so the observation states success/failure explicitly
+   - [x] `agent.py`: LLM reply is now a ```json {"skill": ..., "params": {...}} fence, parsed
+         and dispatched via `skills.render`, no raw code from the model ever reaches `Action`
+   - [x] Kept FLE and the REPL loop shape untouched, only what crosses the LLM boundary changed
+   - [ ] Not yet run against a live cluster to confirm iron ore + coal → plate → gear end to
+         end with the new dispatch (`fle cluster start` wasn't up during this edit) — first
+         thing to verify next session
 6. [ ] First smelted item produced (real iron plate in inventory), **this weekend**
    - [ ] Fuel drill + furnace with coal (`insert_item`), not yet reached in a clean run
    - [ ] Connect drill → furnace (belt, or entity at drop position), not reached

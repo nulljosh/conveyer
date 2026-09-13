@@ -25,106 +25,34 @@ from fle.env.gym_env.action import Action
 from fle.env.gym_env.registry import list_available_environments, get_environment_info
 from fle.commons.models.game_state import GameState
 
-# FLE exposes a fixed Python API (place_entity, connect_entities, Prototype.*, ...), not the
-# raw Lua `game.surfaces[...]` API — a model that hasn't seen it will hallucinate the wrong
-# syntax. fle/env/tools/agent.md is FLE's own reference for that API; ship it as-is instead of
-# re-describing it and drifting out of sync with whatever FLE version is installed.
-_AGENT_MD = Path(__file__).resolve()
-for _p in Path(__import__("fle").__file__).parent.rglob("agent.md"):
-    if _p.parent.name == "tools":
-        _AGENT_MD = _p
-        break
+import skills
 
-SYSTEM_PROMPT = f"""You are an AI agent playing Factorio. You interact with the game through a \
-Python REPL: your messages are Python programs, and what you receive back is the stdout/stderr \
-from running them against the live game.
+SYSTEM_PROMPT = f"""You are an AI agent playing Factorio. You do NOT write Python. Each turn, \
+pick exactly one skill from the list below and reply with a short plan in plain text, then \
+exactly one ```json fence containing {{"skill": "<name>", "params": {{...}}}}.
 
-You have a fixed set of tool functions and types available in every snippet — do NOT use the \
-raw Lua `game.surfaces[...]` / `game.players[...]` API, it does not exist here. Use functions \
-like `place_entity`, `place_entity_next_to`, `connect_entities`, `get_entity`, `get_entities`, \
-`nearest`, `nearest_buildable`, `move_to`, `craft_item`, `insert_item`, `extract_item`, \
-`inspect_inventory`, `rotate_entity`, `harvest_resource`, `set_entity_recipe`, `sleep`, `print`, \
-and the `Prototype`, `Direction`, `Position`, `BuildingBox`, `RecipeName` types. Reference and \
-worked examples:
+Available skills:
+{skills.catalog_text()}
 
-{_AGENT_MD.read_text() if _AGENT_MD.name == "agent.md" else "(agent.md not found — check the FLE install)"}
-
-Rules:
-- Reply with a short plan in plain text, then exactly one ```python code fence with the code to run.
-- Write code as TOP-LEVEL statements that execute immediately, not function definitions you \
-never call. If you do wrap something in a function for clarity, call it in the same snippet. \
-A snippet that only defines things and prints nothing produces an empty, useless observation.
-- Keep each snippet small and focused (roughly 30 lines or fewer) so failures are easy to localize.
-- Never guess a raw (x, y) for `place_entity`. Find a real position first — `nearest(Resource.\
-IronOre)` for ore patches, `nearest_buildable(Prototype.X, building_box, near_position)` for \
-open, buildable ground — then place there. A guessed coordinate is very likely on unplaceable \
-terrain or already occupied.
-- `nearest(...)` returns a `Position` directly — it does NOT have a `.position` attribute. \
-Use its return value as-is: `pos = nearest(Resource.IronOre)`, then `place_entity(..., \
-position=pos)`, never `pos.position`. Only actual entities (what `place_entity`/`get_entity` \
-return) have a `.position` attribute.
-- `nearest_buildable(...)` returns a bounding-box-like object with a `.center` attribute — it \
-is NOT itself a `Position`. You MUST use `.center`: `box = nearest_buildable(...)` then \
-`place_entity(..., position=box.center)`, never `place_entity(..., position=box)` directly. \
-If you see "position argument must be a Position object", this is almost always the bug. This \
-also applies to the `near_position` argument of `nearest_buildable` itself — pass \
-`furnace.position` (the placed entity's real position), never the `nearest_buildable` box you \
-got it from.
-- NEVER place a second entity at the exact same position as one you already placed (e.g. a \
-furnace at `drill.position`) — that tile is occupied. Always call `nearest_buildable(...)` for \
-each new entity to get a free adjacent spot, using the previous entity's real `.position` as \
-the search anchor.
-- `place_entity` fails with "too far away" if the player isn't within ~10 tiles of the target \
-position. ALWAYS `move_to(target_position)` (the actual position you're about to place at, \
-found via `nearest`/`nearest_buildable`) immediately before that `place_entity` call — never \
-move to an arbitrary point like `Position(x=0, y=0)`.
-- If your last snippet errored, do not resubmit the exact same code again. Change the specific \
-line the traceback points to before rerunning.
-- There is no `Prototype.Furnace` — use `Prototype.StoneFurnace` (or SteelFurnace/\
-ElectricFurnace).
-- `set_entity_recipe(entity, recipe)` takes a `RecipeName` enum member, NEVER a raw string. \
-`set_entity_recipe(assembler, "iron-gear-wheel")` fails with "Invalid entity type" — use \
-`set_entity_recipe(assembler, RecipeName.IronGearWheel)` instead.
-- After an error, do NOT start over by re-finding a new ore patch and placing a second drill \
-elsewhere — that wastes the base you already have. Look up what you already placed with \
-`get_entity(Prototype.X, position=...)` at its known position (print positions so you have \
-them to reuse), fix only the failing line, and keep building on it.
-- Python variables do NOT reliably persist between snippets. A variable like `drill` that \
-worked in a previous step WILL silently become unusable (`None` or gone) later, with no \
-warning — this happens even when nothing errored. NEVER reference an entity variable from an \
-earlier step directly. At the START of every snippet, re-fetch every entity you need with \
-`get_entity(Prototype.X, position=Position(x=.., y=..))` using a LITERAL numeric position you \
-printed earlier — e.g. `Position(x=16.0, y=71.0)` — never `drill.position` or any other \
-attribute of the very variable you are trying to fetch; that variable doesn't exist yet in \
-this snippet. Then use those fresh local variables for the rest of the snippet. This is not \
-optional — it is the single most common cause of failure.
-- `place_entity` places an item FROM the player's inventory — you can't place something you \
-don't have. If placement fails with a list of item counts in the error, that's your \
-inventory contents, not a placement reason — it means you don't have that entity. Use \
-`craft_item(Prototype.X, count=1)` first (check `inspect_inventory()` if unsure), then place.
-- Use print() and assert to inspect state and verify results — you cannot see the screen, only \
-what your code prints or raises.
-- Don't repeat the previous snippet after an error; read the traceback, fix the specific problem, \
-and continue from the current game state.
-- If the SAME category of error repeats across steps even though you changed the position each \
-time (e.g. always "already occupied by incompatible entities" at a drill), the bug is \
-conceptual, not positional — stop trying new ore patches/coordinates and fix the actual call.
-- `place_entity_next_to(entity, source.position, spacing=0)` anchored at an entity's OWN \
-position with `spacing=0` places the new entity ON TOP of that entity's footprint, guaranteeing \
-"already occupied by incompatible entities". Use `spacing=1` or more, or anchor at the \
-entity's `drop_position`/`pickup_position` instead of its `position`.
-- Prefer automated solutions (belts, inserters, assemblers) over one-off manual actions once a \
-pattern repeats.
+Notes on params:
+- Positions are strings like "x=1.0,y=2.0" (no `Position(...)` wrapper, no parens).
+- Prototype/Resource/Direction names are bare strings matching FLE's enums, e.g. "IronOre", \
+"BurnerMiningDrill", "StoneFurnace", "IronGearWheel", "UP".
+- Every skill re-fetches entities by the position you give it — it does not remember entities \
+from earlier turns. Reuse the positions printed in past observations (a `SKILL_OK` line \
+always prints the real position of what it placed).
+- If a skill fails, its observation says why (assert message or traceback). Fix the param that \
+caused it and retry the same skill — don't switch to a different skill to work around a bug.
+- Use "inspect" whenever you're unsure what you already have.
 """
 
-CODE_FENCE = re.compile(r"```python\s*(.*?)```", re.DOTALL)
+JSON_FENCE = re.compile(r"```json\s*(.*?)```", re.DOTALL)
 
 
-def extract_code(text: str) -> str:
-    match = CODE_FENCE.search(text)
-    if match:
-        return match.group(1).strip()
-    return text.strip()
+def extract_skill_call(text: str) -> dict:
+    match = JSON_FENCE.search(text)
+    raw = match.group(1).strip() if match else text.strip()
+    return json.loads(raw)
 
 
 def pick_default_env() -> str:
@@ -208,22 +136,29 @@ def main() -> None:
             if "message" not in response:
                 raise SystemExit(f"Ollama error: {response.get('error', response)}")
             reply_text = response["message"]["content"]
-            code = extract_code(reply_text)
             messages.append({"role": "assistant", "content": reply_text})
 
+            try:
+                call = extract_skill_call(reply_text)
+                code = skills.render(call["skill"], call.get("params", {}))
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                print(f"[conveyer] bad skill call, feeding error back: {e}")
+                messages.append({"role": "user", "content": f"SKILL_FAIL: {e}"})
+                continue
+
             # ponytail: local models sometimes ignore the "don't repeat" prompt rule and
-            # resubmit byte-identical code after an error, forever. Enforce it in code
-            # instead of hoping the model follows the instruction.
-            if code == last_code:
+            # resubmit the exact same skill call after a failure, forever. Enforce it in
+            # code instead of hoping the model follows the instruction.
+            if call == last_code:
                 repeat_count += 1
             else:
                 repeat_count = 0
-            last_code = code
+            last_code = call
             if repeat_count >= 2:
-                print(f"[conveyer] same snippet repeated {repeat_count + 1}x, stopping episode")
+                print(f"[conveyer] same skill call repeated {repeat_count + 1}x, stopping episode")
                 break
 
-            print(f"\n--- step {step} ---\n{code}\n")
+            print(f"\n--- step {step}: {call['skill']}({call.get('params', {})}) ---")
 
             game_state = GameState.from_instance(env.instance)
             action = Action(agent_idx=0, game_state=game_state, code=code)
@@ -237,6 +172,8 @@ def main() -> None:
                 json.dumps(
                     {
                         "step": step,
+                        "skill": call["skill"],
+                        "params": call.get("params", {}),
                         "code": code,
                         "observation": observation_text,
                         "reward": reward,

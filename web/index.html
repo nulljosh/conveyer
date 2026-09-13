@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Conveyer, Claude plays Factorio</title>
-<meta name="description" content="Conveyer puts Claude in control of a real Factorio game through the game's own Lua mod API and RCON console. No pixels, no vision model, structured game state in, Python code out.">
+<meta name="description" content="Conveyer puts Claude in control of a real Factorio game through the game's own Lua mod API and RCON console. No pixels, no vision model, structured game state in, a deterministic skill picked out.">
 <meta name="theme-color" content="#d97757">
 <meta property="og:title" content="Conveyer, Claude plays Factorio">
-<meta property="og:description" content="An agent loop built on FLE: Claude gets structured game state, writes Python, and the game runs it.">
+<meta property="og:description" content="An agent loop built on FLE: Claude gets structured game state, picks a skill from a fixed library, and the game runs it.">
 <meta property="og:type" content="website">
 <link rel="icon" href="icon.svg">
 <style>
@@ -60,7 +60,7 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
   <div class="container">
   <img src="icon.svg" alt="">
   <h1>An LLM plays Factorio, for real.</h1>
-  <p class="lede">Real game state in, Python code out. No pixels, no vision model, just an LLM driving a live Factorio server through its own Lua/RCON API.</p>
+  <p class="lede">Real game state in, a deterministic skill picked out. No pixels, no vision model, just an LLM driving a live Factorio server through its own Lua/RCON API.</p>
   <a class="btn" href="https://github.com/nulljosh/conveyer">View on GitHub</a>
   <a class="btn-ghost" href="https://github.com/nulljosh/conveyer#setup">Run it</a>
   <p class="demo-caption">Recorded run, live in-browser preview coming this weekend.</p>
@@ -70,8 +70,8 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
 <section>
   <div class="container">
     <h2>How it works</h2>
-    <p>Every turn, the model sees what happened last and writes back a short Python snippet. <code>agent.py</code> runs it through <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a>'s gym environment into a real headless Factorio server. No hardcoded plan. It reads what's real and decides what's next.</p>
-    <p>Runs on a local model by default. No API key, no cloud bill.</p>
+    <p>Every turn, the model sees real game state and picks a skill from a fixed library (<code>harvest</code>, <code>mine</code>, <code>smelt</code>, <code>craft</code>, <code>auto_feed</code>, <code>belt</code>, ...) — never raw code. Each skill verifies its own success against live game state before returning. <a href="https://github.com/JackHopkins/factorio-learning-environment">FLE</a>'s gym environment runs it against a real headless Factorio server. No hardcoded plan. It reads what's real and decides what's next.</p>
+    <p>Starts from a genuinely vanilla game, no free starting warehouse. Runs on a local model by default. No API key, no cloud bill.</p>
     <p><a href="https://jackhopkins.github.io/factorio-learning-environment/versions/0.3.0.html">FLE's own benchmark</a> puts Claude ahead of GPT, Gemini, and Grok at this, and still finds every frontier model loses track of what it's built and falls back on manual crafting instead of real automation. That's the gap this project is trying to close.</p>
   </div>
 </section>
@@ -85,10 +85,11 @@ footer { padding: 2.5rem 0; color: var(--text2); font-size: .9rem; text-align: c
       <li>Character exists and can be spectated live, <strong>done</strong></li>
       <li>Character moves under its own commands, <strong>done</strong></li>
       <li>First entity placed on real ore, <strong>done</strong></li>
-      <li>Two entities connected (drill → furnace), <strong>done once</strong>, not stable yet</li>
-      <li>First real iron plate smelted, needs fuel + belt connection working reliably</li>
-      <li>First item assembled, needs power grid + craft-before-place, in progress</li>
-      <li>Full loop running unattended, no manual fixes, the real reliability bar</li>
+      <li>Two entities connected (drill → furnace), <strong>done</strong></li>
+      <li>First real iron plate smelted, <strong>done</strong>, from a vanilla start</li>
+      <li>First hand-crafted item, <strong>done</strong></li>
+      <li>Automated drill → belt → inserter → furnace chain, zero hand-feeding, <strong>done</strong></li>
+      <li>Full loop running unattended, no manual fixes, N clean runs in a row, the real reliability bar</li>
       <li>First research completed, needs a stable base producing science packs</li>
       <li>First monster encounter (open_world only), needs combat API + base expansion</li>
       <li>First rocket launched, the real finish line, months+ away, not a session goal</li>

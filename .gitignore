@@ -6,6 +6,22 @@ venv/
 *.log
 runs/
 .factorio/
+.fle/
+vendor/
+
+# runner.py session state — ephemeral, regenerated on every run
+runner.pid
+runner_cmd.json
+runner_result.json
+runner_seq.txt
+status.json
+status_log.json
+map.json
+preview.png
+
+# menubar build output (source of truth is main.swift + build.sh)
+menubar/ConveyerMonitor.app/Contents/MacOS/
+menubar/ConveyerMonitor.app/Contents/_CodeSignature/
 
 # wrangler files
 .wrangler

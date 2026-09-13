@@ -19,7 +19,7 @@ def placements_per_run():
         lines = [json.loads(l) for l in open(f) if l.strip()]
         if not lines:
             continue
-        counts.append(sum(l["observation"].count("Placed") for l in lines))
+        counts.append(sum(l["observation"].lower().count("placed") for l in lines))
     return counts
 
 

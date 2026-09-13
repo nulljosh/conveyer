@@ -31,6 +31,12 @@ SYSTEM_PROMPT = f"""You are an AI agent playing Factorio. You do NOT write Pytho
 pick exactly one skill from the list below and reply with a short plan in plain text, then \
 exactly one ```json fence containing {{"skill": "<name>", "params": {{...}}}}.
 
+Example reply:
+I'll check what I'm holding first.
+```json
+{{"skill": "inspect", "params": {{}}}}
+```
+
 Available skills:
 {skills.catalog_text()}
 
@@ -47,12 +53,30 @@ caused it and retry the same skill — don't switch to a different skill to work
 """
 
 JSON_FENCE = re.compile(r"```json\s*(.*?)```", re.DOTALL)
+# ponytail: small models ignore the "reply with JSON" instruction and instead
+# echo the catalog's own `skill(param=val, ...)` call-signature notation. Parse
+# that shape too instead of just erroring and burning a turn.
+CALL_SYNTAX = re.compile(r"^\s*(\w+)\(([^)]*)\)\s*$", re.DOTALL)
 
 
 def extract_skill_call(text: str) -> dict:
     match = JSON_FENCE.search(text)
-    raw = match.group(1).strip() if match else text.strip()
-    return json.loads(raw)
+    if match:
+        return json.loads(match.group(1).strip())
+
+    call = CALL_SYNTAX.match(text.strip().splitlines()[-1] if text.strip() else "")
+    if call:
+        name, arg_str = call.group(1), call.group(2).strip()
+        params = {}
+        if arg_str:
+            for part in arg_str.split(","):
+                if "=" not in part:
+                    raise ValueError(f"can't parse call arg {part!r}, expected key=value")
+                k, v = part.split("=", 1)
+                params[k.strip()] = v.strip().strip("'\"")
+        return {"skill": name, "params": params}
+
+    return json.loads(text.strip())
 
 
 def pick_default_env() -> str:

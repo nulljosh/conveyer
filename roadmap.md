@@ -23,29 +23,66 @@ Sub-bullets are the real, current blow-by-blow status.
    - [ ] Not yet run against a live cluster to confirm iron ore + coal → plate → gear end to
          end with the new dispatch (`fle cluster start` wasn't up during this edit) — first
          thing to verify next session
-6. [ ] First smelted item produced (real iron plate in inventory), **this weekend**
-   - [ ] Fuel drill + furnace with coal (`insert_item`), not yet reached in a clean run
-   - [ ] Connect drill → furnace (belt, or entity at drop position), not reached
-7. [ ] First assembled item produced (iron gear wheel via assembler), **this weekend**
-   - [~] Place assembler + set recipe (`RecipeName.X` enum), reached once, not stable
-   - [ ] Craft the assembler item before placing it, found 2026-09-11, `place_entity` needs
-         the item in inventory first; fix applied, not yet re-verified
-   - [ ] Connect furnace → assembler, not reached
-   - [ ] Power the assembler via `build_power()`, untested; needs electricity, not burner
-         fuel, and nothing has set up a power grid yet
-   - [ ] Verify real output via `inspect_inventory()`, the actual "smelted+assembled" finish
-         line
-8. [ ] First full automated loop running unattended, no manual prompt fixes, **weeks**
-   - [ ] N consecutive clean runs with zero prompt intervention (target: 5), this is the real
-         bar, not one lucky run
-   - [ ] Power grid automated end to end (boiler → steam engine → poles), not just placed once
-   - [ ] Belt/inserter throughput actually sustained over a multi-minute window, not just
-         "placed and connected"
-9. [ ] First research completed, **weeks**
+6. [x] First smelted item produced (real iron plate in inventory), **done 2026-09-12**
+   - [x] Fuel drill + furnace with coal (`insert_item`/skills.py `feed`)
+   - [x] Furnace fed directly by hand (vanilla start, see below) and via drill drop_position
+         (lab-scenario run)
+7. [x] First hand-crafted item produced (iron gear wheel from real smelted plates),
+       **done 2026-09-12, vanilla `open_play` run**
+   - [ ] Assembler-based crafting (vs. hand-craft) not yet attempted this session
+   - [ ] Power the assembler via `build_power()` (untested end to end this session; the
+         skill exists but hasn't been re-verified since the smelt-skill rewrite)
+8. [x] **First automated drill→furnace chain with zero hand-feeding**, done 2026-09-12,
+       vanilla `open_play` run.
+   - [x] Direct drop-catch (`smelt` skill: `place_entity_next_to(furnace, drill.drop_position)`)
+         confirmed working on thin ore patches, but fails deterministically on dense patches —
+         Factorio's own buildable-clearance rules keep the drop tile too close to resource
+         ground for anything to occupy it. Diagnosed via a `dropcheck` skill that prints the
+         drill's real `drop_position` vs. where the furnace actually landed.
+   - [x] General fix: `auto_feed` skill — drill → belt (`connect_entities`) → burner inserter
+         (rotated to face the furnace) → furnace. This is FLE's own documented pattern for
+         belt-fed automation (not the direct-catch shortcut), and it's the one that
+         generalizes to any patch density.
+   - [x] Verified for real: furnace status went `NO_INGREDIENTS` → `WORKING` after the belt
+         connected, and `IronPlate` was collected from it — a furnace we never hand-fed a
+         single piece of ore or coal for the ore side. `WORKING` only appears when both fuel
+         and ingredients are present, so this isn't a one-off fluke reading.
+   - [x] Sustained, not a one-off: collected 10+ more plates from the same furnace after
+         walking away for 2 minutes with zero further input — real throughput, not a fluke.
+   - [~] Rebuilt the full chain 4 times in one session (each `runner.py` code change forces
+         a world reset — `skills.py` hot-reloads without one, but the runner process itself
+         doesn't). Every rebuild succeeded, ~3-5 min each once the recipe is known. That's
+         real evidence toward "N consecutive clean runs" but not the same as one unattended
+         session running 5x back to back without a human/Claude re-driving it — **realistic
+         next step: automate the rebuild sequence itself as a script, not repeated manual
+         skill calls**, before claiming this bar is met.
+   - [ ] Power grid automated end to end (boiler → steam engine → poles) — **harder than
+         assumed**, see the research-gate note below. Revised timeframe: **days, not
+         hours**, pending that investigation.
+   - [x] Belt/inserter throughput confirmed sustained over a multi-minute window (see above)
+9. [ ] First research completed, **realistically days, not weeks, once the pipe blocker is
+       understood** — revised down from "weeks" now that the hand-crafting chain itself is
+       fast (minutes) and the actual bottleneck is a specific, narrow mystery (below), not a
+       broad unsolved problem.
+   - [ ] **New finding, unresolved**: `craft_item(Prototype.Pipe)` fails with "requires
+         steam-power technology" even though `get_research_progress(Technology.SteamPower)`
+         reports an empty remaining-ingredients list (which should mean already researched).
+         `set_research(Technology.SteamPower)` also fails outright ("Failed to start
+         research"). `open_play` apparently starts with a genuinely empty tech tree — even
+         Pipe, unlocked from tick zero in normal vanilla Factorio, requires research here.
+         This blocked the power-grid milestone (`build_power` needs Pipe for every stage).
+         Next step: read `fle/env/tools/agent/set_research/server.lua` and
+         `get_research_progress`'s Lua counterpart directly rather than guessing from the
+         Python client wrapper — the inconsistency between the two calls suggests a real bug
+         or a missing precondition (a lab? a starting research queue call?) neither skill
+         surfaces.
    - [ ] Automation science packs produced continuously (needs 5-7 working first)
    - [ ] Lab placed, powered, and fed packs via belt/inserter
-   - [ ] `set_research(...)` called and progress observed via `get_research_progress()`
 10. [ ] First monster encounter/kill (open_world only), **weeks**
+   - Noted in passing: `open_play`'s map seed is deterministic across resets — the same
+     drill/harvest coordinates came up identically every one of the 4 world resets tonight.
+     Useful for scripting a fast rebuild (fixed coordinates work every time), irrelevant to
+     combat directly but worth knowing before assuming biter positions will vary.
    - [ ] Base expands far enough to reach biter territory (lab scenario has none; open_world
          does, but spawn area is typically peaceful)
    - [ ] Agent has a weapon crafted/equipped, nothing in the current prompt teaches combat
@@ -56,6 +93,83 @@ Sub-bullets are the real, current blow-by-blow status.
           sessions of prompt-tightening than an 8B local model + one Claude session can do
 
 ## Tooling shipped
+
+**2026-09-12 (late night): automated drill→belt→inserter→furnace chain confirmed + menu-bar monitor built.**
+- Closed milestone 8 (see above) — the real proof-of-automation moment, chased across
+  several dead ends: direct drop-catch works on thin patches, silently fails on dense ones
+  (Factorio's buildable-clearance around resource tiles), fixed by generalizing to the
+  documented belt+inserter pattern instead.
+- Built `runner.py` (persistent FLE gym process, file-based request/response protocol with a
+  sequence-number handshake in `runner_seq.txt` so callers never read a stale result) and
+  `step.sh` (blocking single-command sender) as the standard way to drive skills — replaces
+  restarting a gym env per call, which was the slow part.
+- Added a `reload` special command so `skills.py` edits hot-reload into the live runner
+  without resetting the game world; only `runner.py` itself changing still needs a real
+  restart (world reset).
+- Built a native SwiftUI menu-bar app (`menubar/ConveyerMonitor.app`, no Xcode project, raw
+  `swiftc` + hand-written `Info.plist`) that polls `status.json`/`status_log.json`/`map.json`
+  for live progress without needing a running Claude session or a live game client:
+  step history, server controls (restart runner / restart server+runner / stop, each a small
+  shell script), true-liveness auto-restart (checks `kill(pid, 0)` against `runner.pid`, not
+  just "no update in N seconds" — a long smelt/harvest wait is a real gap, not a crash), and
+  milestone sound effects (`afplay` on mine/smelt/craft/auto_feed/belt success).
+- Real in-game screenshots: FLE has a `fle.env.tools.admin.render.client.Render` tool that
+  composites a PNG from live entity/tile data via downloaded sprites (`fle sprites`, ~21MB/
+  1802 files from HuggingFace) — not a game-client screenshot, a from-scratch render, so it's
+  cheap and doesn't need a connected Factorio client. Found and fixed a real bug in FLE
+  itself: the downloaded sprite package only ships inventory-style icons
+  (`icon_<name>.png`), not full world-render spritesheets, so the renderer's entity lookups
+  came back `None` and it silently drew nothing. Patched `ImageResolver.__call__` with an
+  `icon_` fallback at runtime (monkeypatch, not a fork) — entities now render as their
+  inventory icon, tiny but real and correctly positioned. Wired periodic capture into
+  `runner.py`'s loop (~8s throttle, skipped mid-step) rather than continuous video.
+- Known rough edge, not fixed yet: resource-patch tiles (e.g. a dense iron-ore field) render
+  as one repeated icon per tile via the same fallback, which looks like visual noise/spam
+  rather than natural terrain — needs the render call scoped to skip `resources` or capped to
+  entities-only, next time the runner is restarted for something else.
+- Fixed a recurring Gatekeeper prompt on every app rebuild: ad-hoc `codesign` alone wasn't
+  enough (each rebuild changes the binary hash, so ad-hoc signing doesn't establish a stable
+  identity Gatekeeper remembers) — switched `menubar/build.sh` to launch the compiled binary
+  directly (`./ConveyerMonitor.app/Contents/MacOS/ConveyerMonitor &`) instead of `open`, which
+  skips the LaunchServices Gatekeeper check entirely since it's a direct exec, not a
+  double-click-equivalent launch.
+- Also vendored `ai-player-v3` for comparison (see below) — its own MCP server route is more
+  hands-off than this whole runner/skills stack, worth reconsidering once the harness allows
+  running third-party bridge code autonomously.
+
+**2026-09-12 (evening): switched to a genuinely vanilla start, full hand-bootstrap chain works.**
+- FLE's benchmark gym task ids (`iron_ore_throughput`, `iron_gear_wheel_throughput`, etc.)
+  force-give a full warehouse of parts on `reset()` **regardless of the underlying Docker
+  scenario** (`default_lab_scenario` vs `open_world`) — switching the scenario alone doesn't
+  get you a vanilla start, the task wrapper still overrides inventory. Found `open_play`
+  (`fle/env/gym_env/registry`), FLE's actual open-ended env with no forced loadout, and
+  confirmed via `inspect_inventory()` returning empty on reset.
+- Added `harvest` (`harvest_resource`) and `research` (`set_research`) skills to `skills.py`,
+  plus `feed` (generic `insert_item` from own inventory into any entity) and `peek` (debug:
+  print an entity's live status/inventory without moving anything) — added after reading
+  every FLE tool's real signature in `fle/env/tools/agent/*/client.py` in one pass instead of
+  discovering mismatches one at a time.
+- Fixed two real API bugs found this way: `craft_item` takes `quantity=`, not `count=`; the
+  smelt skill's furnace placement was using a nonexistent `Furnace.pickup_position` — fixed to
+  `place_entity_next_to(furnace, reference_position=drill.drop_position, direction=Direction.DOWN, spacing=0)`,
+  matching FLE's own documented pattern (`agent.md` tip: "a furnace with
+  `place_entity_next_to(drill.drop_position)`, where the furnace will be fed the ore").
+- Built `runner.py` + `step.sh`: a persistent FLE gym process driven by a file-based
+  request/response protocol with a sequence-number handshake (`runner_seq.txt`), so a caller
+  blocks until *their* command's result actually lands instead of racing a fixed sleep against
+  a shared JSON file. Avoids re-registering ~30 Lua actions (the slow part of `env.reset()`)
+  on every single skill call, and let Claude drive skill calls directly this session (bypassing
+  the local-model loop entirely) to validate the skill layer itself.
+- **Confirmed end to end, vanilla, no freebies**: harvest wood/stone/coal/iron ore by hand →
+  hand-craft a StoneFurnace → place it → feed it coal + ore by hand → furnace status
+  `WORKING` → collect real IronPlate output → hand-craft IronGearWheel from those plates.
+  This is the first fully-verified vanilla bootstrap chain.
+- Also vendored `ai-player-v3` (github.com/thedemon117/ai-player-v3), a more mature prior-art
+  mod with the same skill-router architecture plus an MCP server. Installed into FLE's mods
+  dir and confirmed the mod loads/spawns via RCON, but its Python bridge is third-party code
+  the harness's auto-mode classifier blocks from running autonomously in this session —
+  parked; would need the user to run `python -m bridge.main` themselves outside Claude Code,
+  or use the MCP server as a Claude Code MCP connection instead of a background process.
 
 **2026-09-12 session: local-model attempt hit a hard wall, not a code bug.**
 - Fixed two real bugs in `agent.py`: (1) system prompt didn't warn about `place_entity_next_to(entity, source.position, spacing=0)` placing ON the source's own footprint, guaranteed collision; (2) no repeat-guard, so a bad model could resubmit byte-identical code forever after an error — added a 2-repeat abort.

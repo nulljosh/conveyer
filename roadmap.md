@@ -12,43 +12,15 @@ Sub-bullets are the real, current blow-by-blow status.
        fixing coordinate-guessing and prototype-name bugs
 4. [x] First two entities connected (drill → furnace placed together), **done**, stable and reliable (5+ consecutive successful runs, best run placed 7 total entities)
 5. [x] **Skill-layer refactor: LLM stops writing Python**, done 2026-09-12.
-   - [x] `skills.py`: `mine`, `smelt`, `craft`, `place`, `build_power`, `inspect` as Python
-         source templates rendered with `skills.render(name, params)`, filled in with FLE's
-         existing primitives (`nearest`, `place_entity`, `insert_item`, `inspect_inventory`, etc.)
-   - [x] Each template re-fetches entities by literal position and ends in an assert/print
-         (`SKILL_OK`/`SKILL_FAIL`) so the observation states success/failure explicitly
-   - [x] `agent.py`: LLM reply is now a ```json {"skill": ..., "params": {...}} fence, parsed
-         and dispatched via `skills.render`, no raw code from the model ever reaches `Action`
-   - [x] Kept FLE and the REPL loop shape untouched, only what crosses the LLM boundary changed
    - [ ] Not yet run against a live cluster to confirm iron ore + coal → plate → gear end to
          end with the new dispatch (`fle cluster start` wasn't up during this edit) — first
          thing to verify next session
 6. [x] First smelted item produced (real iron plate in inventory), **done 2026-09-12**
-   - [x] Fuel drill + furnace with coal (`insert_item`/skills.py `feed`)
-   - [x] Furnace fed directly by hand (vanilla start, see below) and via drill drop_position
-         (lab-scenario run)
-7. [x] First hand-crafted item produced (iron gear wheel from real smelted plates),
-       **done 2026-09-12, vanilla `open_play` run**
    - [ ] Assembler-based crafting (vs. hand-craft) not yet attempted this session
    - [ ] Power the assembler via `build_power()` (untested end to end this session; the
          skill exists but hasn't been re-verified since the smelt-skill rewrite)
 8. [x] **First automated drill→furnace chain with zero hand-feeding**, done 2026-09-12,
        vanilla `open_play` run.
-   - [x] Direct drop-catch (`smelt` skill: `place_entity_next_to(furnace, drill.drop_position)`)
-         confirmed working on thin ore patches, but fails deterministically on dense patches —
-         Factorio's own buildable-clearance rules keep the drop tile too close to resource
-         ground for anything to occupy it. Diagnosed via a `dropcheck` skill that prints the
-         drill's real `drop_position` vs. where the furnace actually landed.
-   - [x] General fix: `auto_feed` skill — drill → belt (`connect_entities`) → burner inserter
-         (rotated to face the furnace) → furnace. This is FLE's own documented pattern for
-         belt-fed automation (not the direct-catch shortcut), and it's the one that
-         generalizes to any patch density.
-   - [x] Verified for real: furnace status went `NO_INGREDIENTS` → `WORKING` after the belt
-         connected, and `IronPlate` was collected from it — a furnace we never hand-fed a
-         single piece of ore or coal for the ore side. `WORKING` only appears when both fuel
-         and ingredients are present, so this isn't a one-off fluke reading.
-   - [x] Sustained, not a one-off: collected 10+ more plates from the same furnace after
-         walking away for 2 minutes with zero further input — real throughput, not a fluke.
    - [~] Rebuilt the full chain 4 times by hand in one session (each `runner.py` code
          change forces a world reset — `skills.py` hot-reloads without one, but the runner
          process itself doesn't). Every hand-driven rebuild succeeded, ~3-5 min each once
@@ -74,19 +46,9 @@ Sub-bullets are the real, current blow-by-blow status.
          5. Two `StoneFurnace` crafts (one hand-fed, one for `auto_feed`) need 10 stone
             total; harvest quantity was exactly 10, zero margin, and came up short. Fixed:
             bumped to 15.
-   - [x] **Attempt 6, first clean unattended pass: PASS.** `bootstrap.py --runs 1` completed
-         the full vanilla-bootstrap-to-automated-chain sequence with zero manual
-         intervention, confirmed via `peek` showing `WORKING` status and real ore in the
-         target furnace. 1/5 toward the "N consecutive clean runs" bar. Working toward the
-         remaining 4 now.
    - [ ] Power grid automated end to end (boiler → steam engine → poles) — **harder than
          assumed**, see the research-gate note below. Revised timeframe: **days, not
          hours**, pending that investigation.
-   - [x] Belt/inserter throughput confirmed sustained over a multi-minute window (see above)
-9. [ ] First research completed, **realistically days, not weeks, once the pipe blocker is
-       understood** — revised down from "weeks" now that the hand-crafting chain itself is
-       fast (minutes) and the actual bottleneck is a specific, narrow mystery (below), not a
-       broad unsolved problem.
    - [ ] **New finding, unresolved**: `craft_item(Prototype.Pipe)` fails with "requires
          steam-power technology" even though `get_research_progress(Technology.SteamPower)`
          reports an empty remaining-ingredients list (which should mean already researched).

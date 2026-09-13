@@ -57,7 +57,7 @@ def wait_for_smelt(furnace_pos: str, max_wait: int = 180) -> None:
 def run_once(run_idx: int) -> bool:
     print(f"\n=== run {run_idx}: bootstrap -> automated chain ===", flush=True)
 
-    step({"skill": "harvest", "params": {"resource": "Stone", "quantity": 10}})
+    step({"skill": "harvest", "params": {"resource": "Stone", "quantity": 15}})
     step({"skill": "harvest", "params": {"resource": "Coal", "quantity": 40}})
     step({"skill": "harvest", "params": {"resource": "IronOre", "quantity": 25}})
 

@@ -72,12 +72,13 @@ Sub-bullets are the real, current blow-by-blow status.
             timing matters.** Rewrote `wait_for_smelt()` this way — confirmed it correctly
             measured 90s for that batch, which no fixed guess had matched.
          5. Two `StoneFurnace` crafts (one hand-fed, one for `auto_feed`) need 10 stone
-            total; harvest quantity was exactly 10, zero margin, and came up short (stone
-            patches have shown flaky pathing all session — see milestone 3). **Known
-            one-line fix for next session, not yet applied**: bump `harvest Stone` to 15 in
-            `bootstrap.py`.
-   - [ ] Once `bootstrap.py` passes once unattended, run `--runs 5` for the real "N
-         consecutive clean runs" bar — not attempted yet, blocked on the above.
+            total; harvest quantity was exactly 10, zero margin, and came up short. Fixed:
+            bumped to 15.
+   - [x] **Attempt 6, first clean unattended pass: PASS.** `bootstrap.py --runs 1` completed
+         the full vanilla-bootstrap-to-automated-chain sequence with zero manual
+         intervention, confirmed via `peek` showing `WORKING` status and real ore in the
+         target furnace. 1/5 toward the "N consecutive clean runs" bar. Working toward the
+         remaining 4 now.
    - [ ] Power grid automated end to end (boiler → steam engine → poles) — **harder than
          assumed**, see the research-gate note below. Revised timeframe: **days, not
          hours**, pending that investigation.

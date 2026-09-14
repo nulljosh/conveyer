@@ -66,6 +66,8 @@ print(f"SKILL_OK mine: placed {drill_prototype} at {{drill.position}} on {resour
         "output into plates.",
         "template": '''
 source = get_entity(Prototype.{drill_prototype}, position=Position({source_position}))
+if source is None:
+    raise Exception("No {drill_prototype} found at {source_position} — check the position with `inspect` or `find` first")
 move_to(source.drop_position)
 furnace = place_entity_next_to(Prototype.{furnace_prototype}, reference_position=source.drop_position, direction=Direction.DOWN, spacing=0)
 furnace = insert_item(Prototype.Coal, furnace, quantity=20)
@@ -82,6 +84,8 @@ print(f"SKILL_OK smelt: placed {furnace_prototype} at {{furnace.position}}, fed 
         "the resource boundary).",
         "template": '''
 source = get_entity(Prototype.{drill_prototype}, position=Position({source_position}))
+if source is None:
+    raise Exception("No {drill_prototype} found at {source_position} — check the position with `inspect` or `find` first")
 box = BuildingBox(width=Prototype.{furnace_prototype}.WIDTH + 4, height=Prototype.{furnace_prototype}.HEIGHT + 4)
 spot = nearest_buildable(Prototype.{furnace_prototype}, box, source.position)
 move_to(spot.center)
@@ -96,12 +100,21 @@ print(f"SKILL_OK auto_feed: furnace at {{furnace.position}} fed via inserter at 
     },
     "belt": {
         "params": ["from_prototype", "from_position", "to_prototype", "to_position"],
-        "doc": "Connect two existing entities with transport belts (e.g. a drill's "
-        "drop_position to an inserter's pickup_position).",
+        "doc": "Connect two existing entities with transport belts. If `to_prototype` has "
+        "no pickup_position (a furnace/assembler, not an inserter/drill), places a "
+        "BurnerInserter to feed it and belts into that instead.",
         "template": '''
 a = get_entity(Prototype.{from_prototype}, position=Position({from_position}))
 b = get_entity(Prototype.{to_prototype}, position=Position({to_position}))
-belts = connect_entities(a.drop_position, b.pickup_position, Prototype.TransportBelt)
+if a is None:
+    raise Exception("No {from_prototype} found at {from_position} — check the position with `inspect` or `find` first")
+if b is None:
+    raise Exception("No {to_prototype} found at {to_position} — check the position with `inspect` or `find` first")
+target = b
+if not hasattr(b, "pickup_position"):
+    target = place_entity_next_to(Prototype.BurnerInserter, reference_position=b.position, direction=Direction.DOWN, spacing=0)
+    target = rotate_entity(target, Direction.UP)
+belts = connect_entities(a.drop_position, target.pickup_position, Prototype.TransportBelt)
 print(f"SKILL_OK belt: connected {from_prototype} at {{a.position}} to {to_prototype} at {{b.position}}")
 ''',
     },
@@ -120,6 +133,8 @@ print(f"SKILL_OK research_progress: {technology} needs {{progress}}")
         "assembler input, not the generic `place` skill.",
         "template": '''
 target = get_entity(Prototype.{target_prototype}, position=Position({target_position}))
+if target is None:
+    raise Exception("No {target_prototype} found at {target_position} — check the position with `inspect` or `find` first")
 inserter = place_entity_next_to(Prototype.BurnerInserter, reference_position=target.position, direction=Direction.DOWN, spacing=0)
 inserter = rotate_entity(inserter, Direction.UP)
 print(f"SKILL_OK place_inserter: placed at {{inserter.position}}, feeding {target_prototype} at {{target.position}}")

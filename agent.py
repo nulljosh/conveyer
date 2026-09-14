@@ -52,6 +52,24 @@ caused it and retry the same skill — don't switch to a different skill to work
 - Use "inspect" whenever you're unsure what you already have.
 """
 
+# ponytail: persistent base memory. Skills re-fetch entities by position every turn (see
+# SYSTEM_PROMPT), so a small local model tends to forget where things are and blind-guesses
+# positions (e.g. re-querying `nearby` five times to relocate its own furnace). Track the
+# last known position of each placed prototype from observation text and remind the model
+# every turn instead of making it re-discover its own base.
+ENTITY_POSITION_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s+at\s+x=(-?[\d.]+)\s*,?\s*y=(-?[\d.]+)")
+
+# ponytail: automatic curriculum. Small models tend to free-associate the next build step
+# instead of following a coherent plan (see roadmap.md's local-model postmortem). A fixed
+# ordered nudge list, triggered by substrings already present in skill observations, costs
+# nothing to maintain and keeps the model on the one path that actually finishes this task.
+CURRICULUM = [
+    ("SKILL_OK mine", "Drill is on ore. Next: `smelt` from it into a furnace for automatic plate production."),
+    ("SKILL_OK smelt", "Furnace is being fed. Next: place an AssemblingMachine2 and `belt` plates into it, then `craft` IronGearWheel inside it — a real production line, not a one-off manual craft."),
+    ("SKILL_OK place: AssemblingMachine", "Assembler placed. Next: `belt` the furnace's plates into it, then craft IronGearWheel there so it runs continuously."),
+    ("SKILL_OK research: set to Automation", "Automation research selected. Next: craft AutomationSciencePacks and `feed` them into a Lab to actually progress the research — don't leave it just selected."),
+]
+
 JSON_FENCE = re.compile(r"```json\s*(.*?)```", re.DOTALL)
 # ponytail: small models ignore the "reply with JSON" instruction and instead
 # echo the catalog's own `skill(param=val, ...)` call-signature notation. Parse
@@ -131,6 +149,9 @@ def main() -> None:
 
         last_code = None
         repeat_count = 0
+        base_memory: dict[str, str] = {}
+        triggered_stages: set[int] = set()
+        curriculum_hint = ""
         for step in range(1, args.max_steps + 1):
             try:
                 response = httpx.post(
@@ -209,10 +230,24 @@ def main() -> None:
             )
             log_file.flush()
 
+            for prototype, x, y in ENTITY_POSITION_RE.findall(observation_text):
+                base_memory[prototype] = f"x={x},y={y}"
+
+            for i, (trigger, hint) in enumerate(CURRICULUM):
+                if i not in triggered_stages and trigger in observation_text:
+                    triggered_stages.add(i)
+                    curriculum_hint = hint
+
+            extra = ""
+            if base_memory:
+                extra += "\n\n[Known base] " + "; ".join(f"{k}@{v}" for k, v in base_memory.items())
+            if curriculum_hint:
+                extra += f"\n\n[Next up] {curriculum_hint}"
+
             messages.append(
                 {
                     "role": "user",
-                    "content": f"Reward: {reward}\n\n{observation_text}",
+                    "content": f"Reward: {reward}\n\n{observation_text}{extra}",
                 }
             )
 

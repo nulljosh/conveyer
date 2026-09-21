@@ -1,6 +1,6 @@
 # Architecture
 
-Claude plays Factorio via Factorio Learning Environment (FLE), not screenshots. An agentic loop feeds full game state as structured data to Claude, which responds with skill calls (deterministic Python functions), rather than raw code synthesis. No undo button, no forgiving physics: the model must observe outcomes and decide what to do next.
+Conveyer is an AI that plays the factory-building game Factorio. Instead of looking at screenshots, it reads the game's real state (inventory, entities, research) as structured data and picks from a fixed list of moves, so it never has to guess pixels or write buggy code on the fly. It uses the Factorio Learning Environment (FLE), a bridge that exposes that structured game state and runs the game headless. No undo button, no forgiving physics: the model must observe outcomes and decide what to do next.
 
 ## Design principles
 

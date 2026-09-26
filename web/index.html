@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Conveyer, Claude plays Factorio</title>
 <meta name="description" content="Conveyer puts Claude in control of a real Factorio game through the game's own Lua mod API and RCON console. No pixels, no vision model, structured game state in, a deterministic skill picked out.">
-<meta name="theme-color" content="#d97757">
+<meta name="theme-color" content="#f5f0e4">
 <meta property="og:title" content="Conveyer, Claude plays Factorio">
 <meta property="og:description" content="An agent loop built on FLE: Claude gets structured game state, picks a skill from a fixed library, and the game runs it.">
 <meta property="og:type" content="website">
@@ -14,15 +14,8 @@
 @import url("https://heyitsmejosh.com/tokens.css");
 :root {
   --accent: #d97757; --link: #b85c3f; --accent-soft: #fbeee7; --on-accent: #fff;
-  --bg: #fff; --bg2: #f7f7f8; --text: #1c1d22; --text2: #5c5f6a; --border: #e6e7ea;
   --font-body: -apple-system, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #121316; --bg2: #1a1b1f; --text: #ececf0; --text2: rgba(236,236,240,.62);
-  --border: rgba(236,236,240,.12); --accent-soft: #2a1c16; --link: #e89b7f; } }
-:root[data-theme="dark"] {
-  --bg: #121316; --bg2: #1a1b1f; --text: #ececf0; --text2: rgba(236,236,240,.62);
-  --border: rgba(236,236,240,.12); --accent-soft: #2a1c16; --link: #e89b7f; }
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: var(--bg); color: var(--text); font-family: var(--font-body); line-height: 1.6; -webkit-font-smoothing: antialiased; }
 a { color: var(--link); text-decoration: none; }

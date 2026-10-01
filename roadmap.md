@@ -216,3 +216,7 @@ Sub-bullets are the real, current blow-by-blow status.
 - [ ] General "plays well unsupervised" ambition, FLE's own benchmark shows even frontier
       models are weak at long-horizon factory optimization. Not a near-term goal; scope any
       further work as bounded subgoals (a specific throughput target), not "beat the game."
+
+## Ingested 2026-10-01
+- [ ] Server keeps going down; not running in the background properly, especially once the Claude session closes. Start it back up and watch closely.
+- [ ] Monitor screenshot shows 'No status yet, start the server below' with Restart runner / Restart server + runner / Stop server controls. (screenshot: notes/attachments/2026-10-01/conveyer-1.png)

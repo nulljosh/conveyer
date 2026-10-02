@@ -142,6 +142,7 @@ def main() -> None:
     env_id = args.env_id or pick_default_env()
     print(f"[runner] environment: {env_id}", flush=True)
     env = gym.make(env_id, run_idx=0)
+    env.unwrapped.pause_after_action = False  # a paused game freezes research and smelting between steps
     obs, info = env.reset(options={"game_state": None})
     print("[runner] ready, waiting for commands", flush=True)
     seq = 0

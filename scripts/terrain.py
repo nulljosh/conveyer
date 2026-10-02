@@ -10,16 +10,40 @@ import factorio_rcon
 ROOT = Path(__file__).resolve().parent.parent
 SRC, OUT = ROOT / "preview.png", ROOT / "preview_map.png"
 N, PX = 67, 16  # tiles per side queried, pixels per tile
-COLORS = {  # muted so sprites stay readable
-    "g": (62, 82, 44), "d": (88, 70, 48), "s": (128, 108, 70), "w": (34, 66, 96),
-    "W": (24, 48, 78), "c": (100, 95, 86), "o": (70, 70, 60),
-}
-LUA = ("/silent-command local s=game.surfaces[1] local ch=s.find_entities_filtered{type='character'}[1] local p=ch.position "
+G = Path("/Users/joshua/Library/Application Support/Steam/steamapps/common/Factorio/factorio.app/Contents/data/base/graphics/terrain")
+# tile name -> (code, texture sheet). Sheets keep 64 px 1x1 variants along the top row.
+TILES = {"grass-1": "a", "grass-2": "b", "grass-3": "e", "grass-4": "f", "dry-dirt": "o", "landfill": "l",
+         **{f"dirt-{i}": str(i) for i in range(1, 8)}, "sand-1": "x", "sand-2": "y", "sand-3": "z",
+         **{f"red-desert-{i}": "pqrt"[i] for i in range(4)}, "water": "w", "deepwater": "W",
+         "water-green": "w", "deepwater-green": "W", "water-shallow": "w", "water-mud": "w",
+         "stone-path": "s", "concrete": "c", "hazard-concrete-left": "c", "hazard-concrete-right": "c",
+         "refined-concrete": "c", "refined-hazard-concrete-left": "c", "refined-hazard-concrete-right": "c"}
+SHEETS = {c: n + ".png" for n, c in TILES.items() if "-" in n and n.split("-")[0] in ("grass", "dirt", "sand", "red")}
+SHEETS.update({"o": "dry-dirt.png", "l": "landfill.png", "w": "water/water1.png", "W": "water/water1.png",
+               "s": "stone-path/stone-path-1.png", "c": "concrete/concrete.png"})
+_cache = {}
+def variants(code):
+    """Opaque variants of a sheet as (span, tiles): span 4 = the sheet's 4x4 big patches (256 px), else 1x1 (64 px)."""
+    if code not in _cache:
+        try:
+            sheet = Image.open(G / SHEETS.get(code, "dry-dirt.png")).convert("RGBA")
+            span = 4 if sheet.height >= 512 else 1
+            size, y = 64 * span, sheet.height - 64 * span
+            out = []
+            for i in range(sheet.width // size):
+                t = sheet.crop((i * size, y, i * size + size, y + size))
+                if np.array(t)[..., 3].min() > 200:  # skip transparent padding and edge pieces
+                    out.append(np.array(t.convert("RGB").resize((PX * span, PX * span), Image.LANCZOS)))
+            _cache[code] = (span, out or [np.full((PX, PX, 3), (88, 70, 48), np.uint8)])
+            if not out: _cache[code] = (1, _cache[code][1])
+        except Exception:  # no local game install: flat muted color
+            _cache[code] = (1, [np.full((PX, PX, 3), (88, 70, 48), np.uint8)])
+    return _cache[code]
+_LUA_MAP = "local m={" + ",".join(f"['{n}']='{c}'" for n, c in TILES.items()) + "} "
+LUA = ("/silent-command " + _LUA_MAP + "local s=game.surfaces[1] local ch=s.find_entities_filtered{type='character'}[1] local p=ch.position "
        "local sx=math.floor(p.x)-33 local sy=math.floor(p.y)-33 local out={} "
-       "for r=%d,%d do local row={} for c=0,66 do local n=s.get_tile(sx+c,sy+r).name "
-       "local k='o' if n:find('deepwater') then k='W' elseif n:find('water') then k='w' elseif n:find('grass') then k='g' "
-       "elseif n:find('sand') then k='s' elseif n:find('dirt') or n:find('desert') then k='d' elseif n:find('concrete') or n:find('path') or n:find('refined') then k='c' end "
-       "row[#row+1]=k end out[#out+1]=table.concat(row) end rcon.print(p.x..','..p.y..'|'..table.concat(out,','))")
+       "for r=%d,%d do local row={} for c=0,66 do row[#row+1]=m[s.get_tile(sx+c,sy+r).name] or 'o' end "
+       "out[#out+1]=table.concat(row) end rcon.print(p.x..','..p.y..'|'..table.concat(out,','))")
 
 def refresh(rcon) -> bool:
     if not SRC.exists() or (OUT.exists() and OUT.stat().st_mtime >= SRC.stat().st_mtime):
@@ -31,7 +55,13 @@ def refresh(rcon) -> bool:
     for r, row in enumerate(rows):
         for c, k in enumerate(row):
             x0 = round(512 + (sx + c - px) * PX); y0 = round(512 + (sy + r - py) * PX)
-            img[max(y0, 0):max(y0 + PX, 0), max(x0, 0):max(x0 + PX, 0)] = COLORS[k]
+            span, v = variants(k); X, Y = sx + c, sy + r
+            big = v[((X // span) * 7919 + (Y // span) * 104729) % len(v)]
+            ox, oy = (X % span) * PX, (Y % span) * PX
+            tile = big[oy:oy + PX, ox:ox + PX]
+            ys, xs = slice(max(y0, 0), min(y0 + PX, 1024)), slice(max(x0, 0), min(x0 + PX, 1024))
+            if ys.start < ys.stop and xs.start < xs.stop:
+                img[ys, xs] = tile[ys.start - y0:ys.stop - y0, xs.start - x0:xs.stop - x0]
     try:
         fg = np.array(Image.open(SRC).convert("RGB"))
     except Exception:  # runner mid-write, try next time

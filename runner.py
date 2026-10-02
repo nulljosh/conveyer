@@ -165,6 +165,10 @@ def main() -> None:
 
                 ImageResolver.__call__ = _patched_call
                 ImageResolver._icon_fallback_patched = True
+                # ponytail: the shot is for people, not the model: no debug grid, no alert triangles
+                from fle.env.tools.admin.render.renderer import Renderer
+                Renderer._draw_grid = lambda self, *a, **k: None
+                Renderer._render_alert_overlays = lambda self, *a, **k: None
 
             inst = env.unwrapped.instance
             render_tool = Render(inst.lua_script_manager, inst.namespaces[0])

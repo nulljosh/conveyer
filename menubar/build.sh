@@ -6,6 +6,11 @@ set -e
 cd "$(dirname "$0")"
 
 swiftc -O -parse-as-library main.swift -o ConveyerMonitor.app/Contents/MacOS/ConveyerMonitor
+# The engineer sprite sheets come from the installed game, copied into the bundle for runtime use and kept out of git.
+GFX="$HOME/Library/Application Support/Steam/steamapps/common/Factorio/factorio.app/Contents/data/base/graphics/entity/character"
+mkdir -p ConveyerMonitor.app/Contents/Resources
+[ -f "$GFX/level1_running.png" ] && cp "$GFX/level1_running.png" ConveyerMonitor.app/Contents/Resources/engineer_running.png
+[ -f "$GFX/level1_idle.png" ] && cp "$GFX/level1_idle.png" ConveyerMonitor.app/Contents/Resources/engineer_idle.png
 ID="Developer ID Application: Joshua Trommel (QMM486NPYC)"   # a stable identity: macOS keeps the Documents/Finder permission across rebuilds. Ad-hoc ("-") asked again after every build.
 security find-identity -v -p codesigning | grep -q "$ID" || ID=-
 codesign --force --deep --sign "$ID" ConveyerMonitor.app

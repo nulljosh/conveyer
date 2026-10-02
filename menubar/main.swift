@@ -373,7 +373,9 @@ struct PlayerMarker: View {
                 let y = (g.size.height - f.h * s) / 2 + (f.h / 2 + (p.y - f.cy) * f.ppt) * s
                 ZStack {
                     Circle().fill(Color.accentColor.opacity(m.moving ? 0.28 : 0.14)).frame(width: 38, height: 38)
-                    if m.moving {
+                    if Engineer.available {
+                        EngineerSprite(heading: m.heading, walking: m.moving)
+                    } else if m.moving {
                         // 12 fps walk cycle, only while he is actually moving; standing still has no timer at all
                         TimelineView(.animation(minimumInterval: 1.0 / 12)) { ctx in
                             HardHatFigure(heading: m.heading, phase: sin(ctx.date.timeIntervalSinceReferenceDate * 11), walking: true)
@@ -386,6 +388,39 @@ struct PlayerMarker: View {
             }
         }
         .allowsHitTesting(false)
+    }
+}
+
+/// The real Factorio engineer, cut from the game's own sprite sheets at runtime. build.sh copies them from the installed game into the app bundle
+/// (never into git); without them the marker falls back to the hand-drawn hard hat below. 22 frames across, 8 directions down, north first, clockwise.
+enum Engineer {
+    static let run: CGImage? = load("engineer_running")
+    static let idle: CGImage? = load("engineer_idle")
+    private static func load(_ name: String) -> CGImage? {
+        guard let p = Bundle.main.path(forResource: name, ofType: "png"), let img = NSImage(contentsOfFile: p) else { return nil }
+        return img.cgImage(forProposedRect: nil, context: nil, hints: nil)
+    }
+    static var available: Bool { run != nil && idle != nil }
+    /// One frame of the sheet: row by heading (0 = east, 90 = south on screen), column by frame.
+    static func frame(_ sheet: CGImage, heading: Double, frame: Int) -> NSImage {
+        let cw = sheet.width / 22, ch = sheet.height / 8
+        let a = (heading + 90).truncatingRemainder(dividingBy: 360), row = Int(((a < 0 ? a + 360 : a) + 22.5) / 45) % 8
+        let rect = CGRect(x: (frame % 22) * cw, y: row * ch, width: cw, height: ch)
+        let c = sheet.cropping(to: rect) ?? sheet
+        return NSImage(cgImage: c, size: NSSize(width: Double(cw) / 2, height: Double(ch) / 2))   // the sheets are drawn at 2x
+    }
+}
+
+struct EngineerSprite: View {
+    var heading: Double
+    var walking: Bool
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 20)) { ctx in
+            let i = walking ? Int(ctx.date.timeIntervalSinceReferenceDate * 22) % 22 : 0
+            if let sheet = walking ? Engineer.run : Engineer.idle {
+                Image(nsImage: Engineer.frame(sheet, heading: heading, frame: i)).interpolation(.high)
+            }
+        }
     }
 }
 

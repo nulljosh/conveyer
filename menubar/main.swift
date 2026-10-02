@@ -137,7 +137,7 @@ final class StatusPoller: ObservableObject {
     init() {
         poll()
         applyWatching()
-        Hotkey.register { [weak self] in Task { @MainActor in self?.hudVisible.toggle() } }
+        Hotkey.register({ [weak self] in Task { @MainActor in self?.hudVisible.toggle() } }, pin: { Task { @MainActor in LiveWindow.togglePin() } })
         // `ConveyerMonitor --open-live` opens the live window; add `--fullscreen` for full screen
         if CommandLine.arguments.contains("--open-live") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -232,15 +232,22 @@ final class StatusPoller: ObservableObject {
     }
 }
 
-/// Ctrl+Option+H, works from any app and needs no Accessibility permission (Carbon hot key, not an event tap).
+/// Ctrl+Option+H shows or hides the progress panel, Ctrl+Option+P pins the live window above everything or lets it drop back.
+/// Carbon hot keys work from any app and need no Accessibility permission.
 enum Hotkey {
-    nonisolated(unsafe) static var action: (() -> Void)?
-    static func register(_ a: @escaping () -> Void) {
-        action = a
+    nonisolated(unsafe) static var actions: [UInt32: () -> Void] = [:]
+    static func register(_ hud: @escaping () -> Void, pin: @escaping () -> Void) {
+        actions = [1: hud, 2: pin]
         var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-        InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in Hotkey.action?(); return noErr }, 1, &spec, nil, nil)
-        var ref: EventHotKeyRef?
-        RegisterEventHotKey(UInt32(kVK_ANSI_H), UInt32(controlKey | optionKey), EventHotKeyID(signature: 0x43564552, id: 1), GetApplicationEventTarget(), 0, &ref)
+        InstallEventHandler(GetApplicationEventTarget(), { _, ev, _ in
+            var id = EventHotKeyID()
+            GetEventParameter(ev, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &id)
+            Hotkey.actions[id.id]?(); return noErr
+        }, 1, &spec, nil, nil)
+        for (code, id) in [(kVK_ANSI_H, UInt32(1)), (kVK_ANSI_P, UInt32(2))] {
+            var ref: EventHotKeyRef?
+            RegisterEventHotKey(UInt32(code), UInt32(controlKey | optionKey), EventHotKeyID(signature: 0x43564552, id: id), GetApplicationEventTarget(), 0, &ref)
+        }
     }
 }
 
@@ -248,6 +255,12 @@ enum Hotkey {
 @MainActor
 enum LiveWindow {
     static var window: NSWindow?
+    /// Always on top by default, so the live view stays visible next to whatever is being debugged. Remembered across launches.
+    static var pinned: Bool {
+        get { UserDefaults.standard.object(forKey: "livePinned") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "livePinned"); window?.level = newValue ? .floating : .normal }
+    }
+    static func togglePin() { pinned.toggle() }
     static func show(_ poller: StatusPoller) {
         if let w = window { w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 700),
@@ -256,7 +269,8 @@ enum LiveWindow {
         w.appearance = NSAppearance(named: .darkAqua)
         w.backgroundColor = NSColor(white: 0.11, alpha: 1)
         w.isReleasedWhenClosed = false
-        w.collectionBehavior = [.fullScreenPrimary]  // without this the green button and toggleFullScreen do nothing
+        w.level = pinned ? .floating : .normal
+        w.collectionBehavior = [.fullScreenPrimary, .fullScreenAuxiliary]  // without this the green button and toggleFullScreen do nothing
         w.contentView = NSHostingView(rootView: LiveView(poller: poller))
         w.center()
         window = w

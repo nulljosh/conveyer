@@ -193,13 +193,18 @@ def main() -> None:
         except Exception as e:  # noqa: BLE001 - periodic capture, never fatal
             print(f"[runner] periodic screenshot failed: {e}", flush=True)
 
+    def live_interval(default: float) -> float:
+        """The menu bar writes the chosen refresh to .live; never faster than 2 s."""
+        try: return max(2.0, float(Path(__file__).with_name(".live").read_text()))
+        except Exception: return default
+
     last_screenshot = 0.0
     seen_mtime = None
     while True:
         # Periodic screenshot, throttled to ~8s and only when idle (no command
         # mid-flight) so it never competes with an actual skill step.
         if not CMD_PATH.exists() or CMD_PATH.stat().st_mtime == seen_mtime:
-            if time.time() - last_screenshot > 8:
+            if time.time() - last_screenshot > live_interval(8.0):
                 capture_screenshot()
                 last_screenshot = time.time()
         if CMD_PATH.exists():

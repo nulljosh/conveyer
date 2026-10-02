@@ -17,6 +17,8 @@ FLE's Lua state cannot be saved. An autosave kills the server. So any crash or r
 - circuit assembler: scripts/advcircuit.py place
 Every new build gets a replay script the same hour it is built.
 
+- Live view: the menu bar popover has 2/5/10/30 s buttons and a Detach button that opens a resizable "Conveyer live" window. The choice is written to `.live`; runner.py captures and research_status.py repaints at that pace (floor 2 s, default 8 to 10 s). A 2 s setting costs about a second of CPU per frame, so leave it at 10 when nobody is watching. QA without clicking: `ConveyerMonitor --snapshot out.png [--live]`.
+
 ## Tick (what the loop does every ~20 min)
 
 1. `scripts/health.sh --fix`. Prints every moving part, starts what is down, and if the world reverted it replays journal, fuel, oil and tiles. Exit code is the number of open problems. If usage says 90% or more (session or weekly), run /checkpoint and stop the loop. No kill.

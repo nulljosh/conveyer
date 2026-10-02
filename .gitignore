@@ -1,36 +1,36 @@
+
 __pycache__/
-*.pyc
-.venv/
-venv/
+!.dev.vars.example
+!.env.example
+.dev.vars*
 .env
-*.log
-runs/
 .factorio/
 .fle/
-vendor/
-
+.live
+.venv/
+.world/
+.wrangler
+*.log
+*.pyc
+# menubar build output (source of truth is main.swift + build.sh)
 # runner.py session state — ephemeral, regenerated on every run
-runner.pid
+# wrangler files
+agent.pid
+logs/
+map.json
+menubar/ConveyerMonitor.app/Contents/_CodeSignature/
+menubar/ConveyerMonitor.app/Contents/MacOS/
+preview_map.png
+preview.png
+research.json
 runner_cmd.json
 runner_result.json
 runner_seq.txt
-status.json
-status_log.json
-map.json
-preview.png
-
-# menubar build output (source of truth is main.swift + build.sh)
-menubar/ConveyerMonitor.app/Contents/MacOS/
-menubar/ConveyerMonitor.app/Contents/_CodeSignature/
-
-# wrangler files
-.wrangler
-.dev.vars*
-!.dev.vars.example
-!.env.example
-agent.pid
-.world/
 runner.lock
+runner.pid
+runs/
 shots/
-research.json
-preview_map.png
+status_log.json
+status.json
+vendor/
+venv/

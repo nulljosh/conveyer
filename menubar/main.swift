@@ -103,11 +103,31 @@ final class StatusPoller: ObservableObject {
         string: "~/Documents/Code/conveyer/menubar"
     ).expandingTildeInPath
 
-    init() {
-        poll()
-        Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
+    /// Seconds between refreshes. Written to .live so the runner captures and repaints at the same pace.
+    @Published var liveInterval: Int = {
+        let v = UserDefaults.standard.integer(forKey: "liveInterval"); return v == 0 ? 10 : v
+    }()
+    @Published var lastFrame: Date?
+    private var timer: Timer?
+    private let livePath = NSString(string: "~/Documents/Code/conveyer/.live").expandingTildeInPath
+
+    func setLive(_ seconds: Int) {
+        liveInterval = seconds
+        UserDefaults.standard.set(seconds, forKey: "liveInterval")
+        try? "\(seconds)".write(toFile: livePath, atomically: true, encoding: .utf8)
+        schedule()
+    }
+
+    private func schedule() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: Double(min(max(liveInterval, 1), 3)), repeats: true) { _ in
             Task { @MainActor in self.poll() }
         }
+    }
+
+    init() {
+        poll()
+        setLive(liveInterval)
     }
 
     func poll() {
@@ -142,6 +162,7 @@ final class StatusPoller: ObservableObject {
         }
         mapStamp = m
         map = img
+        lastFrame = m
         FileHandle.standardError.write(Data("map: loaded \(Int(img.size.width))x\(Int(img.size.height))\n".utf8))
     }
 
@@ -193,6 +214,96 @@ final class StatusPoller: ObservableObject {
     }
 }
 
+/// The map and progress in a normal window you can move, resize and leave open next to the game.
+@MainActor
+enum LiveWindow {
+    static var window: NSWindow?
+    static func show(_ poller: StatusPoller) {
+        if let w = window { w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 700),
+                         styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
+        w.title = "Conveyer live"
+        w.isReleasedWhenClosed = false
+        w.contentView = NSHostingView(rootView: LiveView(poller: poller))
+        w.center()
+        window = w
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: w, queue: .main) { _ in
+            Task { @MainActor in LiveWindow.window = nil }
+        }
+        w.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+struct RefreshPicker: View {
+    @ObservedObject var poller: StatusPoller
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach([2, 5, 10, 30], id: \.self) { sec in
+                let on = poller.liveInterval == sec
+                Button { poller.setLive(sec) } label: {
+                    Text("\(sec)s").font(.system(size: 11, weight: on ? .semibold : .regular))
+                        .frame(width: 34, height: 20)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(on ? Color.accentColor : Color.secondary.opacity(0.22)))
+                        .foregroundStyle(on ? Color.white : Color.primary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+struct LiveView: View {
+    @ObservedObject var poller: StatusPoller
+    var body: some View {
+        VStack(spacing: 10) {
+            if let map = poller.map {
+                Image(nsImage: map).resizable().interpolation(.high).scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                Text("Waiting for the first frame").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            if let r = poller.research, !r.current.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack {
+                        Text("Researching \(Research.nice(r.current).lowercased())").font(.system(size: 13, weight: .semibold))
+                        Spacer()
+                        Text("\(r.percent)%").font(.system(size: 13))
+                    }
+                    GeometryReader { g in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.secondary.opacity(0.25))
+                            Capsule().fill(Color.accentColor).frame(width: g.size.width * CGFloat(min(max(r.percent, 0), 100)) / 100)
+                        }
+                    }
+                    .frame(height: 6)
+                    if let labs = r.labs, let working = r.labs_working {
+                        Text(working == 0 ? "Labs idle, waiting for science packs" : "\(working) of \(labs) labs working")
+                            .font(.system(size: 11)).foregroundStyle(working == 0 ? Color.orange : Color.secondary)
+                    }
+                }
+            }
+            if let s = poller.status, s.skill != "?" {
+                HStack(spacing: 5) {
+                    Circle().fill(s.worked ? Color.green : Color.red).frame(width: 7, height: 7)
+                    Text("Player is \(ConveyerMonitorApp.narrate(s.skill))").font(.system(size: 12))
+                    Spacer()
+                }
+            }
+            HStack {
+                Text(poller.lastFrame.map { "Frame \($0.formatted(date: .omitted, time: .standard))" } ?? "No frame yet")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                Spacer()
+                Text("Refresh every").font(.system(size: 11)).foregroundStyle(.secondary)
+                RefreshPicker(poller: poller)
+            }
+        }
+        .padding(12)
+        .frame(minWidth: 520, minHeight: 480)
+    }
+}
+
 @main
 struct ConveyerMonitorApp: App {
     @StateObject private var poller = StatusPoller()
@@ -204,7 +315,11 @@ struct ConveyerMonitorApp: App {
         guard let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count else { return }
         let demoPoller = StatusPoller()
         if let d = args.firstIndex(of: "--demo"), d + 1 < args.count { demoPoller.applyDemo(args[d + 1]) }
-        let renderer = ImageRenderer(content: Self.popover(demoPoller).background(Color(white: 0.16)).environment(\.colorScheme, .dark))
+        let live = args.contains("--live")  // --snapshot out.png --live renders the detached window instead of the popover
+        let content: AnyView = live
+            ? AnyView(LiveView(poller: demoPoller).frame(width: 760, height: 700).background(Color(white: 0.16)).environment(\.colorScheme, .dark))
+            : AnyView(Self.popover(demoPoller).background(Color(white: 0.16)).environment(\.colorScheme, .dark))
+        let renderer = ImageRenderer(content: content)
         renderer.scale = 2
         if let cg = renderer.cgImage {
             let rep = NSBitmapImageRep(cgImage: cg)
@@ -267,6 +382,13 @@ struct ConveyerMonitorApp: App {
                         .scaledToFill()
                         .frame(width: 316, height: 220)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
+                    HStack {
+                        RefreshPicker(poller: poller)
+                        Spacer()
+                        Button { LiveWindow.show(poller) } label: {
+                            Label("Detach", systemImage: "macwindow.on.rectangle").font(.system(size: 11))
+                        }
+                    }
                 }
                 if poller.runnerAlive, let r = poller.research, !r.current.isEmpty {
                     VStack(alignment: .leading, spacing: 3) {
@@ -373,7 +495,7 @@ struct ConveyerMonitorApp: App {
 
     /// Skill names as they'd be said out loud, matching how progress reads in
     /// chat ("smelting", "building a base") instead of the raw dispatch name.
-    private static func narrate(_ skill: String) -> String {
+    static func narrate(_ skill: String) -> String {
         switch skill {
         case "goto": return "walking"
         case "harvest": return "gathering resources"

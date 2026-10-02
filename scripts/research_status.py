@@ -21,4 +21,5 @@ while (ROOT / "runner.pid").exists():
         terrain.refresh(rcon)
     except Exception:
         pass
-    time.sleep(10)
+    try: time.sleep(max(2.0, float((ROOT / ".live").read_text())))
+    except Exception: time.sleep(10)

@@ -65,6 +65,12 @@ end to end, driven entirely by skill calls (no raw code).
   mismatch, so watching live means sed-replacing that pin to match your client's exact version
   and restarting the cluster.
 
+- **Real save mode (2026-10-02).** `scripts/world.sh` runs the server on a copy of Joshua's a.zip
+  and `runner.py --keep-world` plays on it. Never clear entities. Unfiltered `get_entities()` on a
+  big base ballooned to 18 GB, so it is capped at 30 tiles. Fetch resources from his chests
+  (`goto` then `collect`) before mining. Boilers and furnaces need coal, check `scripts/fuel.py`.
+  Only one caller at a time against `step.sh`, results can shift by one otherwise.
+
 ## Non-goals
 
 - No vision/pixel-based control. Full game state is already exposed structurally; a vision

@@ -15,6 +15,11 @@ final class StatusPoller: ObservableObject {
     @Published var stale = false
     @Published var runnerAlive = true
     @Published var busy = false
+    @Published var map: NSImage?
+    private var mapStamp: Date?
+    private let mapPath = NSString(
+        string: "~/Documents/Code/conveyer/preview.png"
+    ).expandingTildeInPath
 
     private let statusPath = NSString(
         string: "~/Documents/Code/conveyer/status.json"
@@ -40,7 +45,16 @@ final class StatusPoller: ObservableObject {
             status = decoded
             stale = Date().timeIntervalSince1970 - decoded.updated_at > 120
         }
+        loadMap()
         checkLiveness()
+    }
+
+    /// The runner rewrites preview.png every ~8s while idle; only decode it when it changed.
+    private func loadMap() {
+        guard let m = (try? FileManager.default.attributesOfItem(atPath: mapPath))?[.modificationDate] as? Date,
+              m != mapStamp else { return }
+        mapStamp = m
+        map = NSImage(contentsOfFile: mapPath)
     }
 
     /// True process liveness (kill(pid, 0)), not just "no recent status update" —
@@ -98,6 +112,13 @@ struct ConveyerMonitorApp: App {
     var body: some Scene {
         MenuBarExtra {
             VStack(alignment: .leading, spacing: 10) {
+                if let map = poller.map {
+                    Image(nsImage: map)
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
                 if let s = poller.status, s.skill != "?" {
                     HStack(spacing: 4) {
                         Text(s.skill)
@@ -161,7 +182,7 @@ struct ConveyerMonitorApp: App {
                     .font(.system(size: 12))
             }
             .padding(12)
-            .frame(width: 280)
+            .frame(width: 340)
         } label: {
             Text(labelText)
                 .font(.system(size: 12))

@@ -60,6 +60,13 @@ project set out to prove is possible. A complete self-sustaining base, drill, fu
 assembler, output, is still in progress. See `roadmap.md` for the current state and what's
 next.
 
+On 2 October 2026 it moved onto a real 2300 entity save. The first bug there was memory: every
+observation scanned the whole base and reached 18 GB, fixed by capping the scan at 30 tiles. The
+second was that the base itself was idle, with no fuel in its furnaces and a split power grid. The
+goal is now oil, then a rocket, which the tech tree prices at about 4.8k red, 4.8k green, 3.4k
+chemical, 1.6k production and 1k utility packs. Hand-crafting runs out at chemical science, so
+automated science is the real next build.
+
 ## License
 
 MIT 2026, Joshua Trommel. Factorio is property of Wube Software; this project is unaffiliated

@@ -24,8 +24,19 @@ Factorio already exposes its state as structured data through FLE's Lua/RCON bri
 | `scripts/progress_svg.py` | Chart generator (commit history progress line). |
 | `scripts/cpu_guard.sh` + `scripts/watch.sh` | Process guardians (restart runner if it hangs, monitor resource usage). |
 | `menubar/` | Menu-bar app scripts (`restart_runner.sh`, `restart_server.sh`, `stop_all.sh`, `build.sh`). Shortcuts for starting/stopping the cluster and agent from macOS menu bar. |
+| `scripts/world.sh` | Boots the Factorio server on a copy of a real save (`world.sh back` restores the stock map). Original save is never touched. |
+| `scripts/science.sh` | One hand-crafted science cycle: fetch plates from base chests, craft red and green, load labs. |
+| `scripts/feedlabs.py` | Moves science packs from the character into every lab over RCON (FLE's get_entity fails on a lab that already holds packs). |
+| `scripts/fuel.py` | Tops boilers and fuel-hungry furnaces up with coal over RCON. |
+| `scripts/snap.py` | Every 5 min copies the live map into `shots/` and appends a benchmark row (entities, techs, steps, ok, memory) to `shots/bench.jsonl`. Stops when the runner stops. |
+| `docs/LEARNINGS.md` | One-line lessons from the real save, newest last. |
+| `docs/LOOP-HANDOFF.md` | Current session state and restart prompt. |
 | `web/` | Landing page (`index.html`). Deployed to conveyer.heyitsmejosh.com. Shows project info, GitHub link, live Factorio game state (via v86 embedded emulator), usage instructions. No code required from visitors, just static HTML/CSS. |
 | `.env` | Configuration. `FACTORIO_SERVER_ADDRESS`, `FACTORIO_SERVER_PORT`, `OLLAMA_ENDPOINT`. Hardcoded to work around colima's `docker inspect` limitation. |
+
+## Real save mode
+
+`runner.py --keep-world` patches FLE before it initialises: no reset, adopt the save's character, keep biters. A single `runner.lock` stops duplicate runners. `get_entities()` is capped at 30 tiles around the character so observations stay small, and a memory guard exits the runner at 3 GB and removes `runner.pid` so the menu bar does not restart it into the same problem. `skills.py` has a `goto` skill for walking to far chests.
 
 ## Storage and IPC
 

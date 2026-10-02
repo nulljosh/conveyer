@@ -36,12 +36,24 @@ progress, see [roadmap.md](roadmap.md) for exactly where things stand and what's
 Real entity-placement counts pulled straight from `runs/`. Regenerate after a run:
 `python3 scripts/progress_svg.py`.
 
+## Your own save
+
+Conveyer can run on a copy of a real Factorio save instead of a vanilla start. `scripts/world.sh`
+copies the save, boots the server on it and never touches the original. `runner.py --keep-world`
+adopts the save's character and skips FLE's reset, which would wipe the base. `scripts/world.sh back`
+returns to the stock test map. On a 2300 entity base the runner holds about 165 MB because
+observations only look 30 tiles around the character.
+
+Helpers: `scripts/science.sh` runs one hand-crafted science cycle, `scripts/feedlabs.py` loads labs over
+RCON, `scripts/fuel.py` tops up boilers and furnaces, `scripts/snap.py` saves a screenshot and a
+benchmark row every 5 minutes into `shots/`. What we learn goes in `docs/LEARNINGS.md`.
+
 ## Watch it live
 
 Three ways, cheapest first:
 
 **Menu bar app (near-zero cost, recommended)**, `menubar/ConveyerMonitor.app` — a native
-SwiftUI menu-bar app, no Xcode project needed. Polls a status file for live step history, a
+SwiftUI menu-bar app, no Xcode project needed. Polls a status file for live step history, shows the live map, a
 real periodic screenshot (an actual render composited from game state, not a connected
 client, ~8s throttle), server controls (restart/stop), auto-restart if the runner process
 actually dies, and a sound on real milestones. Build/run: `menubar/build.sh`.

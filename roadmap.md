@@ -90,6 +90,25 @@ Sub-bullets are the real, current blow-by-blow status.
           rocket parts, and a satellite, realistically needs a bigger model or many more
           sessions of prompt-tightening than an 8B local model + one Claude session can do
 
+## Real save run (2026-10-02)
+Conveyer now runs on a copy of Joshua's own Factorio save (`scripts/world.sh`), not a vanilla start.
+Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 41 steel furnaces,
+10 steam engines, a train and two cars. Goal: oil, then a rocket launch.
+- [x] Runs on the real save without ballooning memory (observation capped at 30 tiles, ~165 MB, was 18 GB)
+- [x] Menu bar fixed: shows the live map, stays down after a stop or memory kill, restarts only while the server is up
+- [x] Character fetches from the base's own chests (62k coal, 12k steel, 7k copper) instead of mining from scratch
+- [x] Hand-crafted red and green science, labs fed over RCON, flammables researched (tech 39 to 40)
+- [x] Screenshot and benchmark every 5 minutes (`scripts/snap.py`, `shots/bench.jsonl`)
+- [x] Found why the base was idle: 0 furnaces working (no fuel), west outpost grid underpowered
+- [ ] Sulfur, advanced circuits, chemical science unlocked. Needs 425 red and 425 green. ETA about 1 hour of hand cycles
+- [ ] Automated green science so research stops being hand-fed. ETA 1 to 2 days of agent time
+- [ ] Oil chain running (refineries, plastic, sulfur, advanced circuits, chemical packs). ETA 1 to 2 days
+- [ ] Advanced oil processing researched (500 red, 500 green, 75 chemical). ETA 1 to 2 days
+- [ ] Join the west outpost grid (net 181, 2 engines, 32 consumers) to the main grid with big poles. ETA hours
+- [ ] Rocket silo researched: 25 techs, about 4.8k red, 4.8k green, 3.4k chemical, 1.6k production, 1k utility. ETA weeks
+- [ ] Rocket launched. ETA weeks, only with fully automated science
+- [ ] Log every runner step as (state, skill, result) and fine-tune the local model on the successful picks (no public Factorio fine-tune exists)
+
 ## Tooling shipped
 
 **2026-09-12 (late night): automated drill→belt→inserter→furnace chain confirmed + menu-bar monitor built.**
@@ -219,4 +238,4 @@ Sub-bullets are the real, current blow-by-blow status.
 
 ## Ingested 2026-10-01
 - [ ] Server keeps going down; not running in the background properly, especially once the Claude session closes. Start it back up and watch closely.
-- [ ] Monitor screenshot shows 'No status yet, start the server below' with Restart runner / Restart server + runner / Stop server controls. (screenshot: notes/attachments/2026-10-01/conveyer-1.png)
+- [x] (fixed 2026-10-02, menu bar rebuilt) Monitor screenshot shows 'No status yet, start the server below' with Restart runner / Restart server + runner / Stop server controls. (screenshot: notes/attachments/2026-10-01/conveyer-1.png)

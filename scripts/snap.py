@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Every N minutes: copy the runner's preview.png to shots/ and append one benchmark row.
+"""Every N minutes: copy the textured preview_map.png (falls back to preview.png) to shots/ and append one benchmark row.
 Bounded: stops when runner.pid is gone or after --hours. Usage: snap.py [--mins 5] [--hours 6]"""
 import argparse, json, re, shutil, subprocess, time
 from pathlib import Path
@@ -15,7 +15,7 @@ TECH = "/silent-command local n=0 for _,x in pairs(game.forces.player.technologi
 end = time.time() + a.hours * 3600
 while time.time() < end and (ROOT / "runner.pid").exists():
     t = time.strftime("%Y%m%d-%H%M%S")
-    shutil.copy(ROOT / "preview.png", ROOT / "shots" / f"{t}.png")
+    shutil.copy(ROOT / ("preview_map.png" if (ROOT / "preview_map.png").exists() else "preview.png"), ROOT / "shots" / f"{t}.png")
     techs = -1
     try:
         c = factorio_rcon.RCONClient("127.0.0.1", 27000, "factorio"); entities = int(c.send_command(LUA).strip())

@@ -12,6 +12,10 @@ Built on [FLE](https://github.com/JackHopkins/factorio-learning-environment), th
 
 ## Where it is
 
+<!-- progress:start -->
+**Road to the rocket: 48%** `#########-----------` 21 of 44 techs the silo needs. Rockets launched: 0.
+<!-- progress:end -->
+
 Plays on a copy of a real 2,300 entity base. Research is at chemical science. The refinery runs and makes plastic. Next: sulfur, advanced circuits, then the rocket. [Roadmap](roadmap.md).
 
 <img src="progress.svg" width="480" alt="Entities placed per run">

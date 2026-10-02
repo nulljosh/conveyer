@@ -151,6 +151,12 @@ PAGE = """<!doctype html>
 
 <div class="sheet">
 <main>
+<section class="copy wrap reveal">
+  <h2>Road to the rocket</h2>
+  <div class="meter" role="img" aria-label="__SILOPCT__ percent"><i style="width:__SILOPCT__%"></i></div>
+  <p>__SILOPCT__% of the research the rocket silo needs is done: __SILODONE__ of __SILOTOTAL__ techs. Rockets launched: 0.</p>
+</section>
+
 <div class="facts reveal">
   <div class="fact"><b>__TECHS__</b><span>techs researched</span></div>
   <div class="fact"><b>__ENT__</b><span>things on the base</span></div>
@@ -215,10 +221,23 @@ python3 runner.py --env-id open_play
 </body>
 </html>
 """
-out = (PAGE.replace("__CUR__", cur).replace("__PCT__", str(pct)).replace("__LABS__", esc(labs))
+sd, st = r.get("silo_done", 0), r.get("silo_total", 0)
+spct = round(100 * sd / st) if st else 0
+out = (PAGE.replace("__SILOPCT__", str(spct)).replace("__SILODONE__", str(sd)).replace("__SILOTOTAL__", str(st))
+       .replace("__CUR__", cur).replace("__PCT__", str(pct)).replace("__LABS__", esc(labs))
        .replace("__THEN__", f" &middot; then {queue[0]}" if queue else "")
        .replace("__NEXT3__", "".join(f"<li>{esc(t)}</li>" for t, _ in nxt[:3]))
        .replace("__TODAY__", today).replace("__TECHS__", str(r.get("techs", "")))
        .replace("__ENT__", f"{entities:,}").replace("__DONE__", done_li).replace("__NEXT__", next_li))
 (WEB / "index.html").write_text(out)
 print("built", len(out), "bytes;", len(nxt), "next items")
+
+# README progress line, between markers. Rockets are 0 until one launches.
+rd = ROOT / "README.md"; t = rd.read_text()
+bar = "#" * (spct // 5) + "-" * (20 - spct // 5)
+block = f"<!-- progress:start -->\n**Road to the rocket: {spct}%** `{bar}` {sd} of {st} techs the silo needs. Rockets launched: 0.\n<!-- progress:end -->"
+if "<!-- progress:start -->" in t:
+    t = re.sub(r"<!-- progress:start -->.*?<!-- progress:end -->", lambda m: block, t, flags=re.S)
+else:
+    t = t.replace("## Where it is\n", "## Where it is\n\n" + block + "\n", 1)
+rd.write_text(t)

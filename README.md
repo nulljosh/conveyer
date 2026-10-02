@@ -2,7 +2,7 @@
 
 # Conveyer
 
-![version](https://img.shields.io/badge/version-v0.1.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) [![GitHub](https://img.shields.io/badge/GitHub-nulljosh%2Fconveyer-black?logo=github)](https://github.com/nulljosh/conveyer)
+![version](https://img.shields.io/badge/version-v0.5.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) [![GitHub](https://img.shields.io/badge/GitHub-nulljosh%2Fconveyer-black?logo=github)](https://github.com/nulljosh/conveyer)
 
 An LLM plays Factorio. On a real save.
 
@@ -16,7 +16,7 @@ Built on [FLE](https://github.com/JackHopkins/factorio-learning-environment), th
 **Road to the rocket: 84%** `################----` 37 of 44 techs the silo needs. Rockets launched: 0.
 <!-- progress:end -->
 
-Plays on a copy of a real 2,300 entity base. Research is at chemical science. The refinery runs and makes plastic. Next: sulfur, advanced circuits, then the rocket. [Roadmap](roadmap.md).
+Plays on a copy of a real 2,300 entity base. Red, green, blue and purple science are automated. Next: yellow science, then the silo and the launch. [Roadmap](roadmap.md).
 
 <img src="progress.svg" width="480" alt="Entities placed per run">
 

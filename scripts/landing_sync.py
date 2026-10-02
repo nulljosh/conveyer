@@ -59,6 +59,7 @@ PAGE = """<!doctype html>
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://conveyer.heyitsmejosh.com/og.png">
 <link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.png">
 <link rel="stylesheet" href="https://heyitsmejosh.com/tokens.css">
 <script>document.documentElement.className="js"</script>
 <style>

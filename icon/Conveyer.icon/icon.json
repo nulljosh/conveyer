@@ -1,0 +1,63 @@
+{
+  "fill": {
+    "linear-gradient": [
+      "extended-srgb:0.14,0.12,0.10,1.0",
+      "extended-srgb:0.03,0.03,0.02,1.0"
+    ],
+    "orientation": {
+      "start": {
+        "x": 0.5,
+        "y": 0
+      },
+      "stop": {
+        "x": 0.5,
+        "y": 1
+      }
+    }
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "glass": true,
+          "image-name": "gear.png",
+          "name": "Gear"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Gear",
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": true,
+        "value": 0.2
+      }
+    },
+    {
+      "layers": [
+        {
+          "glass": true,
+          "image-name": "belt.png",
+          "name": "Belt"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Belt",
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.5
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": true,
+        "value": 0.25
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

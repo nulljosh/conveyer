@@ -232,7 +232,7 @@ struct ConveyerMonitorApp: App {
             HStack {
                 Text("Roadmap").font(.system(size: 12, weight: .semibold))
                 Spacer()
-                Text("\(done) of \(all.count) done").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text("\(open.count) left").font(.system(size: 11)).foregroundStyle(.secondary)
             }
             ForEach(Array(open.prefix(3).enumerated()), id: \.element.id) { i, m in
                 HStack(alignment: .top, spacing: 7) {

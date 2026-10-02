@@ -308,6 +308,29 @@ assert engine.energy > 0, "SKILL_FAIL build_power: steam engine has no energy af
 print(f"SKILL_OK build_power: steam engine at {{engine.position}} generating {{engine.energy}}")
 ''',
     },
+    "connect": {
+        "params": ["from_prototype", "from_position", "to_prototype", "to_position", "connection"],
+        "doc": "Lay `connection` (Pipe, UndergroundPipe, TransportBelt) between two existing entities so fluid or items flow.",
+        "template": '''
+a = get_entity(Prototype.{from_prototype}, Position({from_position}))
+b = get_entity(Prototype.{to_prototype}, Position({to_position}))
+group = connect_entities(a, b, Prototype.{connection})
+print(f"SKILL_OK connect: {from_prototype} to {to_prototype} with {connection}: {{group}}")
+''',
+    },
+    "set_recipe": {
+        "params": ["prototype", "position", "recipe"],
+        "doc": "Set what an assembler, refinery or chemical plant makes. `recipe` is a Prototype or RecipeName member, e.g. BasicOilProcessing, PlasticBar, Sulfur.",
+        "template": '''
+e = get_entity(Prototype.{prototype}, Position({position}))
+try:
+    rec = getattr(RecipeName, "{recipe}")
+except AttributeError:
+    rec = getattr(Prototype, "{recipe}")
+e = set_entity_recipe(e, rec)
+print(f"SKILL_OK set_recipe: {prototype} at {{e.position}} now makes {recipe}")
+''',
+    },
     "goto": {
         "params": ["position"],
         "doc": "Walk to `position` (x,y). Do this before collect/feed/place on anything far away.",

@@ -1,4 +1,50 @@
-<!doctype html>
+#!/usr/bin/env python3
+"""Builds web/index.html from real data: research.json (live research), shots/bench.jsonl (entity count),
+roadmap.md (next milestones + ETAs) and the live map (preview_map.png -> web/base.png, web/og.png).
+Run it, then: npx wrangler deploy."""
+import html, json, re, shutil, subprocess, time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+WEB = ROOT / "web"
+esc = html.escape
+nice = lambda n: esc(n.replace("-", " "))
+
+r = json.loads((ROOT / "research.json").read_text()) if (ROOT / "research.json").exists() else {}
+bench = (ROOT / "shots" / "bench.jsonl")
+entities = json.loads(bench.read_text().splitlines()[-1])["entities"] if bench.exists() else 0
+
+src = ROOT / "preview_map.png"
+if src.exists():
+    shutil.copy(src, WEB / "base.png")
+    subprocess.run(["magick", str(src), "-resize", "1200x", "-gravity", "center", "-crop", "1200x630+0+0", "+repage", str(WEB / "og.png")], check=False)
+
+# next milestones from the roadmap (open items only), no parentheses jargon
+road = (ROOT / "roadmap.md").read_text()
+sec = road.split("## Real save run", 1)[1].split("\n## ", 1)[0]
+nxt = []
+for line in sec.splitlines():
+    t = line.strip()
+    if t.startswith("- [ ]"):
+        left, _, eta = t[6:].partition(" ETA ")
+        title = re.sub(r"\s*\([^)]*\)", "", left.split(". ")[0]).strip(". ")
+        for cut in (":", " so ", " to the "):  # headline only, the detail lives in the roadmap
+            title = title.split(cut)[0]
+        nxt.append((title, eta.strip(". ")))
+nxt = [n for n in nxt if "fine-tune" not in n[0]][:5]
+
+DONE = ["Plays on a real 2,300 entity save", "Hand-fed science to chemical science", "First iron plate from a vanilla start",
+        "Drill, belt, inserter, furnace chain with no hand feeding", "Six clean unattended runs in a row"]
+done_li = "\n".join(f"<li>{esc(d)}</li>" for d in DONE)
+next_li = "\n".join(f"<li>{esc(t)}{f' <span>{esc(e)}</span>' if e else ''}</li>" for t, e in nxt)
+
+cur = nice(r["current"]).capitalize() if r.get("current") else "Between research"
+pct = r.get("percent", 0)
+queue = [nice(q) for q in r.get("queue", [])[1:2]]
+labs = "Labs idle, waiting for science packs" if not r.get("labs_working") else f"{r['labs_working']} of {r['labs']} labs working"
+today = time.strftime("%-d %b %Y")
+
+PAGE = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -45,7 +91,7 @@
   .live small { font-size: .8rem; font-variant: var(--caption, small-caps); letter-spacing: .06em; color: var(--text2, rgba(31,27,22,.6)); font-weight: 600; }
   .live b.big { font-size: 1.5rem; letter-spacing: -.02em; line-height: 1.15; }
   .meter { height: 8px; border-radius: 99px; background: var(--border, #dcd2bd); overflow: hidden; margin: 6px 0 2px; }
-  .meter i { display: block; height: 100%; width: 0%; background: var(--accent, #b3461f); border-radius: 99px; }
+  .meter i { display: block; height: 100%; width: __PCT__%; background: var(--accent, #b3461f); border-radius: 99px; }
   .live p { font-size: .9rem; color: var(--text2, rgba(31,27,22,.6)); }
   .live ol { margin: 4px 0 0 1.1rem; font-size: .9rem; } .live li { margin-top: 4px; } .live li span { color: var(--text2, rgba(31,27,22,.6)); }
   .plate-cap { margin: 14px 0 0; text-align: center; font-size: 13px; letter-spacing: .08em; font-variant: var(--caption, small-caps); font-weight: 500; color: var(--text2, rgba(31,27,22,.6)); }
@@ -59,7 +105,7 @@
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
   .card { border: 1px solid var(--border, #dcd2bd); border-radius: var(--radius, 12px); background: var(--bg2, #ebe4d3); padding: 14px 16px; min-width: 0; }
   .card h3 { font-size: .95rem; margin-bottom: 6px; } .card ul { list-style: none; } .card li { font-size: .9rem; padding: 4px 0; } .card li span { display: block; font-size: .8rem; color: var(--text2, rgba(31,27,22,.6)); }
-  .done li::before { content: "\2713"; margin-right: 8px; color: var(--accent, #b3461f); font-weight: 700; }
+  .done li::before { content: "\\2713"; margin-right: 8px; color: var(--accent, #b3461f); font-weight: 700; }
   .run pre { font-family: var(--font-code, ui-monospace, "SF Mono", Menlo, monospace); font-size: .85rem; line-height: 1.6; overflow: auto; border: 1px solid var(--border2, #ebe4d3); border-radius: var(--radius, 12px); background: var(--bg2, #ebe4d3); padding: 14px 16px; }
   footer { margin: 96px 0 40px; }
   footer .foot-rule { display: flex; align-items: center; gap: 16px; max-width: 880px; margin: 0 auto; padding: 14px 20px 28px; font-size: 13px; letter-spacing: .06em; font-weight: 500; color: var(--text2, rgba(31,27,22,.6)); }
@@ -96,20 +142,20 @@
       <div class="map"><img src="base.png" width="1024" height="1024" alt="Top-down map of the real Factorio base, drawn from game state"></div>
       <div class="live">
         <small>Researching</small>
-        <b class="big">Advanced oil processing</b>
-        <div class="meter" role="img" aria-label="0 percent"><i></i></div>
-        <p>0% &middot; Labs idle, waiting for science packs</p>
+        <b class="big">__CUR__</b>
+        <div class="meter" role="img" aria-label="__PCT__ percent"><i></i></div>
+        <p>__PCT__%__THEN__ &middot; __LABS__</p>
         <small style="margin-top:14px">Next</small>
-        <ol><li>Automated green science</li><li>Oil chain running</li><li>Advanced oil processing researched</li></ol>
+        <ol>__NEXT3__</ol>
       </div>
     </div>
   </div>
-  <p class="plate-cap">Drawn from game state, 2 Oct 2026</p>
+  <p class="plate-cap">Drawn from game state, __TODAY__</p>
 </div>
 
 <div class="facts reveal">
-  <div class="fact"><b>43</b><span>techs researched</span></div>
-  <div class="fact"><b>2,320</b><span>things on the base</span></div>
+  <div class="fact"><b>__TECHS__</b><span>techs researched</span></div>
+  <div class="fact"><b>__ENT__</b><span>things on the base</span></div>
   <div class="fact"><b>0</b><span>pixels read</span></div>
   <div class="fact"><b>0</b><span>rockets launched</span></div>
 </div>
@@ -127,16 +173,8 @@
 <section class="copy wrap reveal">
   <h2>Where it is</h2>
   <div class="cols">
-    <div class="card done"><h3>Done</h3><ul><li>Plays on a real 2,300 entity save</li>
-<li>Hand-fed science to chemical science</li>
-<li>First iron plate from a vanilla start</li>
-<li>Drill, belt, inserter, furnace chain with no hand feeding</li>
-<li>Six clean unattended runs in a row</li></ul></div>
-    <div class="card"><h3>Next</h3><ul><li>Automated green science <span>1 to 2 days of agent time</span></li>
-<li>Oil chain running <span>1 to 2 days</span></li>
-<li>Advanced oil processing researched <span>1 to 2 days</span></li>
-<li>Join the west outpost grid <span>hours</span></li>
-<li>Rocket silo researched <span>weeks</span></li></ul></div>
+    <div class="card done"><h3>Done</h3><ul>__DONE__</ul></div>
+    <div class="card"><h3>Next</h3><ul>__NEXT__</ul></div>
   </div>
 </section>
 
@@ -177,3 +215,11 @@ python3 runner.py --env-id open_play
 </script>
 </body>
 </html>
+"""
+out = (PAGE.replace("__CUR__", cur).replace("__PCT__", str(pct)).replace("__LABS__", esc(labs))
+       .replace("__THEN__", f" &middot; then {queue[0]}" if queue else "")
+       .replace("__NEXT3__", "".join(f"<li>{esc(t)}</li>" for t, _ in nxt[:3]))
+       .replace("__TODAY__", today).replace("__TECHS__", str(r.get("techs", "")))
+       .replace("__ENT__", f"{entities:,}").replace("__DONE__", done_li).replace("__NEXT__", next_li))
+(WEB / "index.html").write_text(out)
+print("built", len(out), "bytes;", len(nxt), "next items")

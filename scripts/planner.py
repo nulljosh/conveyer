@@ -60,6 +60,8 @@ def place(item, cell):
 SUPPLY = """/silent-command local s=game.surfaces[1] local want=%s local ins={%s} local outs={%s} local moved={}
 local function stock(name) local n=0 for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do n=n+e.get_inventory(defines.inventory.chest).get_item_count(name) end return n end
 for _,t in ipairs(ins) do local chest=s.find_entities_filtered{name='wooden-chest',position=t.p,radius=0.2}[1]
+  local oc=s.find_entities_filtered{name='wooden-chest',position=t.o,radius=0.2}[1]
+  if oc and oc.get_inventory(defines.inventory.chest).get_item_count(t.item)>=t.cap then chest=nil end
   if chest then for item,amt in pairs(t.need) do local have=chest.get_inventory(defines.inventory.chest).get_item_count(item) local missing=amt-have
     if missing>0 then for _,e in pairs(s.find_entities_filtered{type={'container','furnace'},force='player'}) do if missing<=0 then break end
       local isinput=false for _,q in ipairs(ins) do if math.abs(q.p[1]-e.position.x)<0.2 and math.abs(q.p[2]-e.position.y)<0.2 then isinput=true end end
@@ -73,7 +75,8 @@ def supply(plan, rec):
     for t in plan:
         ox, oy = OX + (t["cell"] % COLS) * CW, OY + (t["cell"] // COLS) * CH
         need = {i: a * 100 for i, a in rec[t["item"]]["ing"].items()}  # 100 crafts of every ingredient on hand
-        ins.append("{p={%g,%g},need={%s}}" % (ox + 0.5, oy + 1.5, ",".join(f"['{k}']={v}" for k, v in need.items())))
+        cap = 400 if t["item"] in TARGETS else 200  # demand: a tile holding this much of its product stops being fed
+        ins.append("{p={%g,%g},o={%g,%g},item='%s',cap=%d,need={%s}}" % (ox + 0.5, oy + 1.5, ox + 6.5, oy + 1.5, t["item"], cap, ",".join(f"['{k}']={v}" for k, v in need.items())))
     return run(SUPPLY % ("{}", ",".join(ins), "")) if ins else ""
 
 STOCK = """/silent-command local s=game.surfaces[1] local o={} for _,n in ipairs{%s} do local k=0 for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do k=k+e.get_inventory(defines.inventory.chest).get_item_count(n) end o[#o+1]=n..'='..k end rcon.print(table.concat(o,' '))"""

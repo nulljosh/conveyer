@@ -12,11 +12,11 @@ import factorio_rcon as f
 
 ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / ".world" / "tiles.json"
-TARGETS = {"automation-science-pack": 300, "logistic-science-pack": 300, "chemical-science-pack": 300}
+TARGETS = {"automation-science-pack": 300, "logistic-science-pack": 300, "chemical-science-pack": 300, "production-science-pack": 300}
 # tiles per item (default 1). 12 labs eat about 0.6 packs/s of each color; one tile makes 0.08 to 0.15/s, so the blue chain is the wall
-MULT = {"automation-science-pack": 2, "logistic-science-pack": 3, "chemical-science-pack": 4, "advanced-circuit": 3, "engine-unit": 4, "copper-cable": 2, "electronic-circuit": 2}
+MULT = {"automation-science-pack": 2, "logistic-science-pack": 3, "chemical-science-pack": 4, "production-science-pack": 3, "electric-furnace": 2, "productivity-module": 2, "rail": 2, "advanced-circuit": 3, "engine-unit": 4, "copper-cable": 2, "electronic-circuit": 2}
 # crafts of every ingredient kept on hand per tile; fast recipes burn a 300-craft buffer inside one 20 s pass at 10x, a chest holds 16 stacks
-BUF = {"copper-cable": 1400, "iron-gear-wheel": 700, "pipe": 700, "electronic-circuit": 500}
+BUF = {"electric-furnace": 30, "productivity-module": 30, "production-science-pack": 40, "copper-cable": 1400, "iron-gear-wheel": 700, "pipe": 700, "electronic-circuit": 500}
 RAW = {"iron-plate", "copper-plate", "steel-plate", "stone-brick", "coal", "plastic-bar", "sulfur"}
 OX, OY, CW, CH, COLS = -28, 4, 9, 6, 3  # tile grid origin and cell size; cells that can't hold a tile are skipped
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=60)
@@ -92,7 +92,8 @@ def stock(items):
 
 def build_order():
     rec = {}
-    for tgt in TARGETS: rec.update(recipes(tgt))
+    for tgt in TARGETS:
+        if run("/silent-command rcon.print(game.forces.player.recipes['%s'].enabled)" % tgt) == "true": rec.update(recipes(tgt))  # a tile cannot take a recipe the tech tree has not unlocked yet
     return rec, tiers(rec)
 
 def step():

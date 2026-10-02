@@ -31,6 +31,13 @@ Steps, one per tick, commit each:
 5. QA by screenshot and by `ps` CPU deltas; record before and after numbers here.
 Baseline and results table:
 
+### Live view grades
+
+| When | QA | Efficiency | Notes |
+|---|---|---|---|
+| 14:55 | A- | B+ | Full screen 1:1, status card top-left, no refresh option, original hard-hat figure moves live (5 Hz feed), basemap re-renders only on base change. Window open: runner 0.1%, app 0.0 to 0.7%, livefeed 0.1%. Closed: everything near 0. Fixed today: runner built its renderer every 3 s (30% CPU), now only when it renders. |
+| open | | | Opening after a long idle shows the last basemap until the next change or 60 s; first render after an edit takes 21 to 28 s and blocks the runner. Game speed (the Factorio VM, ~64% CPU at 10x) does not yet follow load: that is the biggest remaining cost. |
+
 - Blue science is now the research bottleneck (2026-10-02 14:40). Red and green only techs left: mining-productivity-1, weapon-shooting-speed-2, modular-armor, efficiency-module, explosives, bulk-inserter, circuit-network, landfill, fluid-wagon (queue them so labs never idle). Everything on the silo path from here needs chemical packs: add 'chemical-science-pack' to planner.py TARGETS. Needs engine units (steel, gear, pipe), advanced circuits (tile), and sulfur (a second chemical plant on the petroleum pipe, needs water; none in the east base yet).
 - Wide screenshots (touch .wide) render the whole base, 2,700 entities, 28 s a frame. Off by default. The app shows the square map sharp at about 1:1 over a blurred copy instead of magnifying it. Real fix: incremental basemap (live preview plan, step 2).
 

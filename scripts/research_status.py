@@ -22,8 +22,8 @@ while (ROOT / "runner.pid").exists():
         if (d["current"], d["percent"], d["techs"]) != last[:3]: last = (d["current"], d["percent"], d["techs"], now)
         d["moving"] = now - last[3] < 90
         (ROOT / "research.json").write_text(json.dumps(d))
-        terrain.refresh(rcon)
+        if time.time() - (ROOT / ".watching").stat().st_mtime < 8 if (ROOT / ".watching").exists() else False:
+            terrain.refresh(rcon)   # needs a viewer; refresh() itself skips unless preview.png is newer than the painted map
     except Exception:
         pass
-    try: time.sleep(max(2.0, float((ROOT / ".live").read_text())))
-    except Exception: time.sleep(10)
+    time.sleep(2.0 if (ROOT / ".watching").exists() and time.time() - (ROOT / ".watching").stat().st_mtime < 8 else 15.0)

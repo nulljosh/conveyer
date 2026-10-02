@@ -44,6 +44,7 @@ fi
 
 for h in "research_status.py:nohup $W scripts/research_status.py >/tmp/conveyer_research.log 2>&1" \
          "snap.py:nohup $W scripts/snap.py >/dev/null 2>&1" \
+         "livefeed.py:nohup $W scripts/livefeed.py >/dev/null 2>&1" \
          "keepbusy.sh:nohup scripts/keepbusy.sh >keepbusy.log 2>&1"; do
   n=${h%%:*}; cmd=${h#*:}
   if proc_ok "scripts/[${n:0:1}]${n:1}"; then say "$n" up

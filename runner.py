@@ -177,13 +177,6 @@ def main() -> None:
                 Renderer._draw_grid = lambda self, *a, **k: None
                 Renderer._render_alert_overlays = lambda self, *a, **k: None
 
-            inst = env.unwrapped.instance
-            render_tool = Render(inst.lua_script_manager, inst.namespaces[0])
-            # Render's own `layers` kwarg is dead code upstream (accepted, never
-            # read) — strip resources ourselves after fetching instead. One icon
-            # per ore/coal tile in a patch, via the icon-fallback, is a dense
-            # repeated grid, not useful signal. Character/entities/trees/water
-            # are untouched.
             t0 = time.time()
             # Wide view: 120 x 68 tiles = 1920 x 1088 px, 1:1 on a 1080p screen, so nothing is magnified. It draws the whole base
             # (about 2,700 entities) in ~28 s, so it only re-renders when the base changed (cheap Lua signature), when the player
@@ -198,11 +191,23 @@ def main() -> None:
                     if WIDE["sig"] is not None and not moved and now - WIDE["t"] < 600 and (sig == WIDE["sig"] or now - WIDE["t"] < 60):
                         return
                     import os
+                    try: watched = time.time() - Path(__file__).with_name(".watching").stat().st_mtime < 8
+                    except OSError: watched = False
+                    if WIDE["sig"] is not None and not watched:
+                        WIDE["sig"] = None if sig != WIDE["sig"] else WIDE["sig"]  # changed while nobody looked: render when someone does
+                        return
                     if WIDE["sig"] is not None and os.getloadavg()[0] / (os.cpu_count() or 1) > 0.85:
                         return  # CPU aware: a 28 s render on a hot machine makes everything slower, the old frame is fine
                     WIDE.update(sig=sig, c=(px, py), t=now)
                 except Exception as e:  # signature failed: fall through and render, never skip a frame silently
                     print(f"[runner] view signature failed: {e}", flush=True)
+            inst = env.unwrapped.instance
+            render_tool = Render(inst.lua_script_manager, inst.namespaces[0])
+            # Render's own `layers` kwarg is dead code upstream (accepted, never
+            # read) — strip resources ourselves after fetching instead. One icon
+            # per ore/coal tile in a patch, via the icon-fallback, is a dense
+            # repeated grid, not useful signal. Character/entities/trees/water
+            # are untouched.
             R = WIDE_R if not square else 32
             renderer = render_tool.get_renderer_from_map(
                 include_status=False, radius=WIDE_R if not square else 18, compression_level="binary",
@@ -211,16 +216,25 @@ def main() -> None:
             entity_names = sorted({e.name for e in renderer.entities})
             renderer.resources = []
             if not square:
+                renderer.entities = [e for e in renderer.entities if e.name != "character"]  # the live marker is the only character
                 renderer.get_size = lambda: {"minX": -R, "minY": -34, "maxX": R, "maxY": 34, "width": 2 * R, "height": 68}
                 image = renderer.render(2 * R * 16, 68 * 16, render_tool.image_resolver)
             else:
                 image = renderer.render(1024, 1024, render_tool.image_resolver)
             image.save("preview.png")
+            if not square and WIDE["c"]:
+                (Path(__file__).with_name("frame.json")).write_text(json.dumps(
+                    {"cx": WIDE["c"][0], "cy": WIDE["c"][1], "w": image.size[0], "h": image.size[1], "ppt": 16, "t": time.time()}))
             import resource
             print(f"[runner] frame {image.size[0]}x{image.size[1]} {len(renderer.entities)} entities {time.time() - t0:.1f}s peak {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1048576} MB", flush=True)
             print(f"[runner] screenshot entities: {entity_names}", flush=True)
         except Exception as e:  # noqa: BLE001 - periodic capture, never fatal
             print(f"[runner] periodic screenshot failed: {e}", flush=True)
+
+    def is_watched() -> bool:
+        """The menu bar app touches .watching while the popover or the live window is visible."""
+        try: return time.time() - Path(__file__).with_name(".watching").stat().st_mtime < 8
+        except OSError: return False
 
     def live_interval(default: float) -> float:
         """The menu bar writes the chosen refresh to .live; never faster than 2 s."""
@@ -233,7 +247,7 @@ def main() -> None:
         # Periodic screenshot, throttled to ~8s and only when idle (no command
         # mid-flight) so it never competes with an actual skill step.
         if not CMD_PATH.exists() or CMD_PATH.stat().st_mtime == seen_mtime:
-            if time.time() - last_screenshot > live_interval(8.0):
+            if time.time() - last_screenshot > (3.0 if is_watched() else 30.0):
                 capture_screenshot()
                 last_screenshot = time.time()
         if CMD_PATH.exists():

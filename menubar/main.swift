@@ -104,32 +104,38 @@ final class StatusPoller: ObservableObject {
         string: "~/Documents/Code/conveyer/menubar"
     ).expandingTildeInPath
 
-    /// Seconds between refreshes. Written to .live so the runner captures and repaints at the same pace.
-    @Published var liveInterval: Int = {
-        let v = UserDefaults.standard.integer(forKey: "liveInterval"); return v == 0 ? 10 : v
-    }()
+    /// Something is on screen: the popover is open or the live window is visible. Everything expensive keys off this.
+    @Published var popoverShown = false { didSet { applyWatching() } }
+    @Published var windowVisible = false { didSet { applyWatching() } }
     @Published var lastFrame: Date?
+    let marker = MarkerModel()
     private var timer: Timer?
-    private let livePath = NSString(string: "~/Documents/Code/conveyer/.live").expandingTildeInPath
+    private let watchPath = NSString(string: "~/Documents/Code/conveyer/.watching").expandingTildeInPath
 
-    func setLive(_ seconds: Int) {
-        liveInterval = seconds
-        UserDefaults.standard.set(seconds, forKey: "liveInterval")
-        try? "\(seconds)".write(toFile: livePath, atomically: true, encoding: .utf8)
-        schedule()
-    }
+    var watching: Bool { popoverShown || windowVisible }
 
-    private func schedule() {
+    private func applyWatching() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: Double(min(max(liveInterval, 1), 3)), repeats: true) { _ in
+        if watching {
+            touchWatching()
+            marker.start()
+        } else {
+            marker.stop()
+        }
+        // 1 s while someone looks (the heartbeat must stay under the 8 s the Python side tolerates), 5 s otherwise
+        timer = Timer.scheduledTimer(withTimeInterval: watching ? 1 : 5, repeats: true) { _ in
             Task { @MainActor in self.poll() }
         }
     }
 
+    private func touchWatching() {
+        try? Data().write(to: URL(fileURLWithPath: watchPath))
+    }
+
     init() {
         poll()
-        setLive(liveInterval)
-        // `ConveyerMonitor --open-live` opens the detached window straight into full screen
+        applyWatching()
+        // `ConveyerMonitor --open-live` opens the live window straight into full screen
         if CommandLine.arguments.contains("--open-live") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 LiveWindow.show(self)
@@ -139,6 +145,7 @@ final class StatusPoller: ObservableObject {
     }
 
     func poll() {
+        if watching { touchWatching() }
         if let data = FileManager.default.contents(atPath: statusPath),
            let decoded = try? JSONDecoder().decode(Status.self, from: data) {
             status = decoded
@@ -238,29 +245,103 @@ enum LiveWindow {
         w.contentView = NSHostingView(rootView: LiveView(poller: poller))
         w.center()
         window = w
+        poller.windowVisible = true
+        NotificationCenter.default.addObserver(forName: NSWindow.didChangeOcclusionStateNotification, object: w, queue: .main) { _ in
+            Task { @MainActor in poller.windowVisible = w.occlusionState.contains(.visible) }
+        }
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: w, queue: .main) { _ in
-            Task { @MainActor in LiveWindow.window = nil }
+            Task { @MainActor in LiveWindow.window = nil; poller.windowVisible = false }
         }
         w.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 }
 
-struct RefreshPicker: View {
-    @ObservedObject var poller: StatusPoller
+/// Live position of the player, read from live.json (written ~5 times a second by scripts/livefeed.py while someone watches).
+struct LiveFrame: Decodable { let cx: Double; let cy: Double; let w: Double; let h: Double; let ppt: Double }
+struct LivePos: Decodable { let x: Double; let y: Double }
+
+@MainActor
+final class MarkerModel: ObservableObject {
+    @Published var pos: CGPoint?
+    @Published var heading: Double = 90   // degrees, 0 = east, 90 = south (screen y grows down)
+    @Published var moving = false
+    @Published var step = 0
+    @Published var frame: LiveFrame?
+    private var timer: Timer?
+    private var frameStamp: Date?
+    private let livePath = NSString(string: "~/Documents/Code/conveyer/live.json").expandingTildeInPath
+    private let framePath = NSString(string: "~/Documents/Code/conveyer/frame.json").expandingTildeInPath
+
+    func start() {
+        guard timer == nil else { return }
+        read()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in Task { @MainActor in self.read() } }
+    }
+    func stop() { timer?.invalidate(); timer = nil }
+
+    private func read() {
+        if let m = (try? FileManager.default.attributesOfItem(atPath: framePath))?[.modificationDate] as? Date, m != frameStamp,
+           let d = FileManager.default.contents(atPath: framePath), let f = try? JSONDecoder().decode(LiveFrame.self, from: d) {
+            frameStamp = m; frame = f
+        }
+        guard let d = FileManager.default.contents(atPath: livePath), let p = try? JSONDecoder().decode(LivePos.self, from: d) else { return }
+        let np = CGPoint(x: p.x, y: p.y)
+        guard np != pos else { if moving { moving = false }; return }   // publish only on change: idle costs no redraws
+        if let o = pos { heading = atan2(np.y - o.y, np.x - o.x) * 180 / .pi }
+        moving = pos != nil
+        step += 1
+        pos = np
+    }
+}
+
+/// An original marker, not a game sprite: a pin with a heading wedge. It glides between position updates.
+struct PlayerMarker: View {
+    @ObservedObject var m: MarkerModel
     var body: some View {
-        HStack(spacing: 3) {
-            ForEach([2, 5, 10, 30], id: \.self) { sec in
-                let on = poller.liveInterval == sec
-                Button { poller.setLive(sec) } label: {
-                    Text("\(sec)s").font(.system(size: 11, weight: on ? .semibold : .regular))
-                        .frame(width: 34, height: 20)
-                        .background(RoundedRectangle(cornerRadius: 5).fill(on ? Color.accentColor : Color.secondary.opacity(0.22)))
-                        .foregroundStyle(on ? Color.white : Color.primary)
+        GeometryReader { g in
+            if let p = m.pos, let f = m.frame {
+                // same fill transform as the map image: scale to cover, centered
+                let s = max(g.size.width / f.w, g.size.height / f.h)
+                let x = (g.size.width - f.w * s) / 2 + (f.w / 2 + (p.x - f.cx) * f.ppt) * s
+                let y = (g.size.height - f.h * s) / 2 + (f.h / 2 + (p.y - f.cy) * f.ppt) * s
+                ZStack {
+                    Circle().fill(Color.accentColor.opacity(m.moving ? 0.28 : 0.14)).frame(width: 38, height: 38)
+                    HardHatFigure(heading: m.heading, swing: m.moving && m.step % 2 == 0, walking: m.moving)
                 }
-                .buttonStyle(.plain)
+                .position(x: x, y: y)
+                .animation(.linear(duration: 0.2), value: m.pos)
             }
         }
+        .allowsHitTesting(false)
+    }
+}
+
+/// An original little foreman seen from above: blue overalls, orange hard hat with a visor pointing the way it walks.
+struct HardHatFigure: View {
+    var heading: Double   // degrees, 0 = east
+    var swing: Bool
+    var walking: Bool
+    private let skin = Color(red: 0.93, green: 0.74, blue: 0.58)
+    var body: some View {
+        ZStack {
+            Ellipse().fill(Color.black.opacity(0.28)).frame(width: 24, height: 12).offset(y: 3)
+            Capsule().fill(Color(red: 0.20, green: 0.33, blue: 0.62)).frame(width: 24, height: 12)      // shoulders
+            Rectangle().fill(Color(red: 0.97, green: 0.62, blue: 0.10)).frame(width: 3, height: 12)     // hi-vis stripe
+            Circle().fill(skin).frame(width: 6, height: 6).offset(x: -13, y: swing ? -3 : 3)              // hands swing as it walks
+            Circle().fill(skin).frame(width: 6, height: 6).offset(x: 13, y: swing ? 3 : -3)
+            Circle().fill(Color(red: 0.97, green: 0.72, blue: 0.10)).frame(width: 14, height: 14)       // hard hat
+            Circle().stroke(Color.white.opacity(0.55), lineWidth: 1).frame(width: 14, height: 14)
+            Capsule().fill(Color(red: 0.85, green: 0.55, blue: 0.05)).frame(width: 10, height: 4).offset(y: -9)  // visor, points forward
+        }
+        .rotationEffect(.degrees(heading + 90))   // drawn facing north; north is heading -90
+        .scaleEffect(walking ? 1.06 : 1.0)
+    }
+}
+
+struct Triangle: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path(); p.move(to: CGPoint(x: r.midX, y: r.minY)); p.addLine(to: CGPoint(x: r.maxX, y: r.maxY)); p.addLine(to: CGPoint(x: r.minX, y: r.maxY)); p.closeSubpath(); return p
     }
 }
 
@@ -278,7 +359,7 @@ struct LiveView: View {
             }
             .clipped()
             .overlay(alignment: .topLeading) { hud }
-            .overlay(alignment: .topTrailing) { RefreshPicker(poller: poller).padding(10).opacity(0.75) }
+            .overlay { PlayerMarker(m: poller.marker) }
         .frame(minWidth: 520, minHeight: 420)
         .ignoresSafeArea()
         .environment(\.colorScheme, .dark)
@@ -398,10 +479,9 @@ struct ConveyerMonitorApp: App {
                         .frame(width: 316, height: 220)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                     HStack {
-                        RefreshPicker(poller: poller)
                         Spacer()
                         Button { LiveWindow.show(poller) } label: {
-                            Label("Detach", systemImage: "macwindow.on.rectangle").font(.system(size: 11))
+                            Label("Open live view", systemImage: "macwindow.on.rectangle").font(.system(size: 11))
                         }
                     }
                 }
@@ -497,6 +577,8 @@ struct ConveyerMonitorApp: App {
             }
             .padding(12)
             .frame(width: 340)
+            .onAppear { poller.popoverShown = true }
+            .onDisappear { poller.popoverShown = false }
     }
 
     private var labelText: String {

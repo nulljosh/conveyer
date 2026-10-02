@@ -317,22 +317,23 @@ struct PlayerMarker: View {
     }
 }
 
-/// An original little foreman seen from above: blue overalls, orange hard hat with a visor pointing the way it walks.
+/// An original little engineer seen from above: grey armor, a pack on the back, orange helmet with a visor that points the way it walks.
 struct HardHatFigure: View {
     var heading: Double   // degrees, 0 = east
     var swing: Bool
     var walking: Bool
-    private let skin = Color(red: 0.93, green: 0.74, blue: 0.58)
+    private let glove = Color(red: 0.30, green: 0.31, blue: 0.33)
     var body: some View {
         ZStack {
-            Ellipse().fill(Color.black.opacity(0.28)).frame(width: 24, height: 12).offset(y: 3)
-            Capsule().fill(Color(red: 0.20, green: 0.33, blue: 0.62)).frame(width: 24, height: 12)      // shoulders
-            Rectangle().fill(Color(red: 0.97, green: 0.62, blue: 0.10)).frame(width: 3, height: 12)     // hi-vis stripe
-            Circle().fill(skin).frame(width: 6, height: 6).offset(x: -13, y: swing ? -3 : 3)              // hands swing as it walks
-            Circle().fill(skin).frame(width: 6, height: 6).offset(x: 13, y: swing ? 3 : -3)
-            Circle().fill(Color(red: 0.97, green: 0.72, blue: 0.10)).frame(width: 14, height: 14)       // hard hat
-            Circle().stroke(Color.white.opacity(0.55), lineWidth: 1).frame(width: 14, height: 14)
-            Capsule().fill(Color(red: 0.85, green: 0.55, blue: 0.05)).frame(width: 10, height: 4).offset(y: -9)  // visor, points forward
+            Ellipse().fill(Color.black.opacity(0.30)).frame(width: 24, height: 12).offset(y: 3)
+            RoundedRectangle(cornerRadius: 2).fill(Color(red: 0.62, green: 0.40, blue: 0.14)).frame(width: 13, height: 9).offset(y: 8)  // pack
+            Capsule().fill(Color(red: 0.50, green: 0.53, blue: 0.56)).frame(width: 24, height: 12)                                        // armor
+            Capsule().stroke(Color(red: 0.28, green: 0.30, blue: 0.33), lineWidth: 1).frame(width: 24, height: 12)
+            Circle().fill(glove).frame(width: 6, height: 6).offset(x: -13, y: swing ? -3 : 3)                                             // arms swing as it walks
+            Circle().fill(glove).frame(width: 6, height: 6).offset(x: 13, y: swing ? 3 : -3)
+            Circle().fill(Color(red: 0.96, green: 0.50, blue: 0.10)).frame(width: 14, height: 14)                                         // helmet
+            Circle().fill(Color.white.opacity(0.30)).frame(width: 5, height: 5).offset(x: -2, y: 2)
+            Capsule().fill(Color(red: 0.20, green: 0.22, blue: 0.25)).frame(width: 9, height: 4).offset(y: -8)                            // visor, points forward
         }
         .rotationEffect(.degrees(heading + 90))   // drawn facing north; north is heading -90
         .scaleEffect(walking ? 1.06 : 1.0)

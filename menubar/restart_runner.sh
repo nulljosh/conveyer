@@ -6,4 +6,5 @@ cd "$(dirname "$0")/.."
 pkill -f "runner.py" 2>/dev/null || true
 sleep 1
 rm -f runner_cmd.json runner_result.json runner_seq.txt status.json
-nohup .venv/bin/python runner.py --env-id open_play > /tmp/conveyer_runner.log 2>&1 &
+FLAGS=""; [ -f .world/active ] && FLAGS="--keep-world"
+nohup .venv/bin/python runner.py --env-id open_play $FLAGS > /tmp/conveyer_runner.log 2>&1 &

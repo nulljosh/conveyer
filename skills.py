@@ -72,12 +72,25 @@ source = get_entity(Prototype.{drill_prototype}, position=Position({source_posit
 if source is None:
     raise Exception("No {drill_prototype} found at {source_position} — check the position with `inspect` or `find` first")
 box = BuildingBox(width=Prototype.{furnace_prototype}.WIDTH + 4, height=Prototype.{furnace_prototype}.HEIGHT + 4)
-spot = nearest_buildable(Prototype.{furnace_prototype}, box, source.position)
-move_to(spot.center)
-furnace = place_entity(Prototype.{furnace_prototype}, position=spot.center, direction=Direction.UP)
-furnace = insert_item(Prototype.Coal, furnace, quantity=20)
-inserter = place_entity_next_to(Prototype.BurnerInserter, reference_position=furnace.position, direction=Direction.DOWN, spacing=0)
-inserter = rotate_entity(inserter, Direction.UP)
+# Idempotent: a retry after a partial run reuses the furnace/inserter it already placed.
+furnaces = get_entities({{Prototype.{furnace_prototype}}}, position=source.position, radius=10)
+if furnaces:
+    furnace = furnaces[0]
+    move_to(furnace.position)
+else:
+    spot = nearest_buildable(Prototype.{furnace_prototype}, box, source.position)
+    move_to(spot.center)
+    furnace = place_entity(Prototype.{furnace_prototype}, position=spot.center, direction=Direction.UP)
+coal = inspect_inventory()[Prototype.Coal]
+if coal < 10:
+    raise Exception(f"need coal, have {{coal}}: try harvest Coal first")
+furnace = insert_item(Prototype.Coal, furnace, quantity=min(20, coal - 5))
+inserters = get_entities({{Prototype.BurnerInserter}}, position=furnace.position, radius=2)
+if inserters:
+    inserter = inserters[0]
+else:
+    inserter = place_entity_next_to(Prototype.BurnerInserter, reference_position=furnace.position, direction=Direction.DOWN, spacing=0)
+    inserter = rotate_entity(inserter, Direction.UP)
 inserter = insert_item(Prototype.Coal, inserter, quantity=5)
 belts = connect_entities(source.drop_position, inserter.pickup_position, Prototype.TransportBelt)
 print(f"SKILL_OK smelt: furnace at {{furnace.position}} fed via inserter at {{inserter.position}} from drill at {{source.position}}")

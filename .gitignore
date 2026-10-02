@@ -29,3 +29,5 @@ menubar/ConveyerMonitor.app/Contents/_CodeSignature/
 !.dev.vars.example
 !.env.example
 agent.pid
+.world/
+runner.lock

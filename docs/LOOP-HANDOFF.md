@@ -1,4 +1,14 @@
-# Conveyer loop handoff (2026-10-01, evening)
+# Conveyer loop handoff (2026-10-02)
+
+## Latest: running on Joshua's real world (a.zip copy)
+
+Done: smelt is idempotent and checks coal (bootstrap harvests 70 now). `scripts/world.sh` swaps the server onto a copy of the save (`scripts/world.sh back` returns to stock). `runner.py --keep-world` skips FLE's reset, adopts the save's character, keeps biters. runner.lock stops duplicate runners. Memory guard kills the runner at 3 GB and dumps stacks. Menu bar respawns at most every 10 min.
+
+Broken: on the real base (2316 entities) the runner balloons to 18 GB during init and filled swap, which froze the Mac. The server is stopped (`docker stop conveyer-world`) and the menu bar is quit. Find what balloons (likely initialise: _generate_chunks radius 25, or score/entity serialisation over the whole base), fix it, then `scripts/world.sh` and run. Joshua's character is not in the save, so the agent spawns at his last position (-51,-35).
+
+Goal: agent keeps building the base, mines iron and steel, fights biters with guns and grenades. Send Joshua logs and screenshots at milestones.
+
+# (older) Conveyer loop handoff (2026-10-01, evening)
 
 ## What the loop is
 

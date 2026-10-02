@@ -75,11 +75,62 @@ def pick_default_env() -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--env-id")
+    parser.add_argument("--keep-world", action="store_true",
+                        help="real save: skip FLE's reset (it clears entities, resets research, regenerates ore)")
     args = parser.parse_args()
+
+    if args.keep_world:
+        # Real save. FLE's init would wipe it: reset() clears entities, resets research and
+        # regenerates ore; create_agent_characters destroys every character and spawns one at 0,0;
+        # peaceful deletes every enemy. Tools are loaded by file path, so patch them where
+        # setup_tools binds them onto the namespace, before initialise() runs.
+        from fle.env.instance import FactorioInstance
+        from fle.env.lua_manager import LuaScriptManager
+        ADOPT = (
+            "/sc local c = nil "
+            "for _, p in pairs(game.players) do if p.character and p.character.valid then c = p.character break end end "
+            "if not c then for _, e in pairs(game.surfaces[1].find_entities_filtered{type='character'}) do c = e break end end "
+            "if not c then c = game.surfaces[1].create_entity{name='character', position=game.players[1].position, force=game.forces.player} end "
+            "storage.agent_characters = {c} player = c "
+            "rcon.print('adopted character at ' .. c.position.x .. ',' .. c.position.y)"
+        )
+        orig_setup = LuaScriptManager.setup_tools
+
+        def setup_tools(self, instance):
+            orig_setup(self, instance)
+            def adopt(*a, **k):
+                print(f"[runner] {self.rcon_client.send_command(ADOPT)}", flush=True)
+                return True
+            for ns in instance.namespaces:
+                ns._reset = lambda *a, **k: 1
+                ns._create_agent_characters = adopt
+
+        LuaScriptManager.setup_tools = setup_tools
+        orig_init = FactorioInstance.__init__
+        FactorioInstance.__init__ = lambda self, *a, **k: orig_init(self, *a, **{**k, "peaceful": False})
 
     import os
 
+    # One runner per command file: a second one (menu bar watchdog racing a restart) double-fires every step.
+    import fcntl
+    lock = open("runner.lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.exit("[runner] another runner.py holds runner.lock, exiting")
+
     Path("runner.pid").write_text(str(os.getpid()))
+
+    # A real save can blow FLE up to 18 GB and fill swap. Dump where, then die, at 3 GB.
+    import faulthandler, resource, threading
+    def memory_guard():
+        while True:
+            if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 3 * 1024**3:
+                print("[runner] over 3 GB, dumping stacks and exiting", flush=True)
+                faulthandler.dump_traceback(all_threads=True)
+                os._exit(3)
+            time.sleep(1)
+    threading.Thread(target=memory_guard, daemon=True).start()
 
     env_id = args.env_id or pick_default_env()
     print(f"[runner] environment: {env_id}", flush=True)

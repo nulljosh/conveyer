@@ -44,8 +44,8 @@ final class StatusPoller: ObservableObject {
     }
 
     /// True process liveness (kill(pid, 0)), not just "no recent status update" —
-    /// a long smelt/harvest wait is a real gap, not a crash. Auto-restarts once
-    /// if the PID is actually dead, debounced so it can't loop.
+    /// a long smelt/harvest wait is a real gap, not a crash. Auto-restarts at most
+    /// every 10 min: a runner that dies on boot (memory guard) must not respawn in a loop.
     private func checkLiveness() {
         guard let pidText = try? String(contentsOfFile: pidPath, encoding: .utf8),
               let pid = pid_t(pidText.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -54,7 +54,7 @@ final class StatusPoller: ObservableObject {
         runnerAlive = alive
         if !alive {
             let now = Date()
-            if autoRestartedAt == nil || now.timeIntervalSince(autoRestartedAt!) > 60 {
+            if autoRestartedAt == nil || now.timeIntervalSince(autoRestartedAt!) > 600 {
                 autoRestartedAt = now
                 run("restart_runner.sh")
             }
@@ -80,7 +80,7 @@ struct ConveyerMonitorApp: App {
     var body: some Scene {
         MenuBarExtra {
             VStack(alignment: .leading, spacing: 10) {
-                if let s = poller.status {
+                if let s = poller.status, s.skill != "?" {
                     HStack(spacing: 4) {
                         Text(s.skill)
                             .font(.system(size: 12, weight: .semibold))
@@ -99,7 +99,7 @@ struct ConveyerMonitorApp: App {
                         .fixedSize(horizontal: false, vertical: true)
 
                     if !poller.runnerAlive {
-                        Text("Runner died — auto-restarting…")
+                        Text("Runner stopped. Auto-restart at most every 10 min.")
                             .font(.system(size: 11))
                             .foregroundStyle(.red)
                     } else if poller.stale {
@@ -108,7 +108,7 @@ struct ConveyerMonitorApp: App {
                             .foregroundStyle(.secondary)
                     }
                 } else {
-                    Text("No status yet — start the server below")
+                    Text("Waiting for the first step")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
@@ -153,7 +153,7 @@ struct ConveyerMonitorApp: App {
 
     private var labelText: String {
         if !poller.runnerAlive { return "⚠ died" }
-        guard let s = poller.status else { return "…" }
+        guard let s = poller.status, s.skill != "?" else { return "…" }
         let dot = s.ok ? "●" : "○"
         return "\(dot) \(Self.narrate(s.skill))"
     }

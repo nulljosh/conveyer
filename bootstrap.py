@@ -94,7 +94,7 @@ def run_once(run_idx: int) -> bool:
     print(f"\n=== run {run_idx}: bootstrap -> automated chain ===", flush=True)
 
     step({"skill": "harvest", "params": {"resource": "Stone", "quantity": 15}})
-    step({"skill": "harvest", "params": {"resource": "Coal", "quantity": 40}})
+    step({"skill": "harvest", "params": {"resource": "Coal", "quantity": 70}})  # furnace 20 + drill 20 + smelt 20 + inserter 5
     step({"skill": "harvest", "params": {"resource": "IronOre", "quantity": 25}})
 
     step({"skill": "craft", "params": {"item_prototype": "StoneFurnace", "count": 1}})

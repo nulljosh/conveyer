@@ -47,7 +47,7 @@ next_li = "\n".join(f"<li>{esc(t)}{f' <span>{esc(e)}</span>' if e else ''}</li>"
 
 cur = nice(r["current"]).capitalize() if r.get("current") else "Between research"
 pct = r.get("percent", 0)
-queue = [nice(q) for q in r.get("queue", [])[1:2]]
+queue = [nice(q) for q in (r.get("queue") if isinstance(r.get("queue"), list) else [])[1:2]]
 labs = "Labs idle, waiting for science packs" if not r.get("labs_working") else f"{r['labs_working']} of {r['labs']} labs working"
 today = time.strftime("%-d %b %Y")
 
@@ -154,14 +154,14 @@ PAGE = """<!doctype html>
 <section class="copy wrap reveal">
   <h2>Road to the rocket</h2>
   <div class="meter" role="img" aria-label="__SILOPCT__ percent"><i style="width:__SILOPCT__%"></i></div>
-  <p>__SILOPCT__% of the research the rocket silo needs is done: __SILODONE__ of __SILOTOTAL__ techs. Rockets launched: 0.</p>
+  <p>__SILOPCT__% of the research the rocket silo needs is done: __SILODONE__ of __SILOTOTAL__ techs. Rockets launched: 1 (v1.0, assisted: purple and yellow science were console-fed).</p>
 </section>
 
 <div class="facts reveal">
   <div class="fact"><b>__TECHS__</b><span>techs researched</span></div>
   <div class="fact"><b>__ENT__</b><span>things on the base</span></div>
   <div class="fact"><b>0</b><span>pixels read</span></div>
-  <div class="fact"><b>0</b><span>rockets launched</span></div>
+  <div class="fact"><b>1</b><span>rocket launched (assisted)</span></div>
 </div>
 
 <section class="copy wrap reveal">
@@ -235,7 +235,7 @@ print("built", len(out), "bytes;", len(nxt), "next items")
 # README progress line, between markers. Rockets are 0 until one launches.
 rd = ROOT / "README.md"; t = rd.read_text()
 bar = "#" * (spct // 5) + "-" * (20 - spct // 5)
-block = f"<!-- progress:start -->\n**Road to the rocket: {spct}%** `{bar}` {sd} of {st} techs the silo needs. Rockets launched: 0.\n<!-- progress:end -->"
+block = f"<!-- progress:start -->\n**Road to the rocket: {spct}%** `{bar}` {sd} of {st} techs the silo needs. Rockets launched: 1 (v1.0, assisted: purple and yellow science were console-fed).\n<!-- progress:end -->"
 if "<!-- progress:start -->" in t:
     t = re.sub(r"<!-- progress:start -->.*?<!-- progress:end -->", lambda m: block, t, flags=re.S)
 else:

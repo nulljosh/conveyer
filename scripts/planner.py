@@ -85,9 +85,6 @@ def supply(plan, rec):
         need = {i: a * BUF.get(t["item"], 300) for i, a in rec[t["item"]]["ing"].items()}  # 300 crafts of every ingredient on hand: at 10x speed a tile eats 100 crafts between 60 s passes
         cap = 400 if t["item"] in TARGETS else 200  # demand: a tile holding this much of its product stops being fed
         ins.append("{p={%g,%g},o={%g,%g},item='%s',cap=%d,need={%s}}" % (ox + 0.5, oy + 1.5, ox + 6.5, oy + 1.5, t["item"], cap, ",".join(f"['{k}']={v}" for k, v in need.items())))
-    if plan:  # the player makes the rounds, one tile per pass, so the live view shows it working
-        t = plan[int(time.time() / 20) % len(plan)]
-        run("/silent-command game.surfaces[1].find_entities_filtered{type='character'}[1].teleport({%g,%g})" % (OX + (t["cell"] % COLS) * CW + 3.5, OY + (t["cell"] // COLS) * CH + 5))
     return run(SUPPLY % ("{}", ",".join(ins), "")) if ins else ""
 
 STOCK = """/silent-command local s=game.surfaces[1] local o={} for _,n in ipairs{%s} do local k=0 for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do k=k+e.get_inventory(defines.inventory.chest).get_item_count(n) end o[#o+1]=n..'='..k end rcon.print(table.concat(o,' '))"""

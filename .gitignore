@@ -38,3 +38,4 @@ venv/
 frame.json
 live.json
 conveyer-adapter/
+live_status.json

@@ -283,6 +283,9 @@ final class MarkerModel: ObservableObject {
     @Published var moving = false
     @Published var step = 0
     @Published var frame: LiveFrame?
+    @Published var dots: [[Double]] = []   // [x, y, code] per machine, from live_status.json: 0 working, 1 waiting, 2 stuck
+    private var dotsStamp: Date?
+    private let dotsPath = NSString(string: "~/Documents/Code/conveyer/live_status.json").expandingTildeInPath
     private var timer: Timer?
     private var frameStamp: Date?
     private let livePath = NSString(string: "~/Documents/Code/conveyer/live.json").expandingTildeInPath
@@ -295,7 +298,15 @@ final class MarkerModel: ObservableObject {
     }
     func stop() { timer?.invalidate(); timer = nil }
 
+    private func readDots() {
+        guard let m = (try? FileManager.default.attributesOfItem(atPath: dotsPath))?[.modificationDate] as? Date, m != dotsStamp,
+              let d = FileManager.default.contents(atPath: dotsPath),
+              let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any], let arr = j["d"] as? [[Double]] else { return }
+        dotsStamp = m; dots = arr
+    }
+
     private func read() {
+        readDots()
         if let m = (try? FileManager.default.attributesOfItem(atPath: framePath))?[.modificationDate] as? Date, m != frameStamp,
            let d = FileManager.default.contents(atPath: framePath), let f = try? JSONDecoder().decode(LiveFrame.self, from: d) {
             frameStamp = m; frame = f
@@ -307,6 +318,34 @@ final class MarkerModel: ObservableObject {
         moving = pos != nil
         step += 1
         pos = np
+    }
+}
+
+/// Machine status dots over the map: green pulses while working, amber waits for items, red is stuck. Drawn from live_status.json, so the view moves even when the map picture is old.
+struct StatusDots: View {
+    @ObservedObject var m: MarkerModel
+    var body: some View {
+        GeometryReader { g in
+            if let f = m.frame, !m.dots.isEmpty {
+                let s = max(g.size.width / f.w, g.size.height / f.h)
+                TimelineView(.animation(minimumInterval: 1.0 / 10)) { ctx in
+                    let t = ctx.date.timeIntervalSinceReferenceDate
+                    Canvas { c, _ in
+                        for (i, d) in m.dots.enumerated() where d.count == 3 {
+                            let x = (g.size.width - f.w * s) / 2 + (f.w / 2 + (d[0] - f.cx) * f.ppt) * s
+                            let y = (g.size.height - f.h * s) / 2 + (f.h / 2 + (d[1] - f.cy) * f.ppt) * s
+                            let code = Int(d[2])
+                            let pulse = code == 0 ? 0.55 + 0.45 * sin(t * 6 + Double(i)) : 1.0
+                            let col: Color = code == 0 ? .green : (code == 1 ? .orange : .red)
+                            let r: CGFloat = code == 0 ? 5 : 6
+                            c.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r - 14, width: 2 * r, height: 2 * r)), with: .color(col.opacity(pulse)))
+                            c.stroke(Path(ellipseIn: CGRect(x: x - r, y: y - r - 14, width: 2 * r, height: 2 * r)), with: .color(.black.opacity(0.6)), lineWidth: 1)
+                        }
+                    }
+                }
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 
@@ -384,6 +423,7 @@ struct LiveView: View {
             }
             .clipped()
             .overlay(alignment: .topLeading) { if poller.hudVisible { hud } }
+            .overlay { StatusDots(m: poller.marker) }
             .overlay { PlayerMarker(m: poller.marker) }
         .frame(minWidth: 520, minHeight: 420)
         .ignoresSafeArea()

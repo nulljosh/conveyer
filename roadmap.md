@@ -62,6 +62,7 @@ Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 4
 10 steam engines, a train and two cars. Goal: oil, then a rocket launch.
 - [x] Advanced circuits and chemical science unlocked (tech 43, 2026-10-02)
 - [ ] Automated green science so research stops being hand-fed. ETA 1 to 2 days of agent time
+- [x] Refinery running on the main grid, first plastic made (2026-10-02)
 - [ ] Oil chain running (refineries, plastic, sulfur, advanced circuits, chemical packs). ETA 1 to 2 days
 - [ ] Advanced oil processing researched (500 red, 500 green, 75 chemical). ETA 1 to 2 days
 - [ ] Join the west outpost grid (net 181, 2 engines, 32 consumers) to the main grid with big poles. ETA hours

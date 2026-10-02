@@ -17,11 +17,13 @@ elif [ $FIX = 1 ]; then colima start --network-address >/dev/null 2>&1 && say co
 else fail colima "not running"; fi
 
 if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx conveyer-world; then say server up
-elif [ $FIX = 1 ]; then scripts/world.sh 2>&1 | tail -1 | sed 's/^/server        /'; docker ps --format '{{.Names}}' 2>/dev/null | grep -qx conveyer-world || fail server "world.sh failed"
+elif [ $FIX = 1 ]; then SERVER_RESTARTED=1; scripts/world.sh 2>&1 | tail -1 | sed 's/^/server        /'; docker ps --format '{{.Names}}' 2>/dev/null | grep -qx conveyer-world || fail server "world.sh failed"
 else fail server "container not running"; fi
 
 if rcon_ok; then say rcon up; else fail rcon "no answer on 27000"; fi
 
+# a runner that outlived a server restart is attached to a dead game: replace it
+if [ "${SERVER_RESTARTED:-0}" = 1 ] && runner_ok; then kill "$(cat runner.pid)"; sleep 2; rm -f runner.pid runner.lock; fi
 if runner_ok; then say runner "up, $(( $(ps -o rss= -p "$(cat runner.pid)") / 1024 )) MB"
 elif [ $FIX = 1 ] && rcon_ok; then
   rm -f runner.lock runner.pid runner_cmd.json runner_result.json runner_seq.txt

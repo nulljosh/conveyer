@@ -43,7 +43,7 @@ local function put(n,x,y,dir) local e=s.find_entities_filtered{name=n,position={
 if not s.can_place_entity{name='assembling-machine-2',position={ox+3.5,oy+1.5},force='player'} and #s.find_entities_filtered{name='assembling-machine-2',position={ox+3.5,oy+1.5},radius=0.2}==0 then rcon.print('BLOCKED') return end
 local a=put('assembling-machine-2',ox+3.5,oy+1.5) if a and a.get_recipe()==nil then a.set_recipe('%s') end
 put('wooden-chest',ox+0.5,oy+1.5) put('wooden-chest',ox+6.5,oy+1.5)
-for _,x in ipairs{ox+1.5,ox+5.5} do local i=put('inserter',x,oy+1.5,d.east) if i and i.drop_position.x<i.position.x then i.direction=(i.direction+8)%%16 end end
+for _,x in ipairs{ox+1.5,ox+5.5} do for _,old in pairs(s.find_entities_filtered{name='inserter',position={x,oy+1.5},radius=0.2}) do old.destroy() end local i=put('fast-inserter',x,oy+1.5,d.east) if i and i.drop_position.x<i.position.x then i.direction=(i.direction+8)%%16 end end
 local p=put('medium-electric-pole',ox+3.5,oy+3.5)
 local lab=s.find_entities_filtered{name='lab'}[1] local main=lab and lab.electric_network_id
 if p and main and p.electric_network_id~=main then
@@ -64,14 +64,15 @@ for _,t in ipairs(ins) do local chest=s.find_entities_filtered{name='wooden-ches
     if missing>0 then for _,e in pairs(s.find_entities_filtered{type={'container','furnace'},force='player'}) do if missing<=0 then break end
       local isinput=false for _,q in ipairs(ins) do if math.abs(q.p[1]-e.position.x)<0.2 and math.abs(q.p[2]-e.position.y)<0.2 then isinput=true end end
       if not isinput then local inv=(e.type=='furnace') and e.get_output_inventory() or e.get_inventory(defines.inventory.chest) local h=inv.get_item_count(item)
-        if h>0 then local n=chest.insert{name=item,count=math.min(h,missing)} if n>0 then inv.remove{name=item,count=n} missing=missing-n moved[#moved+1]=item..'+'..n end end end end end end end end
+        if h>0 then local n=chest.insert{name=item,count=math.min(h,missing)} if n>0 then inv.remove{name=item,count=n} missing=missing-n moved[#moved+1]=item..'+'..n end end end end
+    if missing>0 then local bag=s.find_entities_filtered{type='character'}[1].get_main_inventory() local h=bag.get_item_count(item) if h>0 then local n=chest.insert{name=item,count=math.min(h,missing)} if n>0 then bag.remove{name=item,count=n} moved[#moved+1]=item..'+'..n..'(bag)' end end end end end end end
 rcon.print(table.concat(moved,' '))"""
 
 def supply(plan, rec):
     ins, outs = [], []
     for t in plan:
         ox, oy = OX + (t["cell"] % COLS) * CW, OY + (t["cell"] // COLS) * CH
-        need = {i: a * 20 for i, a in rec[t["item"]]["ing"].items()}  # 20 crafts of every ingredient on hand
+        need = {i: a * 100 for i, a in rec[t["item"]]["ing"].items()}  # 100 crafts of every ingredient on hand
         ins.append("{p={%g,%g},need={%s}}" % (ox + 0.5, oy + 1.5, ",".join(f"['{k}']={v}" for k, v in need.items())))
     return run(SUPPLY % ("{}", ",".join(ins), "")) if ins else ""
 

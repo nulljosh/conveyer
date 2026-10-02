@@ -3,7 +3,7 @@
 can make now (red, green, blue; add purple and yellow to PACKS when their tiles run), prerequisites first, cheapest first.
 Prints the queue. Cheap RCON call, safe to run every pass."""
 import factorio_rcon as f
-PACKS = ["automation-science-pack", "logistic-science-pack", "chemical-science-pack"]
+PACKS = ["automation-science-pack", "logistic-science-pack", "chemical-science-pack", "production-science-pack", "utility-science-pack"]
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=30)
 lua = """/silent-command local F=game.forces.player local ok={%s} local need={} local seen={}
 local function walk(t) if seen[t.name] then return end seen[t.name]=true need[#need+1]=t for _,p in pairs(t.prerequisites) do walk(p) end end walk(F.technologies['rocket-silo'])

@@ -138,11 +138,11 @@ final class StatusPoller: ObservableObject {
         poll()
         applyWatching()
         Hotkey.register { [weak self] in Task { @MainActor in self?.hudVisible.toggle() } }
-        // `ConveyerMonitor --open-live` opens the live window straight into full screen
+        // `ConveyerMonitor --open-live` opens the live window; add `--fullscreen` for full screen
         if CommandLine.arguments.contains("--open-live") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 LiveWindow.show(self)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { LiveWindow.window?.toggleFullScreen(nil) }
+                if CommandLine.arguments.contains("--fullscreen") { DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { LiveWindow.window?.toggleFullScreen(nil) } }
             }
         }
     }

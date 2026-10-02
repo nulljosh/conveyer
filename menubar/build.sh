@@ -6,7 +6,9 @@ set -e
 cd "$(dirname "$0")"
 
 swiftc -O -parse-as-library main.swift -o ConveyerMonitor.app/Contents/MacOS/ConveyerMonitor
-codesign --force --deep --sign - ConveyerMonitor.app
+ID="Developer ID Application: Joshua Trommel (QMM486NPYC)"   # a stable identity: macOS keeps the Documents/Finder permission across rebuilds. Ad-hoc ("-") asked again after every build.
+security find-identity -v -p codesigning | grep -q "$ID" || ID=-
+codesign --force --deep --sign "$ID" ConveyerMonitor.app
 xattr -cr ConveyerMonitor.app
 
 pkill -f ConveyerMonitor 2>/dev/null || true

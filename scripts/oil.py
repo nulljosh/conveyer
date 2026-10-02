@@ -29,6 +29,7 @@ if ci and ci.drop_position.x>ci.position.x then ci.direction=(ci.direction+8)%16
 local cc=s.find_entities_filtered{name='wooden-chest',position={-32.5,-8.5},radius=0.3}[1]
 local pl=s.find_entities_filtered{name='chemical-plant',position={-35.5,-8.5},radius=0.3}[1]
 local bag=s.find_entities_filtered{type='character'}[1].get_main_inventory()
+if cc then local ci2=cc.get_inventory(defines.inventory.chest) for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do if e~=cc then local inv=e.get_inventory(defines.inventory.chest) local h=inv.get_item_count('coal') if h>400 then local need=780-ci2.get_item_count('coal') if need<=0 then break end local n=ci2.insert{name='coal',count=math.min(need,h-300)} if n>0 then inv.remove{name='coal',count=n} end end end end end
 if cc then local h=math.min(700-cc.get_inventory(defines.inventory.chest).get_item_count('coal'),bag.get_item_count('coal')) if h>0 then bag.remove{name='coal',count=cc.get_inventory(defines.inventory.chest).insert{name='coal',count=h}} end end
 if pl then local need=50-pl.get_item_count('coal') local h=math.min(need,bag.get_item_count('coal')) if h>0 then bag.remove{name='coal',count=pl.insert{name='coal',count=h}} end end
 local m={} for k,v in pairs(defines.entity_status) do m[v]=k end

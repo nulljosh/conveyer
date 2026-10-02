@@ -20,6 +20,9 @@ put('oil-refinery',-38.5,-2.5,d.north,'basic-oil-processing')
 put('medium-electric-pole',-43.5,-13.5) put('medium-electric-pole',-43.5,-9.5) put('medium-electric-pole',-38.5,-8.5) put('medium-electric-pole',-42.5,-3.5)
 put('chemical-plant',-35.5,-8.5,d.south,'plastic-bar')
 put('pipe',-36.5,-5.5) put('pipe',-36.5,-6.5)
+local pl=s.find_entities_filtered{name='chemical-plant',position={-35.5,-8.5},radius=0.3}[1]
+local bag=s.find_entities_filtered{type='character'}[1].get_main_inventory()
+if pl then local need=50-pl.get_item_count('coal') local h=math.min(need,bag.get_item_count('coal')) if h>0 then bag.remove{name='coal',count=pl.insert{name='coal',count=h}} end end
 local m={} for k,v in pairs(defines.entity_status) do m[v]=k end
 for _,n in ipairs{'oil-refinery','chemical-plant'} do local e=s.find_entities_filtered{name=n,area={{-42,-12},{-33,2}}}[1]
   if e then local fl={} for i=1,#e.fluidbox do local b=e.fluidbox[i] fl[#fl+1]=b and (b.name..'='..math.floor(b.amount)) or '-' end

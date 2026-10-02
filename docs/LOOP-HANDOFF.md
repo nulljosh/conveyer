@@ -54,7 +54,7 @@ Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show sh
 2. Read research.json. Keep the research queue on the silo path (RCON: `F.research_queue = {...}`), cheapest red and green techs first while blue is built.
 3. Do ONE small chunk toward the next milestone. Order: automate blue science (sulfur plant, engine unit tile, advanced circuit tile, blue pack tile through planner.py), then purple, then yellow, then the silo.
 4. At a milestone: `scripts/milestone.py NAME frame` around the build, `finish`, send the GIF, then `scripts/ship_landing.sh "<milestone>"`. Walk the character to the build first so the map centers on it. Stop keepbusy while recording (two step.sh callers shift results).
-5. Commit and push by exact path. One TLDR line to Joshua.
+5. Commit and push by exact path. Bump VERSION (patch per fix, minor per milestone), then `git tag vX.Y.Z && git push --tags && gh release create vX.Y.Z --generate-notes`. One TLDR line to Joshua.
 
 ## Gotchas that cost time
 

@@ -25,40 +25,6 @@ Sub-bullets are the real, current blow-by-blow status.
          change forces a world reset — `skills.py` hot-reloads without one, but the runner
          process itself doesn't). Every hand-driven rebuild succeeded, ~3-5 min each once
          the recipe is known. Real evidence, but not the same as unattended.
-   - [x] **`bootstrap.py` (scripts the whole sequence end to end, no human/Claude re-driving),
-         6 confirmed clean unattended passes across two batches (1 + 1 + 4-in-a-row with
-         zero new bugs) — past the 5-run bar.** 9 real bugs found and fixed one at a time to
-         get there, worth keeping as a record of what "unattended" actually took:
-         1. Fixed 35s smelt sleep, too short for 15 ore (~48s needed) — cascading 0-plate failure.
-         2. Fixed 55s sleep, still too short once the actual full plate budget (~27 for all
-            downstream crafts) was counted properly.
-         3. Bumped ore *feed* quantity to 25 without bumping the *harvest* quantity that fed
-            it — feed silently caps at whatever you actually have, doesn't error on asking
-            for more. Real lesson: silent capping on quantity mismatches hides bugs, worth a
-            skill-level assert if anyone touches `feed`/`collect` again.
-         4. **Root cause of all the smelt-timing guesses**: the furnace was fully draining
-            its ore just fine — the bug was assuming wall-clock seconds map 1:1 to game
-            ticks. They don't reliably, likely because Box64 (x64-on-arm64 emulation running
-            the whole headless server) doesn't guarantee real-time tick rate under load.
-            **General fix, not just this script: poll game state (`peek` until
-            `NO_INGREDIENTS`/`WORKING`) instead of guessing a sleep duration, anywhere
-            timing matters.** Rewrote `wait_for_smelt()` this way — confirmed it correctly
-            measured 90s for that batch, which no fixed guess had matched.
-         5. Two `StoneFurnace` crafts (one hand-fed, one for `auto_feed`) need 10 stone
-            total; harvest quantity was exactly 10, zero margin, and came up short. Fixed:
-            bumped to 15.
-         6. `--runs N>1` didn't restart the world between runs, but every position in the
-            script is a hardcoded coordinate that only makes sense on a fresh world (this
-            seed is deterministic — same coordinates every reset). Added `restart_world()`,
-            called between runs.
-         7. `step()` didn't catch `subprocess.TimeoutExpired` — one slow response (runner.py
-            still settling right after a world restart) crashed the entire multi-run batch
-            unhandled instead of retrying. Caught it, treated like any other retriable
-            failure. Added a 3s settling buffer after restart reports ready, too.
-         8-9. Same class of bug twice: a script this size needs the *specific* game-state
-            evidence checked (peek a furnace's real status/inventory), not an assumption
-            from an error message's wording — every guess-based "fix" failed until the
-            actual root cause was read off live state instead.
    - [ ] Power grid automated end to end (boiler → steam engine → poles) — **harder than
          assumed**, see the research-gate note below. Revised timeframe: **days, not
          hours**, pending that investigation.
@@ -94,13 +60,6 @@ Sub-bullets are the real, current blow-by-blow status.
 Conveyer now runs on a copy of Joshua's own Factorio save (`scripts/world.sh`), not a vanilla start.
 Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 41 steel furnaces,
 10 steam engines, a train and two cars. Goal: oil, then a rocket launch.
-- [x] Runs on the real save without ballooning memory (observation capped at 30 tiles, ~165 MB, was 18 GB)
-- [x] Menu bar fixed: shows the live map, stays down after a stop or memory kill, restarts only while the server is up
-- [x] Character fetches from the base's own chests (62k coal, 12k steel, 7k copper) instead of mining from scratch
-- [x] Hand-crafted red and green science, labs fed over RCON, flammables researched (tech 39 to 40)
-- [x] Screenshot and benchmark every 5 minutes (`scripts/snap.py`, `shots/bench.jsonl`)
-- [x] Found why the base was idle: 0 furnaces working (no fuel), west outpost grid underpowered
-- [x] Sulfur researched (tech 41)
 - [ ] Advanced circuits and chemical science unlocked. Needs about 160 more red and green. ETA about 30 minutes of hand cycles
 - [ ] Automated green science so research stops being hand-fed. ETA 1 to 2 days of agent time
 - [ ] Oil chain running (refineries, plastic, sulfur, advanced circuits, chemical packs). ETA 1 to 2 days
@@ -239,4 +198,3 @@ Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 4
 
 ## Ingested 2026-10-01
 - [ ] Server keeps going down; not running in the background properly, especially once the Claude session closes. Start it back up and watch closely.
-- [x] (fixed 2026-10-02, menu bar rebuilt) Monitor screenshot shows 'No status yet, start the server below' with Restart runner / Restart server + runner / Stop server controls. (screenshot: notes/attachments/2026-10-01/conveyer-1.png)

@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 N=${1:-60}
 s(){ ./step.sh "$1" | python3 -c "import json,sys; d=json.load(sys.stdin); print(str(d.get('observation',d))[:160])"; }
 get(){ s "{\"skill\":\"goto\",\"params\":{\"position\":\"$2\"}}" >/dev/null; s "{\"skill\":\"collect\",\"params\":{\"item_prototype\":\"$1\",\"source_position\":\"$3\",\"quantity\":$4}}"; }
-get IronPlate -143,-30 -144.5,-31.5 $((N*8))
+.venv/bin/python scripts/withdraw.py iron-plate $((N*8))
 get CopperPlate -89,-46 -89.5,-48.5 $N
 get CopperCable -89,-46 -89.5,-48.5 $((N*3))
 get TransportBelt -90,-46 -90.5,-48.5 $N

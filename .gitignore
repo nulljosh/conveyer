@@ -34,3 +34,6 @@ status_log.json
 status.json
 vendor/
 venv/
+.watching
+frame.json
+live.json

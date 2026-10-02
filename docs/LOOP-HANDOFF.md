@@ -15,6 +15,7 @@ FLE's Lua state cannot be saved. An autosave kills the server. So any crash or r
 - oil block: scripts/oil.py
 - science tiles: scripts/planner.py replay (plan in .world/tiles.json)
 - circuit assembler: scripts/advcircuit.py place
+- iron farm (west patch, 10 drill-furnace-chest slots + pole bridge to the main grid): scripts/ironfarm.py (slots frozen in .world/ironfarm.json; delete it to rescan)
 Every new build gets a replay script the same hour it is built.
 
 - Live view: the menu bar popover has 2/5/10/30 s buttons and a Detach button that opens a resizable "Conveyer live" window. The choice is written to `.live`; runner.py captures and research_status.py repaints at that pace (floor 2 s, default 8 to 10 s). A 2 s setting costs about a second of CPU per frame, so leave it at 10 when nobody is watching. QA without clicking: `ConveyerMonitor --snapshot out.png [--live]`.
@@ -46,6 +47,10 @@ Baseline and results table:
 ## Known macro bottleneck (15:15)
 
 Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
+
+## Iron farm (2026-10-02 15:40, v0.2.0)
+
+Built scripts/ironfarm.py: electric drill into steel furnace into inserter into wooden chest, 10 slots on the west patch (16 iron drills now), medium-pole chain joins the outpost to the main grid. Chests collect plates and the planner supply pulls from any chest. First minute: 414 plates. Fuel: furnaces burn 20 coal in 90 s at 10x, fuel.py now fills to 50. Next: more slots (west patch has room once the old outpost is cleared around), then sulfur and the blue tiles.
 
 ## Plate survey (2026-10-02 15:12)
 

@@ -149,7 +149,7 @@ struct ConveyerMonitorApp: App {
                     HStack(spacing: 4) {
                         Text(s.skill)
                             .font(.system(size: 12, weight: .semibold))
-                        Text(s.ok ? "ok" : "failed")
+                        Text(s.ok ? "done" : "didn't work")
                             .font(.system(size: 11))
                             .foregroundStyle(s.ok ? Color.secondary : Color.red)
                         Spacer()
@@ -157,41 +157,41 @@ struct ConveyerMonitorApp: App {
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
-                    Text(s.message)
+                    Text(s.message.replacingOccurrences(of: "SKILL_OK ", with: ""))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(4)
                         .fixedSize(horizontal: false, vertical: true)
 
                     if !poller.runnerAlive {
-                        Text("Runner stopped. Restarts itself only while the server is up.")
+                        Text("Stopped. It restarts on its own while the game is running.")
                             .font(.system(size: 11))
                             .foregroundStyle(.red)
                     } else if poller.stale {
-                        Text("No update in 2 min, likely a long smelt or harvest")
+                        Text("Waiting on a slow step.")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
                 } else {
-                    Text("Waiting for the first step")
+                    Text("Starting up")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
 
                 Divider()
 
-                Text("Server controls")
+                Text("Controls")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
 
                 VStack(spacing: 4) {
-                    Self.controlButton(poller, "Restart runner", systemImage: "arrow.clockwise") {
+                    Self.controlButton(poller, "Restart", systemImage: "arrow.clockwise") {
                         poller.run("restart_runner.sh")
                     }
-                    Self.controlButton(poller, "Restart server + runner", systemImage: "arrow.triangle.2.circlepath") {
+                    Self.controlButton(poller, "Restart game and player", systemImage: "arrow.triangle.2.circlepath") {
                         poller.run("restart_server.sh")
                     }
-                    Self.controlButton(poller, "Stop server", systemImage: "stop.circle") {
+                    Self.controlButton(poller, "Stop everything", systemImage: "stop.circle") {
                         poller.run("stop_all.sh")
                     }
                 }
@@ -199,12 +199,12 @@ struct ConveyerMonitorApp: App {
                 if poller.busy {
                     HStack(spacing: 5) {
                         ProgressView().controlSize(.small)
-                        Text("Working…").font(.system(size: 11)).foregroundStyle(.secondary)
+                        Text("Working").font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                 }
 
                 Divider()
-                Button("Quit monitor") { NSApplication.shared.terminate(nil) }
+                Button("Quit") { NSApplication.shared.terminate(nil) }
                     .font(.system(size: 12))
             }
             .padding(12)

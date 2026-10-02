@@ -1,4 +1,45 @@
-# Conveyer loop handoff (2026-10-02, afternoon)
+# Conveyer loop handoff (2026-10-02, 14:20)
+
+Read this first. Everything a fresh session needs is here and in git. Nothing lives only in a conversation.
+
+## State
+
+Goal: launch a rocket on Joshua's real save (a.zip copy). Rocket-silo path: 27 of 44 techs. Remaining: 4,350 red, 4,350 green, 3,350 blue, 1,600 purple, 1,000 yellow packs. Route and reasoning are in roadmap.md ("Route to the silo").
+Built: refinery and plastic plant (scripts/oil.py), one advanced-circuit assembler (scripts/advcircuit.py), seven science tiles making red and green science (scripts/planner.py), a character armed with a submachine gun, heavy armor, 100 magazines, grenades.
+Running: colima, the conveyer-world container, runner.py, research_status.py, snap.py (a map shot every 5 min into shots/), keepbusy.sh (keeps labs fed, boilers fueled, tiles supplied).
+
+## The one rule that explains most of this repo
+
+FLE's Lua state cannot be saved. An autosave kills the server. So any crash or restart reverts the world to the 10:55 copy, and everything built or researched since is gone. Defense is replay, not saves:
+- research: scripts/journal.py (snapshot is automatic, restore re-marks techs researched)
+- oil block: scripts/oil.py
+- science tiles: scripts/planner.py replay (plan in .world/tiles.json)
+- circuit assembler: scripts/advcircuit.py place
+Every new build gets a replay script the same hour it is built.
+
+## Tick (what the loop does every ~20 min)
+
+1. `scripts/health.sh --fix`. Prints every moving part, starts what is down, and if the world reverted it replays journal, fuel, oil and tiles. Exit code is the number of open problems. If usage says 90% or more (session or weekly), run /checkpoint and stop the loop. No kill.
+2. Read research.json. Keep the research queue on the silo path (RCON: `F.research_queue = {...}`), cheapest red and green techs first while blue is built.
+3. Do ONE small chunk toward the next milestone. Order: automate blue science (sulfur plant, engine unit tile, advanced circuit tile, blue pack tile through planner.py), then purple, then yellow, then the silo.
+4. At a milestone: `scripts/milestone.py NAME frame` around the build, `finish`, send the GIF, then `scripts/ship_landing.sh "<milestone>"`. Walk the character to the build first so the map centers on it. Stop keepbusy while recording (two step.sh callers shift results).
+5. Commit and push by exact path. One TLDR line to Joshua.
+
+## Gotchas that cost time
+
+- step.sh takes one caller at a time. keepbusy, planner, oil, fuel, journal use RCON only and are safe beside it.
+- Never `pkill -f` a pattern that appears in your own command line. Use the `[x]` trick or a PID.
+- Every wait loop needs a deadline. A wait on a file's age ran 39 minutes once.
+- A tool result that says "Cannot execute command ... must be used" means a bare function call in Lua. Lua here is 5.2: no `//`.
+- Autosave, a second science runner, Steam and the full game client each caused trouble. Do not start any of them without a RAM check (health.sh prints it, keep 40% free).
+- Screenshots: scripts/terrain.py paints ground under the FLE render; the renderer is patched in runner.py to drop the grid and alert triangles. scripts/realshot.sh is an experiment to get true-graphics shots from the real client.
+
+## Files
+
+health.sh, journal.py, oil.py, advcircuit.py, planner.py, keepbusy.sh, ship_landing.sh, milestone.py, world.sh, fuel.py, withdraw.py, feedlabs.py, terrain.py, snap.py, research_status.py (all in scripts/).
+
+# History
+
 
 ## Every milestone
 

@@ -6,7 +6,7 @@ Demand: a target item wants N in stock; the lowest-tier ingredient with no tile 
 Logistics stand-in: supply() moves items between chests over RCON, the way bots would. The plan lives in .world/tiles.json,
 so after a crash (the world reverts) `replay` rebuilds every tile.
 ponytail: create_entity is free (no assembler items spent) and supply() teleports items; swap for bots once robotics is researched."""
-import json, sys
+import time, json, sys
 from pathlib import Path
 import factorio_rcon as f
 
@@ -59,7 +59,9 @@ rcon.print('placed '..table.concat(out,' ')..' net='..tostring(a and a.electric_
 
 def place(item, cell):
     ox, oy = OX + (cell % COLS) * CW, OY + (cell // COLS) * CH
-    return run(PLACE % (ox, oy, item)), ox, oy
+    r = run(PLACE % (ox, oy, item))
+    run("/silent-command game.surfaces[1].find_entities_filtered{type='character'}[1].teleport({%g,%g})" % (ox + 3.5, oy + 5))  # the player visibly goes to what it builds
+    return r, ox, oy
 
 SUPPLY = """/silent-command local s=game.surfaces[1] local want=%s local ins={%s} local outs={%s} local moved={}
 local function stock(name) local n=0 for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do n=n+e.get_inventory(defines.inventory.chest).get_item_count(name) end return n end
@@ -83,6 +85,9 @@ def supply(plan, rec):
         need = {i: a * BUF.get(t["item"], 300) for i, a in rec[t["item"]]["ing"].items()}  # 300 crafts of every ingredient on hand: at 10x speed a tile eats 100 crafts between 60 s passes
         cap = 400 if t["item"] in TARGETS else 200  # demand: a tile holding this much of its product stops being fed
         ins.append("{p={%g,%g},o={%g,%g},item='%s',cap=%d,need={%s}}" % (ox + 0.5, oy + 1.5, ox + 6.5, oy + 1.5, t["item"], cap, ",".join(f"['{k}']={v}" for k, v in need.items())))
+    if plan:  # the player makes the rounds, one tile per pass, so the live view shows it working
+        t = plan[int(time.time() / 20) % len(plan)]
+        run("/silent-command game.surfaces[1].find_entities_filtered{type='character'}[1].teleport({%g,%g})" % (OX + (t["cell"] % COLS) * CW + 3.5, OY + (t["cell"] // COLS) * CH + 5))
     return run(SUPPLY % ("{}", ",".join(ins), "")) if ins else ""
 
 STOCK = """/silent-command local s=game.surfaces[1] local o={} for _,n in ipairs{%s} do local k=0 for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do k=k+e.get_inventory(defines.inventory.chest).get_item_count(n) end o[#o+1]=n..'='..k end rcon.print(table.concat(o,' '))"""

@@ -349,9 +349,9 @@ struct StatusDots: View {
                             let code = Int(d[2])
                             let pulse = code == 0 ? 0.55 + 0.45 * sin(t * 6 + Double(i)) : 1.0
                             let col: Color = code == 0 ? .green : (code == 1 ? .orange : .red)
-                            let r: CGFloat = code == 0 ? 5 : 6
-                            c.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r - 14, width: 2 * r, height: 2 * r)), with: .color(col.opacity(pulse)))
-                            c.stroke(Path(ellipseIn: CGRect(x: x - r, y: y - r - 14, width: 2 * r, height: 2 * r)), with: .color(.black.opacity(0.6)), lineWidth: 1)
+                            let r: CGFloat = max(3, (code == 0 ? 4 : 5) * s)
+                            c.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r - 14 * s, width: 2 * r, height: 2 * r)), with: .color(col.opacity(pulse)))
+                            c.stroke(Path(ellipseIn: CGRect(x: x - r, y: y - r - 14 * s, width: 2 * r, height: 2 * r)), with: .color(.black.opacity(0.6)), lineWidth: 1)
                         }
                     }
                 }
@@ -372,9 +372,9 @@ struct PlayerMarker: View {
                 let x = (g.size.width - f.w * s) / 2 + (f.w / 2 + (p.x - f.cx) * f.ppt) * s
                 let y = (g.size.height - f.h * s) / 2 + (f.h / 2 + (p.y - f.cy) * f.ppt) * s
                 ZStack {
-                    Circle().fill(Color.accentColor.opacity(m.moving ? 0.28 : 0.14)).frame(width: 38, height: 38)
+                    Circle().fill(Color.accentColor.opacity(m.moving ? 0.28 : 0.14)).frame(width: 30 * s, height: 30 * s)
                     if Engineer.available {
-                        EngineerSprite(heading: m.heading, walking: m.moving)
+                        EngineerSprite(heading: m.heading, walking: m.moving, scale: s)
                     } else if m.moving {
                         // 12 fps walk cycle, only while he is actually moving; standing still has no timer at all
                         TimelineView(.animation(minimumInterval: 1.0 / 12)) { ctx in
@@ -402,23 +402,24 @@ enum Engineer {
     }
     static var available: Bool { run != nil && idle != nil }
     /// One frame of the sheet: row by heading (0 = east, 90 = south on screen), column by frame.
-    static func frame(_ sheet: CGImage, heading: Double, frame: Int) -> NSImage {
+    static func frame(_ sheet: CGImage, heading: Double, frame: Int, scale: CGFloat) -> NSImage {
         let cw = sheet.width / 22, ch = sheet.height / 8
         let a = (heading + 90).truncatingRemainder(dividingBy: 360), row = Int(((a < 0 ? a + 360 : a) + 22.5) / 45) % 8
         let rect = CGRect(x: (frame % 22) * cw, y: row * ch, width: cw, height: ch)
         let c = sheet.cropping(to: rect) ?? sheet
-        return NSImage(cgImage: c, size: NSSize(width: Double(cw) / 2, height: Double(ch) / 2))   // the sheets are drawn at 2x
+        return NSImage(cgImage: c, size: NSSize(width: CGFloat(cw) / 4 * scale, height: CGFloat(ch) / 4 * scale))   // sheets are 2x art for 32 px a tile; the map is 16 px a tile, then scaled to the window
     }
 }
 
 struct EngineerSprite: View {
     var heading: Double
     var walking: Bool
+    var scale: CGFloat
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 20)) { ctx in
             let i = walking ? Int(ctx.date.timeIntervalSinceReferenceDate * 22) % 22 : 0
             if let sheet = walking ? Engineer.run : Engineer.idle {
-                Image(nsImage: Engineer.frame(sheet, heading: heading, frame: i)).interpolation(.high)
+                Image(nsImage: Engineer.frame(sheet, heading: heading, frame: i, scale: scale)).interpolation(.high)
             }
         }
     }

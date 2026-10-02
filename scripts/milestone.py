@@ -28,7 +28,7 @@ elif cmd == "frame":
     import factorio_rcon
     if not terrain.refresh(factorio_rcon.RCONClient("127.0.0.1", 27000, "factorio")) or not out.exists():
         sys.exit("terrain paint failed, no frame written")
-    Image.open(out).crop((192, 192, 832, 832)).save(out)  # 40 tiles at 16 px, player centered
+    im = Image.open(out); w, h = im.size; im.crop((w // 2 - 320, h // 2 - 320, w // 2 + 320, h // 2 + 320)).save(out)  # 40 tiles at 16 px, player centered
     print(out)
 elif cmd == "finish":
     fs = frames()

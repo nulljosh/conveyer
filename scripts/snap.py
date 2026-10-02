@@ -16,6 +16,8 @@ end = time.time() + a.hours * 3600
 while time.time() < end and (ROOT / "runner.pid").exists():
     t = time.strftime("%Y%m%d-%H%M%S")
     shutil.copy(ROOT / ("preview_map.png" if (ROOT / "preview_map.png").exists() else "preview.png"), ROOT / "shots" / f"{t}.png")
+    for old_f in sorted((ROOT / "shots").glob("2*.png"))[:-288]:  # keep a day of 5-minute frames, the wide frames are 2 MB each
+        old_f.unlink()
     techs = -1
     try:
         c = factorio_rcon.RCONClient("127.0.0.1", 27000, "factorio"); entities = int(c.send_command(LUA).strip())

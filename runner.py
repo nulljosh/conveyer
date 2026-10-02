@@ -197,6 +197,9 @@ def main() -> None:
                     moved = WIDE["c"] is not None and ((px - WIDE["c"][0]) ** 2 + (py - WIDE["c"][1]) ** 2) ** 0.5 > 25
                     if WIDE["sig"] is not None and not moved and now - WIDE["t"] < 600 and (sig == WIDE["sig"] or now - WIDE["t"] < 60):
                         return
+                    import os
+                    if WIDE["sig"] is not None and os.getloadavg()[0] / (os.cpu_count() or 1) > 0.85:
+                        return  # CPU aware: a 28 s render on a hot machine makes everything slower, the old frame is fine
                     WIDE.update(sig=sig, c=(px, py), t=now)
                 except Exception as e:  # signature failed: fall through and render, never skip a frame silently
                     print(f"[runner] view signature failed: {e}", flush=True)

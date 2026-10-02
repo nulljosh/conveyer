@@ -12,7 +12,7 @@ import factorio_rcon as f
 
 ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / ".world" / "tiles.json"
-TARGETS = {"automation-science-pack": 300, "logistic-science-pack": 300}
+TARGETS = {"automation-science-pack": 300, "logistic-science-pack": 300, "chemical-science-pack": 300}
 RAW = {"iron-plate", "copper-plate", "steel-plate", "stone-brick", "coal", "plastic-bar", "sulfur"}
 OX, OY, CW, CH, COLS = -28, 4, 9, 6, 3  # tile grid origin and cell size; cells that can't hold a tile are skipped
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=60)

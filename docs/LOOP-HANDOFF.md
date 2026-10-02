@@ -1,4 +1,14 @@
-# Conveyer loop handoff (2026-10-02)
+# Conveyer loop handoff (2026-10-02, afternoon)
+
+## Latest: runs on the real save, memory fixed, goal is a rocket
+
+Fixed: the 18 GB balloon was get_entities() scanning the whole base every observation. Runner caps it at 30 tiles; it idles at about 165 MB. Menu bar stays down after a stop or memory kill and only restarts while the server is up. `scripts/world.sh` puts the server on a copy of a.zip. `scripts/snap.py` copies a screenshot into shots/ and logs a benchmark row (entities, steps, ok, rss) to shots/bench.jsonl every 5 min, and stops when runner.pid is gone.
+
+Base at start (benchmark baseline): 2316 entities, 39 techs researched, 3 labs, 36 assembler-2, 27 electric drills, 41 steel furnaces, 6 boilers, 10 engines. Researching flammables. Open: advanced-circuit, sulfur-processing, solar-energy, concrete. rocket-silo is not researched.
+
+Goal: build a rocket and launch it. Order: keep labs fed so research never stalls, then oil (pumpjack exists), advanced circuits, plastic, sulfur, then utility and production science, then the silo. Do not clear anything in the base. Skills ask for direction as UP/DOWN/LEFT/RIGHT; harvest then mine places a drill; smelt needs the drill already there.
+
+# (older) 2026-10-02 morning
 
 ## Latest: running on Joshua's real world (a.zip copy)
 

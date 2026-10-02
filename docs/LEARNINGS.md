@@ -14,3 +14,4 @@ Newest at the bottom. One line each.
 - Training idea: every runner step is already a (state, skill, result) row. Log them, keep the ok ones, fine-tune the local model on the picks.
 - Iron stock in chests ran dry after ~1500 plates. scripts/withdraw.py pulls plates from furnace outputs over RCON (a shortcut, the character does not walk there). Real fix is automated iron into science.
 - Game runs at ~7x real time and is not paused between steps, so labs finish units fast. Science pack supply is the limit, not lab count. Research queue held pack-wasting extras (fluid wagon, solar, defender); set a strict queue with force.research_queue.
+- Cable chest ran dry. Hand-craft cable from copper plates instead (science.sh withdraws N*3 copper). SKIP_IRON=1 reuses plates already in the bag.

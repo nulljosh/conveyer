@@ -1,6 +1,11 @@
 import SwiftUI
 import Darwin
 
+extension Status {
+    /// The game reports ok even when a skill threw, so also read the message.
+    var worked: Bool { ok && !message.contains("Exception") && !message.contains("Error occurred") }
+}
+
 struct Status: Decodable {
     let step: Int
     let skill: String
@@ -172,7 +177,14 @@ struct ConveyerMonitorApp: App {
                             Spacer()
                             Text("\(r.percent)%").font(.system(size: 12))
                         }
-                        ProgressView(value: Double(r.percent), total: 100)
+                        GeometryReader { g in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(Color.secondary.opacity(0.25))
+                                Capsule().fill(Color.accentColor)
+                                    .frame(width: g.size.width * CGFloat(min(max(r.percent, 0), 100)) / 100)
+                            }
+                        }
+                        .frame(height: 6)
                         let next = r.queue.dropFirst().map { Research.nice($0).lowercased() }
                         Text(next.isEmpty ? "\(r.techs) techs done" : "\(r.techs) techs done. Next: \(next.joined(separator: ", "))")
                             .font(.system(size: 11))
@@ -183,9 +195,9 @@ struct ConveyerMonitorApp: App {
                     HStack(spacing: 4) {
                         Text(s.skill)
                             .font(.system(size: 12, weight: .semibold))
-                        Text(s.ok ? "done" : "didn't work")
+                        Text(s.worked ? "done" : "didn't work")
                             .font(.system(size: 11))
-                            .foregroundStyle(s.ok ? Color.secondary : Color.red)
+                            .foregroundStyle(s.worked ? Color.secondary : Color.red)
                         Spacer()
                         Text("step \(s.step)")
                             .font(.system(size: 11))
@@ -251,7 +263,7 @@ struct ConveyerMonitorApp: App {
             return "\(Research.nice(r.current)) \(r.percent)%"
         }
         guard let s = poller.status, s.skill != "?" else { return "…" }
-        let dot = s.ok ? "●" : "○"
+        let dot = s.worked ? "●" : "○"
         return "\(dot) \(Self.narrate(s.skill))"
     }
 

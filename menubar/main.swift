@@ -307,7 +307,14 @@ struct PlayerMarker: View {
                 let y = (g.size.height - f.h * s) / 2 + (f.h / 2 + (p.y - f.cy) * f.ppt) * s
                 ZStack {
                     Circle().fill(Color.accentColor.opacity(m.moving ? 0.28 : 0.14)).frame(width: 38, height: 38)
-                    HardHatFigure(heading: m.heading, swing: m.moving && m.step % 2 == 0, walking: m.moving)
+                    if m.moving {
+                        // 12 fps walk cycle, only while he is actually moving; standing still has no timer at all
+                        TimelineView(.animation(minimumInterval: 1.0 / 12)) { ctx in
+                            HardHatFigure(heading: m.heading, phase: sin(ctx.date.timeIntervalSinceReferenceDate * 11), walking: true)
+                        }
+                    } else {
+                        HardHatFigure(heading: m.heading, phase: 0, walking: false)
+                    }
                 }
                 .position(x: x, y: y)
                 .animation(.linear(duration: 0.2), value: m.pos)
@@ -320,7 +327,7 @@ struct PlayerMarker: View {
 /// An original little engineer seen from above: grey armor, a pack on the back, orange helmet with a visor that points the way it walks.
 struct HardHatFigure: View {
     var heading: Double   // degrees, 0 = east
-    var swing: Bool
+    var phase: Double     // -1...1 walk cycle, 0 when standing
     var walking: Bool
     private let glove = Color(red: 0.30, green: 0.31, blue: 0.33)
     var body: some View {
@@ -329,14 +336,16 @@ struct HardHatFigure: View {
             RoundedRectangle(cornerRadius: 2).fill(Color(red: 0.62, green: 0.40, blue: 0.14)).frame(width: 13, height: 9).offset(y: 8)  // pack
             Capsule().fill(Color(red: 0.50, green: 0.53, blue: 0.56)).frame(width: 24, height: 12)                                        // armor
             Capsule().stroke(Color(red: 0.28, green: 0.30, blue: 0.33), lineWidth: 1).frame(width: 24, height: 12)
-            Circle().fill(glove).frame(width: 6, height: 6).offset(x: -13, y: swing ? -3 : 3)                                             // arms swing as it walks
-            Circle().fill(glove).frame(width: 6, height: 6).offset(x: 13, y: swing ? 3 : -3)
+            Ellipse().fill(Color(red: 0.20, green: 0.21, blue: 0.23)).frame(width: 6, height: 8).offset(x: -5, y: 9 + 4 * phase)         // feet step in turn
+            Ellipse().fill(Color(red: 0.20, green: 0.21, blue: 0.23)).frame(width: 6, height: 8).offset(x: 5, y: 9 - 4 * phase)
+            Circle().fill(glove).frame(width: 6, height: 6).offset(x: -13, y: -3.5 * phase)                                              // arms swing opposite the feet
+            Circle().fill(glove).frame(width: 6, height: 6).offset(x: 13, y: 3.5 * phase)
             Circle().fill(Color(red: 0.96, green: 0.50, blue: 0.10)).frame(width: 14, height: 14)                                         // helmet
             Circle().fill(Color.white.opacity(0.30)).frame(width: 5, height: 5).offset(x: -2, y: 2)
             Capsule().fill(Color(red: 0.20, green: 0.22, blue: 0.25)).frame(width: 9, height: 4).offset(y: -8)                            // visor, points forward
         }
         .rotationEffect(.degrees(heading + 90))   // drawn facing north; north is heading -90
-        .scaleEffect(walking ? 1.06 : 1.0)
+        .scaleEffect(1.0 + (walking ? 0.05 + 0.03 * abs(phase) : 0))   // small bob while walking
     }
 }
 

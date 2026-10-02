@@ -16,6 +16,7 @@ PY
   # every 5th pass top up boilers and furnaces (the west outpost boiler starved six iron drills when this only ran on refills)
   i=$((i+1)); if [ $((i % 5)) -eq 1 ]; then $W scripts/withdraw.py coal 150 >/dev/null 2>&1; $W scripts/fuel.py >/dev/null 2>&1; $W scripts/journal.py snapshot >/dev/null 2>&1; fi
   $W scripts/planner.py step >> planner.log 2>&1   # keep the tiles supplied
+  $W scripts/speed.py >> planner.log 2>&1            # CPU aware: game speed follows machine load
   echo "$(date +%H:%M:%S) idle labs: $idle"
   if [ "${idle:-0}" -gt 0 ]; then
     $W scripts/withdraw.py coal 300 >/dev/null 2>&1; $W scripts/fuel.py >/dev/null 2>&1

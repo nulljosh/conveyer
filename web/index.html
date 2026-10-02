@@ -24,36 +24,35 @@
   h1, h2, h3 { text-wrap: balance; }
   code { font-family: var(--font-code, ui-monospace, "SF Mono", Menlo, monospace); font-size: .9em; background: var(--color-code-bg, #ebe4d3); padding: .1em .35em; border-radius: 4px; }
   .sheet-rule { display: flex; align-items: center; gap: 16px; padding: 14px 20px 0; font-size: 13px; letter-spacing: .08em; font-variant: var(--caption, small-caps); font-weight: 500; color: var(--text2, rgba(31,27,22,.6)); }
-  .sheet-rule::before { content: ""; order: 1; flex: 1; height: 1px; background: var(--border, #dcd2bd); }
+  .sheet-rule { position: absolute; top: 0; left: 0; right: 0; z-index: 5; color: rgba(255,255,255,.8); text-shadow: 0 1px 8px rgba(0,0,0,.5); }
+  .sheet-rule::before { content: ""; order: 1; flex: 1; height: 1px; background: rgba(255,255,255,.3); }
   .sheet-rule > :first-child { order: 0; } .sheet-rule > :last-child { order: 2; }
   .sheet-rule a { text-decoration: none; display: inline-block; padding: 12px 6px; margin: -12px -6px; } .sheet-rule a:hover { text-decoration: underline; }
-  .hero { text-align: center; padding: 88px 20px 48px; display: flex; flex-direction: column; align-items: center; }
-  .mark { width: 92px; height: 92px; border-radius: 22px; }
-  .hero h1 { font-size: clamp(2.6rem, 8vw, 5rem); line-height: 1.02; letter-spacing: -.035em; font-weight: 700; margin-top: 18px; }
-  .eyebrow { margin-top: 14px; font-size: 14px; font-variant: var(--caption, small-caps); letter-spacing: .08em; font-weight: 600; }
-  .lede { font-size: 1.2rem; color: var(--text2, rgba(31,27,22,.6)); max-width: 30ch; margin: 18px auto 0; }
+  /* hero: the map is the wallpaper, pinned; the page slides over it */
+  .hero { position: sticky; top: 0; z-index: 0; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 72px 20px 56px; color: #fff;
+          background: radial-gradient(ellipse 70% 55% at 50% 40%, rgba(16,12,8,.68), rgba(16,12,8,.28) 70%, rgba(16,12,8,.1)), linear-gradient(180deg, rgba(16,12,8,.35), rgba(16,12,8,.15) 60%, rgba(16,12,8,.55)), url(base.png) 40% 22% / cover no-repeat #3a2f23; }
+  .hero > * { position: relative; }
+  .mark { width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+  .hero h1 { font-size: clamp(2.6rem, 8vw, 5rem); line-height: 1.02; letter-spacing: -.035em; font-weight: 700; margin-top: 18px; text-shadow: 0 2px 24px rgba(0,0,0,.45); }
+  .eyebrow { margin-top: 14px; font-size: 14px; font-variant: var(--caption, small-caps); letter-spacing: .08em; font-weight: 600; opacity: .92; }
+  .lede { font-size: 1.2rem; color: rgba(255,255,255,.82); max-width: 30ch; margin: 18px auto 0; text-shadow: 0 1px 14px rgba(0,0,0,.5); }
   .cta { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-  .btn { display: inline-block; padding: 10px 18px; border-radius: var(--radius-pill, 999px); border: 1px solid var(--text, #1f1b16); text-decoration: none; font-size: .95rem; font-weight: 500; }
-  .btn.solid { background: var(--text, #1f1b16); color: var(--bg, #f5f0e4); } .btn:hover { opacity: .85; }
-  .stage { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
-  .win { border: 1px solid var(--border2, #ebe4d3); border-radius: var(--radius-lg, 18px); background: var(--bg2, #ebe4d3); overflow: hidden; box-shadow: var(--shadow-lg, 0 12px 36px rgba(60,40,20,.12)); }
-  .bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--border, #dcd2bd); font-size: .8rem; color: var(--text2, rgba(31,27,22,.6)); }
-  .bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--border, #dcd2bd); } .bar span { margin-left: 10px; }
-  .panes { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
-  .map img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; aspect-ratio: 1.15; }
-  .live { padding: 22px 22px 24px; border-left: 1px solid var(--border, #dcd2bd); display: flex; flex-direction: column; gap: 6px; }
-  .live small { font-size: .8rem; font-variant: var(--caption, small-caps); letter-spacing: .06em; color: var(--text2, rgba(31,27,22,.6)); font-weight: 600; }
-  .live b.big { font-size: 1.5rem; letter-spacing: -.02em; line-height: 1.15; }
-  .meter { height: 8px; border-radius: 99px; background: var(--border, #dcd2bd); overflow: hidden; margin: 6px 0 2px; }
-  .meter i { display: block; height: 100%; width: 0%; background: var(--accent, #b3461f); border-radius: 99px; }
-  .live p { font-size: .9rem; color: var(--text2, rgba(31,27,22,.6)); }
-  .live ol { margin: 4px 0 0 1.1rem; font-size: .9rem; } .live li { margin-top: 4px; } .live li span { color: var(--text2, rgba(31,27,22,.6)); }
-  .plate-cap { margin: 14px 0 0; text-align: center; font-size: 13px; letter-spacing: .08em; font-variant: var(--caption, small-caps); font-weight: 500; color: var(--text2, rgba(31,27,22,.6)); }
+  .btn { display: inline-block; padding: 10px 18px; border-radius: var(--radius-pill, 999px); border: 1px solid rgba(255,255,255,.55); color: #fff; text-decoration: none; font-size: .95rem; font-weight: 500; }
+  .btn.solid { background: #fff; color: #1f1b16; border-color: #fff; } .btn:hover { opacity: .85; }
+  .glass { margin-top: 40px; width: min(440px, 100%); text-align: left; padding: 18px 20px 20px; border-radius: 18px; background: rgba(245,240,228,.13); border: 1px solid rgba(255,255,255,.22); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); }
+  .glass small { font-size: .78rem; font-variant: var(--caption, small-caps); letter-spacing: .08em; font-weight: 600; opacity: .8; }
+  .glass b.big { display: block; font-size: 1.4rem; letter-spacing: -.02em; line-height: 1.2; margin-top: 2px; }
+  .meter { height: 7px; border-radius: 99px; background: rgba(255,255,255,.22); overflow: hidden; margin: 10px 0 6px; }
+  .meter i { display: block; height: 100%; width: 0%; background: var(--bulb, #ffca30); border-radius: 99px; }
+  .glass p { font-size: .88rem; color: rgba(255,255,255,.78); }
+  .glass ol { margin: 8px 0 0 1.1rem; font-size: .88rem; color: rgba(255,255,255,.9); } .glass li { margin-top: 3px; }
+  .plate-cap { margin: 18px 0 0; font-size: 12px; letter-spacing: .08em; font-variant: var(--caption, small-caps); font-weight: 500; color: rgba(255,255,255,.62); }
+  .sheet { position: relative; z-index: 1; background: var(--bg, #f5f0e4); border-radius: 28px 28px 0 0; box-shadow: 0 -18px 50px rgba(0,0,0,.28); padding-top: 8px; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 0 20px; }
   .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 760px; margin: 72px auto 0; padding: 0 20px; }
   .fact { border: 1px solid var(--border, #dcd2bd); border-radius: var(--radius, 12px); padding: 16px 14px; background: var(--bg2, #ebe4d3); text-align: center; }
   .fact b { display: block; font-size: 1.6rem; letter-spacing: -.03em; line-height: 1.1; } .fact span { font-size: .8rem; color: var(--text2, rgba(31,27,22,.6)); }
-  section.copy { padding-top: 72px; } section.copy h2 { font-size: 1.7rem; letter-spacing: -.025em; margin-bottom: 14px; }
+  section.copy { padding-top: 56px; } section.copy h2 { position: sticky; top: 0; z-index: 3; background: var(--bg, #f5f0e4); padding: 14px 0 10px; font-size: 1.7rem; letter-spacing: -.025em; margin-bottom: 8px; }
   .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
   .step { border-top: 2px solid var(--accent, #b3461f); padding-top: 10px; } .step b { display: block; font-size: .95rem; } .step span { font-size: .85rem; color: var(--text2, rgba(31,27,22,.6)); }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
@@ -71,42 +70,33 @@
   .js .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; } .js .reveal.in { opacity: 1; transform: none; }
   @media (max-width: 720px) {
     .hero { padding: 48px 16px 32px; } .hero h1 { font-size: clamp(2.4rem, 12vw, 3.2rem); } .lede { font-size: 1.05rem; } .mark { width: 72px; height: 72px; }
-    .btn { padding: 13px 20px; min-height: 44px; } .stage { padding: 0 12px; } .wrap { padding: 0 16px; }
-    .panes { grid-template-columns: minmax(0, 1fr); } .live { border-left: 0; border-top: 1px solid var(--border, #dcd2bd); }
+    .btn { padding: 13px 20px; min-height: 44px; } .hero { background-position: 30% 22%; } .wrap { padding: 0 16px; }
     .facts, .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cols { grid-template-columns: minmax(0, 1fr); } .foot-dir { grid-template-columns: repeat(2, 1fr); }
   }
-  @media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .hero { position: relative; } .js .reveal { opacity: 1; transform: none; transition: none; } }
 </style>
 </head>
 <body id="top">
 <div class="sheet-rule" aria-hidden="true"><span>Conveyer</span><span><a href="https://github.com/nulljosh/conveyer" tabindex="-1">GitHub</a></span></div>
-<main>
 <header class="hero">
   <img class="mark" src="icon.svg" alt="">
   <h1>Introducing<br>Conveyer.</h1>
   <p class="eyebrow">An LLM plays Factorio.</p>
   <p class="lede">On a real save. It reads the game, picks one move, and repeats.</p>
   <div class="cta"><a class="btn solid" href="https://github.com/nulljosh/conveyer">View on GitHub</a><a class="btn" href="#run">Run it</a></div>
+  <div class="glass">
+    <small>Researching now</small>
+    <b class="big">Advanced oil processing</b>
+    <div class="meter" role="img" aria-label="0 percent"><i></i></div>
+    <p>0% &middot; Labs idle, waiting for science packs</p>
+    <small style="display:block;margin-top:12px">Next</small>
+    <ol><li>Automated green science</li><li>Oil chain running</li><li>Advanced oil processing researched</li></ol>
+  </div>
+  <p class="plate-cap">The wallpaper is the real base, drawn from game state, 2 Oct 2026</p>
 </header>
 
-<div class="stage">
-  <div class="win">
-    <div class="bar"><i></i><i></i><i></i><span>The base, live from the game</span></div>
-    <div class="panes">
-      <div class="map"><img src="base.png" width="1024" height="1024" alt="Top-down map of the real Factorio base, drawn from game state"></div>
-      <div class="live">
-        <small>Researching</small>
-        <b class="big">Advanced oil processing</b>
-        <div class="meter" role="img" aria-label="0 percent"><i></i></div>
-        <p>0% &middot; Labs idle, waiting for science packs</p>
-        <small style="margin-top:14px">Next</small>
-        <ol><li>Automated green science</li><li>Oil chain running</li><li>Advanced oil processing researched</li></ol>
-      </div>
-    </div>
-  </div>
-  <p class="plate-cap">Drawn from game state, 2 Oct 2026</p>
-</div>
-
+<div class="sheet">
+<main>
 <div class="facts reveal">
   <div class="fact"><b>43</b><span>techs researched</span></div>
   <div class="fact"><b>2,320</b><span>things on the base</span></div>
@@ -167,6 +157,7 @@ python3 runner.py --env-id open_play
   </nav>
   <div class="foot-bar">Conveyer &middot; MIT License &middot; &copy; 2026 Joshua Trommel &middot; Unaffiliated with Wube Software</div>
 </footer>
+</div>
 <script>
 (function () {
   var els = document.querySelectorAll(".reveal");

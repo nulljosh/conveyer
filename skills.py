@@ -308,6 +308,14 @@ assert engine.energy > 0, "SKILL_FAIL build_power: steam engine has no energy af
 print(f"SKILL_OK build_power: steam engine at {{engine.position}} generating {{engine.energy}}")
 ''',
     },
+    "goto": {
+        "params": ["position"],
+        "doc": "Walk to `position` (x,y). Do this before collect/feed/place on anything far away.",
+        "template": '''
+p = move_to(Position({position}))
+print(f"SKILL_OK goto: now at {{p}}")
+''',
+    },
     "inspect": {
         "params": [],
         "doc": "Print current inventory and nearby entities. Use this when unsure what state "

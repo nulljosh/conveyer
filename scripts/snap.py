@@ -11,12 +11,15 @@ a = ap.parse_args()
 (ROOT / "shots").mkdir(exist_ok=True)
 LUA = ("/silent-command local n=0 local s=0 for _,e in pairs(game.surfaces[1].find_entities_filtered{force='player'}) "
        "do if e.type~='character' then n=n+1 end end rcon.print(n)")
+TECH = "/silent-command local n=0 for _,x in pairs(game.forces.player.technologies) do if x.researched then n=n+1 end end rcon.print(n)"
 end = time.time() + a.hours * 3600
 while time.time() < end and (ROOT / "runner.pid").exists():
     t = time.strftime("%Y%m%d-%H%M%S")
     shutil.copy(ROOT / "preview.png", ROOT / "shots" / f"{t}.png")
+    techs = -1
     try:
         c = factorio_rcon.RCONClient("127.0.0.1", 27000, "factorio"); entities = int(c.send_command(LUA).strip())
+        techs = int(c.send_command(TECH).strip())
     except Exception:
         entities = -1
     log = Path("/tmp/conveyer_runner.log").read_text(errors="ignore")
@@ -24,7 +27,7 @@ while time.time() < end and (ROOT / "runner.pid").exists():
     ok = sum(1 for _, o in steps if o == "True")
     pid = (ROOT / "runner.pid").read_text().strip()
     rss = subprocess.run(["ps", "-o", "rss=", "-p", pid], capture_output=True, text=True).stdout.strip() or "0"
-    row = {"t": t, "entities": entities, "steps": len(steps), "ok": ok, "rss_mb": round(int(rss) / 1024)}
+    row = {"t": t, "entities": entities, "techs": techs, "steps": len(steps), "ok": ok, "rss_mb": round(int(rss) / 1024)}
     with open(ROOT / "shots" / "bench.jsonl", "a") as f: f.write(json.dumps(row) + "\n")
     print(row, flush=True)
     time.sleep(a.mins * 60)

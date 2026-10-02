@@ -8,7 +8,7 @@ payload="$1"
 before=$(cat runner_seq.txt 2>/dev/null || echo 0)
 echo "$payload" > runner_cmd.json
 
-for _ in $(seq 1 60); do
+for _ in $(seq 1 600); do
   after=$(cat runner_seq.txt 2>/dev/null || echo 0)
   if [ "$after" != "$before" ]; then
     cat runner_result.json

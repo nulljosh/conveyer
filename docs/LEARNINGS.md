@@ -18,3 +18,4 @@ Newest at the bottom. One line each.
 - The game was PAUSED between steps (FLE pause_after_action), so research and smelting froze whenever the player was not acting. runner.py now sets pause_after_action False. Check game.tick_paused first when research stalls with labs 'working'.
 - A lab placed off the power grid keeps whatever you feed it (4 labs ate 152 green packs). feedlabs.py now skips labs with no electric network.
 - Oil: the pipeline from the far pumpjack already reached the base. A train track crossed the pipe route, so it needed an underground pair. New buildings need a pole bridge to the grid (medium pole reach about 7.5 tiles). place_at ignores direction for plants, rotate over RCON.
+- FLE's Lua state can't be saved: an autosave fails with 'scenario level caused a non-recoverable error' and kills the server. Every crash rolls back to the 10:55 copy. scripts/oil.py rebuilds the oil block in one command; rerun it after any restart.

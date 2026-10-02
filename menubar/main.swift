@@ -1,5 +1,6 @@
 import SwiftUI
 import Darwin
+import Carbon.HIToolbox
 
 extension Status {
     /// The game reports ok even when a skill threw, so also read the message.
@@ -107,6 +108,7 @@ final class StatusPoller: ObservableObject {
     /// Something is on screen: the popover is open or the live window is visible. Everything expensive keys off this.
     @Published var popoverShown = false { didSet { applyWatching() } }
     @Published var windowVisible = false { didSet { applyWatching() } }
+    @Published var hudVisible = false   // the progress panel top left starts hidden; Ctrl+Option+H shows or hides it
     @Published var lastFrame: Date?
     let marker = MarkerModel()
     private var timer: Timer?
@@ -135,6 +137,7 @@ final class StatusPoller: ObservableObject {
     init() {
         poll()
         applyWatching()
+        Hotkey.register { [weak self] in Task { @MainActor in self?.hudVisible.toggle() } }
         // `ConveyerMonitor --open-live` opens the live window straight into full screen
         if CommandLine.arguments.contains("--open-live") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -226,6 +229,18 @@ final class StatusPoller: ObservableObject {
             Task { @MainActor in self.busy = false }
         }
         try? task.run()
+    }
+}
+
+/// Ctrl+Option+H, works from any app and needs no Accessibility permission (Carbon hot key, not an event tap).
+enum Hotkey {
+    nonisolated(unsafe) static var action: (() -> Void)?
+    static func register(_ a: @escaping () -> Void) {
+        action = a
+        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in Hotkey.action?(); return noErr }, 1, &spec, nil, nil)
+        var ref: EventHotKeyRef?
+        RegisterEventHotKey(UInt32(kVK_ANSI_H), UInt32(controlKey | optionKey), EventHotKeyID(signature: 0x43564552, id: 1), GetApplicationEventTarget(), 0, &ref)
     }
 }
 
@@ -368,7 +383,7 @@ struct LiveView: View {
                 }
             }
             .clipped()
-            .overlay(alignment: .topLeading) { hud }
+            .overlay(alignment: .topLeading) { if poller.hudVisible { hud } }
             .overlay { PlayerMarker(m: poller.marker) }
         .frame(minWidth: 520, minHeight: 420)
         .ignoresSafeArea()

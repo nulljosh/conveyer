@@ -21,6 +21,7 @@ struct Research: Decodable {
     let queue: [String]
     let labs: Int?
     let labs_working: Int?
+    let moving: Bool?   // research progress changed in the last 90 s; labs flip faster than we sample
 
     /// "advanced-circuit" -> "Advanced circuit"
     static func nice(_ name: String) -> String {
@@ -94,7 +95,7 @@ final class StatusPoller: ObservableObject {
         switch name {
         case "stopped": runnerAlive = false
         case "failed": status = Status(step: 9, skill: "craft", ok: true, message: "Error occurred:\n Line 2: could not craft LogisticsSciencePack, missing 40 iron-plate", updated_at: Date().timeIntervalSince1970)
-        case "idle": research = Research(current: "advanced-circuit", percent: 36, techs: 41, queue: ["advanced-circuit", "chemical-science-pack"], labs: 9, labs_working: 0)
+        case "idle": research = Research(current: "advanced-circuit", percent: 36, techs: 41, queue: ["advanced-circuit", "chemical-science-pack"], labs: 9, labs_working: 0, moving: false)
         case "nodata": status = nil; research = nil; milestones = []; map = nil
         default: break
         }
@@ -128,6 +129,13 @@ final class StatusPoller: ObservableObject {
     init() {
         poll()
         setLive(liveInterval)
+        // `ConveyerMonitor --open-live` opens the detached window straight into full screen
+        if CommandLine.arguments.contains("--open-live") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                LiveWindow.show(self)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { LiveWindow.window?.toggleFullScreen(nil) }
+            }
+        }
     }
 
     func poll() {
@@ -223,7 +231,10 @@ enum LiveWindow {
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 700),
                          styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         w.title = "Conveyer live"
+        w.appearance = NSAppearance(named: .darkAqua)
+        w.backgroundColor = NSColor(white: 0.11, alpha: 1)
         w.isReleasedWhenClosed = false
+        w.collectionBehavior = [.fullScreenPrimary]  // without this the green button and toggleFullScreen do nothing
         w.contentView = NSHostingView(rootView: LiveView(poller: poller))
         w.center()
         window = w
@@ -267,9 +278,9 @@ struct LiveView: View {
             if let r = poller.research, !r.current.isEmpty {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
-                        Text("Researching \(Research.nice(r.current).lowercased())").font(.system(size: 13, weight: .semibold))
+                        Text("Researching \(Research.nice(r.current).lowercased())").font(.system(size: 16, weight: .semibold))
                         Spacer()
-                        Text("\(r.percent)%").font(.system(size: 13))
+                        Text("\(r.percent)%").font(.system(size: 16))
                     }
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
@@ -279,28 +290,33 @@ struct LiveView: View {
                     }
                     .frame(height: 6)
                     if let labs = r.labs, let working = r.labs_working {
-                        Text(working == 0 ? "Labs idle, waiting for science packs" : "\(working) of \(labs) labs working")
-                            .font(.system(size: 11)).foregroundStyle(working == 0 ? Color.orange : Color.secondary)
+                        Text(working == 0 && r.moving != true ? "Labs idle, waiting for science packs" : "Research moving, \(working) of \(labs) labs busy")
+                            .font(.system(size: 14)).foregroundStyle(working == 0 && r.moving != true ? Color.orange : Color.secondary)
                     }
                 }
             }
             if let s = poller.status, s.skill != "?" {
                 HStack(spacing: 5) {
                     Circle().fill(s.worked ? Color.green : Color.red).frame(width: 7, height: 7)
-                    Text("Player is \(ConveyerMonitorApp.narrate(s.skill))").font(.system(size: 12))
+                    Text("Player is \(ConveyerMonitorApp.narrate(s.skill))").font(.system(size: 14))
                     Spacer()
                 }
             }
             HStack {
                 Text(poller.lastFrame.map { "Frame \($0.formatted(date: .omitted, time: .standard))" } ?? "No frame yet")
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .font(.system(size: 13)).foregroundStyle(.secondary)
                 Spacer()
-                Text("Refresh every").font(.system(size: 11)).foregroundStyle(.secondary)
+                Button { LiveWindow.window?.toggleFullScreen(nil) } label: {
+                    Label("Full screen", systemImage: "arrow.up.left.and.arrow.down.right").font(.system(size: 13))
+                }
+                Text("Refresh every").font(.system(size: 13)).foregroundStyle(.secondary)
                 RefreshPicker(poller: poller)
             }
         }
         .padding(12)
         .frame(minWidth: 520, minHeight: 480)
+        .background(Color(white: 0.11))
+        .environment(\.colorScheme, .dark)
     }
 }
 
@@ -407,10 +423,11 @@ struct ConveyerMonitorApp: App {
                         }
                         .frame(height: 6)
                         if let labs = r.labs, let working = r.labs_working {
-                            Label(working == 0 ? "Labs idle, waiting for science packs" : "\(working) of \(labs) labs working",
-                                  systemImage: working == 0 ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
+                            let stalled = working == 0 && r.moving != true
+                            Label(stalled ? "Labs idle, waiting for science packs" : "Research moving, \(working) of \(labs) labs busy",
+                                  systemImage: stalled ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
                                 .font(.system(size: 11))
-                                .foregroundStyle(working == 0 ? Color.orange : Color.secondary)
+                                .foregroundStyle(stalled ? Color.orange : Color.secondary)
                         }
                         let next = r.queue.dropFirst().first.map { Research.nice($0).lowercased() }
                         Text(next.map { "\(r.techs) techs done. Then \($0)" } ?? "\(r.techs) techs done")

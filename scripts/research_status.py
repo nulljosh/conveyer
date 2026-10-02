@@ -14,10 +14,14 @@ LUA = ("/silent-command local F=game.forces.player local r=F.current_research lo
        "local q={} for _,t in pairs(F.research_queue) do q[#q+1]=t.name end "
        "local labs=game.surfaces[1].find_entities_filtered{name='lab'} local w=0 for _,l in pairs(labs) do if l.status==defines.entity_status.working then w=w+1 end end "
        "rcon.print(helpers.table_to_json{current=r and r.name or '', percent=math.floor(F.research_progress*100), techs=n, queue=q, labs=#labs, labs_working=w, silo_done=sd, silo_total=sn})")
+last = (None, -1, -1, time.time())
 while (ROOT / "runner.pid").exists():
     try:
         rcon = factorio_rcon.RCONClient("127.0.0.1", 27000, "factorio")
-        (ROOT / "research.json").write_text(rcon.send_command(LUA))
+        d = json.loads(rcon.send_command(LUA)); now = time.time()
+        if (d["current"], d["percent"], d["techs"]) != last[:3]: last = (d["current"], d["percent"], d["techs"], now)
+        d["moving"] = now - last[3] < 90
+        (ROOT / "research.json").write_text(json.dumps(d))
         terrain.refresh(rcon)
     except Exception:
         pass

@@ -26,6 +26,11 @@ from fle.env.gym_env.registry import list_available_environments
 import skills
 
 WIDE_R = 60  # half-width of the screenshot in tiles; the view is 2*WIDE_R x 68 tiles
+WIDE = {"sig": None, "c": None, "t": 0.0}  # last wide render: base signature, player position, time
+VIEW_SIG = ("/silent-command local s=game.surfaces[1] local ch=s.find_entities_filtered{type='character'}[1] local n,h=0,0 "
+            "for _,e in pairs(s.find_entities_filtered{position=ch.position,radius=70,force='player'}) do if e.type~='character' then "
+            "n=n+1 h=(h*31+math.floor(e.position.x*2)*7+math.floor(e.position.y*2)*13+#e.name)%1000000007 end end "
+            "rcon.print(n..':'..h..','..ch.position.x..','..ch.position.y)")
 
 CMD_PATH = Path("runner_cmd.json")
 RESULT_PATH = Path("runner_result.json")
@@ -180,17 +185,29 @@ def main() -> None:
             # repeated grid, not useful signal. Character/entities/trees/water
             # are untouched.
             t0 = time.time()
-            # Wide view (touch .wide to enable): 120 x 68 tiles = 1920 x 1088 px, 1:1 on a 1080p screen. It draws the whole base
-            # (about 2,700 entities) and took 27.8 s a frame, so it stays off until the renderer is incremental.
-            wide = Path(__file__).with_name(".wide").exists()
-            R = WIDE_R if wide else 32
+            # Wide view: 120 x 68 tiles = 1920 x 1088 px, 1:1 on a 1080p screen, so nothing is magnified. It draws the whole base
+            # (about 2,700 entities) in ~28 s, so it only re-renders when the base changed (cheap Lua signature), when the player
+            # walked 25+ tiles away, or every 10 minutes. `.square` brings back the fast 64 x 64 frame (1.3 s) for debugging.
+            square = Path(__file__).with_name(".square").exists()
+            if not square:
+                try:
+                    import factorio_rcon as _fr
+                    sig, px, py = _fr.RCONClient("127.0.0.1", 27000, "factorio", timeout=20).send_command(VIEW_SIG).split(",")
+                    px, py, now = float(px), float(py), time.time()
+                    moved = WIDE["c"] is not None and ((px - WIDE["c"][0]) ** 2 + (py - WIDE["c"][1]) ** 2) ** 0.5 > 25
+                    if WIDE["sig"] is not None and not moved and now - WIDE["t"] < 600 and (sig == WIDE["sig"] or now - WIDE["t"] < 60):
+                        return
+                    WIDE.update(sig=sig, c=(px, py), t=now)
+                except Exception as e:  # signature failed: fall through and render, never skip a frame silently
+                    print(f"[runner] view signature failed: {e}", flush=True)
+            R = WIDE_R if not square else 32
             renderer = render_tool.get_renderer_from_map(
-                include_status=False, radius=WIDE_R if wide else 18, compression_level="binary",
+                include_status=False, radius=WIDE_R if not square else 18, compression_level="binary",
                 max_render_radius=R, position=None,
             )
             entity_names = sorted({e.name for e in renderer.entities})
             renderer.resources = []
-            if wide:
+            if not square:
                 renderer.get_size = lambda: {"minX": -R, "minY": -34, "maxX": R, "maxY": 34, "width": 2 * R, "height": 68}
                 image = renderer.render(2 * R * 16, 68 * 16, render_tool.image_resolver)
             else:

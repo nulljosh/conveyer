@@ -269,32 +269,28 @@ struct LiveView: View {
     /// The map fills the whole window; the status bar floats on top of it so nothing is letterboxed.
     var body: some View {
         Color(white: 0.11)
-            .overlay {   // blurred copy fills the window; overlays never change the parent's size
+            .overlay {   // fills the window; the frame is 1920 x 1088, so on a 1080p screen this is 1:1, not magnified
                 if let map = poller.map {
-                    Image(nsImage: map).resizable().scaledToFill().blur(radius: 38).opacity(0.55)
-                }
-            }
-            .clipped()
-            .overlay {   // the sharp map at close to 1:1, never magnified to fill
-                if let map = poller.map {
-                    Image(nsImage: map).resizable().interpolation(.high).scaledToFit()
+                    Image(nsImage: map).resizable().interpolation(.high).scaledToFill()
                 } else {
                     Text("Waiting for the first frame").foregroundStyle(.secondary)
                 }
             }
-            .overlay(alignment: .bottom) { hud }
+            .clipped()
+            .overlay(alignment: .topLeading) { hud }
+            .overlay(alignment: .topTrailing) { RefreshPicker(poller: poller).padding(10).opacity(0.75) }
         .frame(minWidth: 520, minHeight: 420)
         .ignoresSafeArea()
         .environment(\.colorScheme, .dark)
     }
 
     private var hud: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 5) {
             if let r = poller.research, !r.current.isEmpty {
-                HStack {
-                    Text("Researching \(Research.nice(r.current).lowercased())").font(.system(size: 16, weight: .semibold))
-                    Spacer()
-                    Text("\(r.percent)%").font(.system(size: 16))
+                HStack(spacing: 8) {
+                    Text(Research.nice(r.current)).font(.system(size: 14, weight: .semibold))
+                    Spacer(minLength: 12)
+                    Text("\(r.percent)%").font(.system(size: 14)).monospacedDigit()
                 }
                 GeometryReader { g in
                     ZStack(alignment: .leading) {
@@ -302,27 +298,24 @@ struct LiveView: View {
                         Capsule().fill(Color.accentColor).frame(width: g.size.width * CGFloat(min(max(r.percent, 0), 100)) / 100)
                     }
                 }
-                .frame(height: 6)
+                .frame(height: 5)
                 if let labs = r.labs, let working = r.labs_working {
                     let stalled = working == 0 && r.moving != true
-                    Text(stalled ? "Labs idle, waiting for science packs" : "Research moving, \(working) of \(labs) labs busy")
-                        .font(.system(size: 14)).foregroundStyle(stalled ? Color.orange : Color.secondary)
+                    Text(stalled ? "Labs idle, waiting for packs" : "\(working) of \(labs) labs busy")
+                        .font(.system(size: 12)).foregroundStyle(stalled ? Color.orange : Color.white.opacity(0.7))
                 }
             }
-            HStack(spacing: 8) {
-                if let s = poller.status, s.skill != "?" {
-                    Circle().fill(s.worked ? Color.green : Color.red).frame(width: 7, height: 7)
-                    Text("Player is \(ConveyerMonitorApp.narrate(s.skill))").font(.system(size: 13))
+            if let s = poller.status, s.skill != "?" {
+                HStack(spacing: 5) {
+                    Circle().fill(s.worked ? Color.green : Color.red).frame(width: 6, height: 6)
+                    Text("Player is \(ConveyerMonitorApp.narrate(s.skill))").font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
                 }
-                Text(poller.lastFrame.map { "Frame \($0.formatted(date: .omitted, time: .standard))" } ?? "No frame yet")
-                    .font(.system(size: 13)).foregroundStyle(.secondary)
-                Spacer()
-                Text("Refresh every").font(.system(size: 13)).foregroundStyle(.secondary)
-                RefreshPicker(poller: poller)
             }
         }
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .background(.black.opacity(0.62))
+        .padding(12)
+        .frame(width: 270, alignment: .leading)
+        .background(.black.opacity(0.58), in: RoundedRectangle(cornerRadius: 10))
+        .padding(12)
     }
 }
 

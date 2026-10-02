@@ -14,7 +14,7 @@ PY
   echo "$(date +%H:%M:%S) idle labs: $idle"
   if [ "${idle:-0}" -gt 0 ]; then
     $W scripts/withdraw.py coal 300 >/dev/null 2>&1; $W scripts/fuel.py >/dev/null 2>&1
-    scripts/science.sh 60
+    scripts/science.sh 150
     $W scripts/oil.py
   fi
   sleep 60

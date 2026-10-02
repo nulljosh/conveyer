@@ -412,22 +412,44 @@ struct Triangle: Shape {
 struct LiveView: View {
     @ObservedObject var poller: StatusPoller
     /// The map fills the whole window; the status bar floats on top of it so nothing is letterboxed.
+    /// Follow camera: the map, dots and player share one zoomed layer that is panned so the player stays in the middle, clamped to the picture's edge.
+    private let zoom: CGFloat = 1.7
     var body: some View {
-        Color(white: 0.11)
-            .overlay {   // fills the window; the frame is 1920 x 1088, so on a 1080p screen this is 1:1, not magnified
-                if let map = poller.map {
-                    Image(nsImage: map).resizable().interpolation(.high).scaledToFill()
-                } else {
-                    Text("Waiting for the first frame").foregroundStyle(.secondary)
+        GeometryReader { g in
+            let f = poller.marker.frame
+            let s0 = f.map { max(g.size.width / $0.w, g.size.height / $0.h) } ?? 1
+            let off = cameraOffset(g.size, f, s0)
+            ZStack {
+                Color(white: 0.11)
+                Group {
+                    ZStack {
+                        if let map = poller.map {
+                            Image(nsImage: map).resizable().interpolation(.high).scaledToFill().frame(width: g.size.width, height: g.size.height).clipped()
+                        } else {
+                            Text("Waiting for the first frame").foregroundStyle(.secondary)
+                        }
+                        StatusDots(m: poller.marker)
+                        PlayerMarker(m: poller.marker)
+                    }
+                    .scaleEffect(zoom)
+                    .offset(x: off.width, y: off.height)
+                    .animation(.linear(duration: 0.25), value: off.width)
+                    .animation(.linear(duration: 0.25), value: off.height)
                 }
             }
             .clipped()
             .overlay(alignment: .topLeading) { if poller.hudVisible { hud } }
-            .overlay { StatusDots(m: poller.marker) }
-            .overlay { PlayerMarker(m: poller.marker) }
+        }
         .frame(minWidth: 520, minHeight: 420)
         .ignoresSafeArea()
         .environment(\.colorScheme, .dark)
+    }
+
+    private func cameraOffset(_ size: CGSize, _ f: LiveFrame?, _ s0: CGFloat) -> CGSize {
+        guard let f = f, let p = poller.marker.pos else { return .zero }
+        let qx = (p.x - f.cx) * f.ppt * s0, qy = (p.y - f.cy) * f.ppt * s0      // player relative to the picture's centre, unzoomed
+        let mx = max(0, zoom * f.w * s0 / 2 - size.width / 2), my = max(0, zoom * f.h * s0 / 2 - size.height / 2)   // how far the zoomed picture can slide before showing its edge
+        return CGSize(width: min(max(-zoom * qx, -mx), mx), height: min(max(-zoom * qy, -my), my))
     }
 
     private var hud: some View {

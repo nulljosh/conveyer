@@ -25,13 +25,12 @@ MAP_MAX = 60
 _POSITION = re.compile(r"placed (\w+) at x=(-?[\d.]+) y=(-?[\d.]+)")
 
 # Real base-building milestones — not harvest/inspect/peek/feed noise. Different
-# sound for a bigger step (auto_feed/belt = the automated-chain milestone).
+# sound for a bigger step (smelt/belt = the automated-chain milestone).
 _MILESTONE_SOUND = {
     "mine": "Tink.aiff",
-    "smelt": "Tink.aiff",
+    "smelt": "Glass.aiff",
     "craft": "Pop.aiff",
     "place_at": "Tink.aiff",
-    "auto_feed": "Glass.aiff",
     "belt": "Glass.aiff",
     "research": "Hero.aiff",
 }

@@ -118,13 +118,13 @@ def run_once(run_idx: int) -> bool:
     print(f"  drill: {r.get('observation', r)}", flush=True)
     drill_pos = "x=-16.0,y=-51.0"  # deterministic on this seed
 
-    r = step({"skill": "auto_feed", "params": {"source_position": drill_pos, "drill_prototype": "BurnerMiningDrill", "furnace_prototype": "StoneFurnace"}})
+    r = step({"skill": "smelt", "params": {"source_position": drill_pos, "drill_prototype": "BurnerMiningDrill", "furnace_prototype": "StoneFurnace"}})
     obs = r.get("observation", "")
-    if "SKILL_OK auto_feed" not in obs:
-        # auto_feed partially completed (usually a coal shortfall) — finish by hand
+    if "SKILL_OK smelt" not in obs:
+        # smelt partially completed (usually a coal shortfall) — finish by hand
         step({"skill": "harvest", "params": {"resource": "Coal", "quantity": 25}})
         nearby = step({"skill": "nearby", "params": {"position": drill_pos, "radius": 10}})
-        print(f"  nearby after partial auto_feed: {nearby.get('observation')}", flush=True)
+        print(f"  nearby after partial smelt: {nearby.get('observation')}", flush=True)
         # Best-effort: this seed places the furnace at x=-12,y=-48 consistently.
         target_furnace = "x=-12.0,y=-48.0"
         step({"skill": "feed", "params": {"item_prototype": "Coal", "target_prototype": "StoneFurnace", "target_position": target_furnace, "quantity": 15}})

@@ -17,6 +17,8 @@ plus power, not the full FLE surface (oil, research, chemical plants). Add a
 template here when a new skill is actually needed, not before.
 """
 
+import re
+
 SKILLS = {
     "harvest": {
         "params": ["resource", "quantity"],
@@ -61,27 +63,10 @@ print(f"SKILL_OK mine: placed {drill_prototype} at {{drill.position}} on {resour
     },
     "smelt": {
         "params": ["source_position", "drill_prototype", "furnace_prototype"],
-        "doc": "Place a furnace next to the mining drill (`drill_prototype`, e.g. "
-        "'BurnerMiningDrill') at `source_position` (e.g. 'x=1.0,y=2.0') to catch and smelt its "
+        "doc": "Place a furnace near the mining drill (`drill_prototype`, e.g. "
+        "'BurnerMiningDrill') at `source_position` (e.g. 'x=1.0,y=2.0'), with a burner "
+        "inserter and belt actually carrying ore from the drill into it, and smelt its "
         "output into plates.",
-        "template": '''
-source = get_entity(Prototype.{drill_prototype}, position=Position({source_position}))
-if source is None:
-    raise Exception("No {drill_prototype} found at {source_position} — check the position with `inspect` or `find` first")
-move_to(source.drop_position)
-furnace = place_entity_next_to(Prototype.{furnace_prototype}, reference_position=source.drop_position, direction=Direction.DOWN, spacing=0)
-furnace = insert_item(Prototype.Coal, furnace, quantity=20)
-print(f"SKILL_OK smelt: placed {furnace_prototype} at {{furnace.position}}, fed by source at {{source.position}}")
-''',
-    },
-    "auto_feed": {
-        "params": ["source_position", "drill_prototype", "furnace_prototype"],
-        "doc": "The general-purpose automated drill->furnace chain: places a furnace clear "
-        "of the resource patch, a burner inserter next to it, and a belt from the drill's "
-        "drop_position to the inserter — the inserter then loads the furnace itself. Use "
-        "this instead of `smelt` when direct drop-catch fails on a dense ore patch (a "
-        "furnace/chest touching the drop tile only works when that tile is just outside "
-        "the resource boundary).",
         "template": '''
 source = get_entity(Prototype.{drill_prototype}, position=Position({source_position}))
 if source is None:
@@ -95,14 +80,16 @@ inserter = place_entity_next_to(Prototype.BurnerInserter, reference_position=fur
 inserter = rotate_entity(inserter, Direction.UP)
 inserter = insert_item(Prototype.Coal, inserter, quantity=5)
 belts = connect_entities(source.drop_position, inserter.pickup_position, Prototype.TransportBelt)
-print(f"SKILL_OK auto_feed: furnace at {{furnace.position}} fed via inserter at {{inserter.position}} from drill at {{source.position}}")
+print(f"SKILL_OK smelt: furnace at {{furnace.position}} fed via inserter at {{inserter.position}} from drill at {{source.position}}")
 ''',
     },
     "belt": {
         "params": ["from_prototype", "from_position", "to_prototype", "to_position"],
         "doc": "Connect two existing entities with transport belts. If `to_prototype` has "
         "no pickup_position (a furnace/assembler, not an inserter/drill), places a "
-        "BurnerInserter to feed it and belts into that instead.",
+        "BurnerInserter to feed it and belts into that instead. Same for `from_prototype` "
+        "lacking a drop_position (a furnace/assembler output) — places an extraction "
+        "inserter and belts from that instead.",
         "template": '''
 a = get_entity(Prototype.{from_prototype}, position=Position({from_position}))
 b = get_entity(Prototype.{to_prototype}, position=Position({to_position}))
@@ -110,11 +97,29 @@ if a is None:
     raise Exception("No {from_prototype} found at {from_position} — check the position with `inspect` or `find` first")
 if b is None:
     raise Exception("No {to_prototype} found at {to_position} — check the position with `inspect` or `find` first")
+def _dist2(p, q):
+    return (p.x - q.x) ** 2 + (p.y - q.y) ** 2
+
+source = a
+if not hasattr(a, "drop_position"):
+    existing = get_entities({{Prototype.BurnerInserter}}, position=a.position, radius=3)
+    existing = [e for e in existing if _dist2(e.pickup_position, a.position) < _dist2(e.drop_position, a.position)]
+    if existing:
+        source = existing[0]
+    else:
+        source = place_entity_next_to(Prototype.BurnerInserter, reference_position=a.position, direction=Direction.UP, spacing=0)
+        source = rotate_entity(source, Direction.DOWN)
 target = b
 if not hasattr(b, "pickup_position"):
-    target = place_entity_next_to(Prototype.BurnerInserter, reference_position=b.position, direction=Direction.DOWN, spacing=0)
-    target = rotate_entity(target, Direction.UP)
-belts = connect_entities(a.drop_position, target.pickup_position, Prototype.TransportBelt)
+    existing = get_entities({{Prototype.BurnerInserter}}, position=b.position, radius=3)
+    existing = [e for e in existing if _dist2(e.drop_position, b.position) < _dist2(e.pickup_position, b.position)]
+    if existing:
+        target = existing[0]
+    else:
+        target = place_entity_next_to(Prototype.BurnerInserter, reference_position=b.position, direction=Direction.DOWN, spacing=0)
+        target = rotate_entity(target, Direction.UP)
+source_pos = source.drop_position if hasattr(source, "drop_position") else source.position
+belts = connect_entities(source_pos, target.pickup_position, Prototype.TransportBelt)
 print(f"SKILL_OK belt: connected {from_prototype} at {{a.position}} to {to_prototype} at {{b.position}}")
 ''',
     },
@@ -135,8 +140,13 @@ print(f"SKILL_OK research_progress: {technology} needs {{progress}}")
 target = get_entity(Prototype.{target_prototype}, position=Position({target_position}))
 if target is None:
     raise Exception("No {target_prototype} found at {target_position} — check the position with `inspect` or `find` first")
-inserter = place_entity_next_to(Prototype.BurnerInserter, reference_position=target.position, direction=Direction.DOWN, spacing=0)
-inserter = rotate_entity(inserter, Direction.UP)
+existing = get_entities({{Prototype.BurnerInserter}}, position=target.position, radius=3)
+existing = [e for e in existing if (e.drop_position.x - target.position.x) ** 2 + (e.drop_position.y - target.position.y) ** 2 < (e.pickup_position.x - target.position.x) ** 2 + (e.pickup_position.y - target.position.y) ** 2]
+if existing:
+    inserter = existing[0]
+else:
+    inserter = place_entity_next_to(Prototype.BurnerInserter, reference_position=target.position, direction=Direction.DOWN, spacing=0)
+    inserter = rotate_entity(inserter, Direction.UP)
 print(f"SKILL_OK place_inserter: placed at {{inserter.position}}, feeding {target_prototype} at {{target.position}}")
 ''',
     },
@@ -205,7 +215,9 @@ print(f"SKILL_OK nearby: {{[(e.name, e.position) for e in found]}}")
         "before assuming collect/smelt failed for a real reason.",
         "template": '''
 e = get_entity(Prototype.{prototype}, position=Position({position}))
-print(f"SKILL_OK peek: {prototype} at {{e.position}} status={{e.status}} fuel={{e.fuel_inventory}} in={{e.input_inventory if hasattr(e, 'input_inventory') else e.inventory}}")
+fuel = e.fuel_inventory if hasattr(e, "fuel_inventory") else "n/a (electric)"
+inv = e.input_inventory if hasattr(e, "input_inventory") else e.inventory
+print(f"SKILL_OK peek: {prototype} at {{e.position}} status={{e.status}} fuel={{fuel}} in={{inv}}")
 ''',
     },
     "feed": {
@@ -294,6 +306,18 @@ print(f"SKILL_OK inspect: inventory={{inspect_inventory()}}")
 }
 
 
+def _normalize_prototype(value):
+    """The model routinely types Factorio's internal kebab-case names
+    ('iron-plate', 'transport-belt') instead of FLE's Prototype enum
+    ('IronPlate', 'TransportBelt'). Both refer to the same thing, so fix it
+    here instead of crashing the episode on a naming convention mismatch."""
+    if not isinstance(value, str):
+        return value
+    if "-" in value or "_" in value or value[:1].islower():
+        return "".join(word.capitalize() for word in re.split(r"[-_]", value))
+    return value
+
+
 def render(name: str, params: dict) -> str:
     if name not in SKILLS:
         known = ", ".join(SKILLS)
@@ -302,6 +326,10 @@ def render(name: str, params: dict) -> str:
     missing = [p for p in spec["params"] if p not in params]
     if missing:
         raise ValueError(f"skill {name!r} missing params: {missing}")
+    params = {
+        k: (_normalize_prototype(v) if "prototype" in k else v)
+        for k, v in params.items()
+    }
     try:
         return spec["template"].format(**params)
     except (KeyError, IndexError) as e:

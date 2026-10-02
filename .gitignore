@@ -28,3 +28,4 @@ menubar/ConveyerMonitor.app/Contents/_CodeSignature/
 .dev.vars*
 !.dev.vars.example
 !.env.example
+agent.pid

@@ -56,6 +56,15 @@ Sub-bullets are the real, current blow-by-blow status.
           rocket parts, and a satellite, realistically needs a bigger model or many more
           sessions of prompt-tightening than an 8B local model + one Claude session can do
 
+## Route to the silo (computed from the game's tech tree, 2026-10-02)
+
+Remaining on the rocket-silo path: 4,350 red, 4,350 green, 3,350 blue (chemical), 1,600 purple (production), 1,000 yellow (utility). 22 techs. Blue is the biggest wall, so the order is:
+1. Red and green only techs first (battery, modules, speed and productivity module, concrete, accumulators, solar: about 1,000 units). Hand-fed science covers these while blue gets built.
+2. Build blue science: sulfur plant on the existing petroleum, engine units, advanced circuits (assembler exists). Then blue-only techs (advanced oil, rocket fuel, robotics, processing unit, low density structure).
+3. Purple: production science pack, then the two module-3 techs. Yellow: utility science pack.
+4. rocket-silo: 1,000 units of all five packs. Then 100 rocket parts and the launch.
+Hand-crafting 4,350 of anything is 30 refill cycles, so automating red and green assemblers is the first build, ahead of blue.
+
 ## Real save run (2026-10-02)
 Conveyer now runs on a copy of Joshua's own Factorio save (`scripts/world.sh`), not a vanilla start.
 Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 41 steel furnaces,

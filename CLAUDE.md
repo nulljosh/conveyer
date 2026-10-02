@@ -74,6 +74,10 @@ end to end, driven entirely by skill calls (no raw code).
   weak at long-horizon strategic play, so scope tasks accordingly rather than assuming the
   loop can just "play well" unsupervised.
 
+## The loop
+
+See [docs/LOOP-HANDOFF.md](docs/LOOP-HANDOFF.md) for current session state, next steps, and the restart prompt.
+
 ## Roadmap
 
 See [roadmap.md](roadmap.md).

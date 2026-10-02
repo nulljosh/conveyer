@@ -1,57 +1,22 @@
-# Loop handoff
+# Conveyer loop handoff (2026-10-01, evening)
 
-Written 2026-10-01 at 91% session usage. Pick this up after the reset (Thu 20:10).
+## What the loop is
 
-## Where it stands
+Agent.py runs FLE's Factorio environment headless, controlled by local Ollama (llama3.1:8b). Skills layer dispatches LLM picks (skill name plus JSON params) instead of raw code. Bootstrap chains ore-harvest to furnace to gear-wheel end to end. Agent loop runs 20-episode restarts unattended, refining on each failure.
 
-Everything is down. Colima isn't running, so Docker, the FLE Factorio server, runner.py and
-agent.py are all dead. That matches the 2026-10-01 note in roadmap.md: the server keeps going
-down once the Claude session closes.
+## Where things stand
 
-The last agent episode (`runs/1789370257-iron_gear_wheel_throughput.jsonl`) failed the same
-way small models always fail here. It tried `craft IronGearWheel x16` with zero iron plates,
-got "requires 32 iron-plate", then called `inspect` three times in a row and tripped the
-repeat guard. It never went back to mine and smelt. Inventory had 455 coal, 49 drills, 9
-furnaces, so materials were never the problem, planning was.
+Stack crashed overnight (colima down, agent.py hung). Last episode tried to craft 16 iron gears with 0 plates, tripped repeat guard. Restarted everything. Bootstrap now passes via fallback (hand-feed iron into furnace, not the smelt skill). Smelt skill's coal-insert failed in the retry path. Furnace ended up at x=2, y=2 after placement. Colima plus FLE server plus runner.py plus status_writer.py all running as of 20:00. ConveyerMonitor.app running. Normalize names (kebab to PascalCase) and reuse-inserter logic merged into b518162.
 
-Committed this session (not yet run live):
-- `auto_feed` folded into `smelt`. `smelt` now always builds the furnace clear of the ore
-  patch with a burner inserter and belt, the version that actually works on dense patches.
-  bootstrap.py and the milestone sounds follow the rename.
-- `belt` and `place_inserter` reuse an inserter that already exists instead of stacking a
-  second one, and `belt` can pull from a furnace output (extraction inserter).
-- Kebab-case names from the model (`iron-plate`, `stone_furnace`) are normalized to FLE's
-  `IronPlate` before rendering, instead of crashing the episode.
-- `peek` no longer crashes on electric entities with no fuel slot.
+## Next, in order
 
-## Steps, in order
+1. Check why smelt skill coal insert failed. Make retry idempotent so placing-furnace-twice doesn't cascade. Hand-feed works; smelt needs its coal path fixed.
+2. Load Joshua's existing world save at ~/Library/Application Support/factorio/saves/a.zip (Aug 23, Factorio 2.0.77). Swap FLE's open_world control.lua into it. Start with --start-server instead of --start-server-load-scenario to skip FLE's forced inventory and run on real terrain.
+3. Craft error messages should name the next skill needed (e.g. "need plates, try: smelt" when gears fail). Call it "missing-ingredient naming".
+4. Run agent.py episode headless on Joshua's world. Goal: build the base out progressively. Start with ore-to-gear, then expand.
 
-1. Bring the stack up:
-   ```
-   colima start
-   cd ~/Documents/Code/conveyer && ./menubar/restart_server.sh
-   ```
-   Check `/tmp/conveyer_cluster.log` and `/tmp/conveyer_runner.log`. Runner should log
-   `peek -> ok=True`.
-2. Verify the committed skill changes live: run `./bootstrap.py` once. Pass = it reaches
-   `SKILL_OK smelt` without the hand-feed fallback and ends with iron plates. If it fails,
-   fix that before anything else; this is the unverified part.
-3. Fix the planning failure from the last episode. When `craft` fails on a missing
-   ingredient, the error text should tell the model the next skill to call (`harvest` ore,
-   then `smelt`) rather than leaving it to guess. Smallest fix lives in the `craft` template's
-   exception message in skills.py, not a new planner.
-4. Run one agent episode headless and read the transcript:
-   ```
-   .venv/bin/python agent.py --env-id iron_gear_wheel_throughput --max-steps 50
-   ```
-   Pass = it produces at least one gear without a repeat-guard stop.
-5. Commit and push each passing step on its own.
+## Restart prompt
 
-## Ground rules
-
-- Keep it headless. No Factorio client window, no Chrome.
-- `skills.py` hot-reloads; editing `runner.py` forces a world reset.
-- Don't leave a watchdog or cron behind to keep it alive (house rule, see ~/CLAUDE.md). The
-  "keeps going down" roadmap item is solved by a real server (VPS, roadmap "This weekend"),
-  not a local daemon.
-- Stop at 90% usage and update this file before you go.
+```
+/loop --agent haiku --timeout 15m "Conveyer: finish smelt coal fix, then load Joshua's world save and run agent ep 1. Check bootstrap log for coal error root cause, fix smelt retry idempotent. Swap control.lua, start --start-server. Run agent.py headless on a.zip. Grade via menu bar status."
+```

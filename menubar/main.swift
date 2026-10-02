@@ -19,11 +19,40 @@ struct Research: Decodable {
     let percent: Int
     let techs: Int
     let queue: [String]
+    let labs: Int?
+    let labs_working: Int?
 
     /// "advanced-circuit" -> "Advanced circuit"
     static func nice(_ name: String) -> String {
         let t = name.replacingOccurrences(of: "-", with: " ")
         return t.prefix(1).uppercased() + t.dropFirst()
+    }
+}
+
+struct Milestone: Identifiable {
+    let id: Int
+    let title: String
+    let eta: String?
+    let done: Bool
+
+    /// Parses the "Real save run" checklist in roadmap.md. One source of truth: edit the roadmap, the menu bar follows.
+    static func load(_ path: String) -> [Milestone] {
+        guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+        var inSection = false
+        var out: [Milestone] = []
+        for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+            if line.hasPrefix("## ") { inSection = line.hasPrefix("## Real save run"); continue }
+            guard inSection else { continue }
+            let t = line.trimmingCharacters(in: .whitespaces)
+            let done = t.hasPrefix("- [x]")
+            guard done || t.hasPrefix("- [ ]") else { continue }
+            let body = String(t.dropFirst(6))
+            let parts = body.components(separatedBy: " ETA ")
+            let title = parts[0].components(separatedBy: ". ")[0].trimmingCharacters(in: CharacterSet(charactersIn: ". "))
+            let eta = parts.count > 1 ? parts[1].trimmingCharacters(in: CharacterSet(charactersIn: ". ")) : nil
+            out.append(Milestone(id: out.count, title: title, eta: eta, done: done))
+        }
+        return out
     }
 }
 
@@ -35,12 +64,21 @@ final class StatusPoller: ObservableObject {
     @Published var busy = false
     @Published var map: NSImage?
     @Published var research: Research?
+    @Published var milestones: [Milestone] = []
+    private var roadmapStamp: Date?
+    private let roadmapPath = NSString(
+        string: "~/Documents/Code/conveyer/roadmap.md"
+    ).expandingTildeInPath
     private let researchPath = NSString(
         string: "~/Documents/Code/conveyer/research.json"
     ).expandingTildeInPath
     private var mapStamp: Date?
     private let mapPath = NSString(
         string: "~/Documents/Code/conveyer/preview.png"
+    ).expandingTildeInPath
+    /// preview.png with real ground painted under the sprites (scripts/terrain.py); falls back to the flat render.
+    private let terrainPath = NSString(
+        string: "~/Documents/Code/conveyer/preview_map.png"
     ).expandingTildeInPath
 
     private let statusPath = NSString(
@@ -50,6 +88,17 @@ final class StatusPoller: ObservableObject {
         string: "~/Documents/Code/conveyer/runner.pid"
     ).expandingTildeInPath
     private var autoRestartedAt: Date?
+
+    /// `--demo stopped|failed|idle|nodata` overrides the real data so each state can be checked in a snapshot.
+    func applyDemo(_ name: String) {
+        switch name {
+        case "stopped": runnerAlive = false
+        case "failed": status = Status(step: 9, skill: "craft", ok: true, message: "Error occurred:\n Line 2: could not craft LogisticsSciencePack, missing 40 iron-plate", updated_at: Date().timeIntervalSince1970)
+        case "idle": research = Research(current: "advanced-circuit", percent: 36, techs: 41, queue: ["advanced-circuit", "chemical-science-pack"], labs: 9, labs_working: 0)
+        case "nodata": status = nil; research = nil; milestones = []; map = nil
+        default: break
+        }
+    }
     private let scriptsDir = NSString(
         string: "~/Documents/Code/conveyer/menubar"
     ).expandingTildeInPath
@@ -70,15 +119,30 @@ final class StatusPoller: ObservableObject {
         loadMap()
         if let data = FileManager.default.contents(atPath: researchPath),
            let r = try? JSONDecoder().decode(Research.self, from: data) { research = r }
+        loadRoadmap()
         checkLiveness()
     }
 
-    /// The runner rewrites preview.png every ~8s while idle; only decode it when it changed.
+    private func loadRoadmap() {
+        guard let m = (try? FileManager.default.attributesOfItem(atPath: roadmapPath))?[.modificationDate] as? Date,
+              m != roadmapStamp else { return }
+        roadmapStamp = m
+        milestones = Milestone.load(roadmapPath)
+    }
+
+    /// The runner rewrites preview.png every ~8s while idle, non-atomically. Only keep a
+    /// frame that decodes, and only remember its stamp then, so a half-written file is retried.
     private func loadMap() {
-        guard let m = (try? FileManager.default.attributesOfItem(atPath: mapPath))?[.modificationDate] as? Date,
+        let path = FileManager.default.fileExists(atPath: terrainPath) ? terrainPath : mapPath
+        guard let m = (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date,
               m != mapStamp else { return }
+        guard let img = NSImage(contentsOfFile: path), img.size.width > 0 else {
+            FileHandle.standardError.write(Data("map: decode failed, will retry\n".utf8))
+            return
+        }
         mapStamp = m
-        map = NSImage(contentsOfFile: mapPath)
+        map = img
+        FileHandle.standardError.write(Data("map: loaded \(Int(img.size.width))x\(Int(img.size.height))\n".utf8))
     }
 
     /// True process liveness (kill(pid, 0)), not just "no recent status update" —
@@ -138,7 +202,9 @@ struct ConveyerMonitorApp: App {
     init() {
         let args = CommandLine.arguments
         guard let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count else { return }
-        let renderer = ImageRenderer(content: Self.popover(StatusPoller()).background(Color(white: 0.16)).environment(\.colorScheme, .dark))
+        let demoPoller = StatusPoller()
+        if let d = args.firstIndex(of: "--demo"), d + 1 < args.count { demoPoller.applyDemo(args[d + 1]) }
+        let renderer = ImageRenderer(content: Self.popover(demoPoller).background(Color(white: 0.16)).environment(\.colorScheme, .dark))
         renderer.scale = 2
         if let cg = renderer.cgImage {
             let rep = NSBitmapImageRep(cgImage: cg)
@@ -158,6 +224,39 @@ struct ConveyerMonitorApp: App {
     }
 
 
+    @ViewBuilder
+    static func roadmap(_ all: [Milestone]) -> some View {
+        let done = all.filter(\.done).count
+        let open = all.filter { !$0.done }
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Roadmap").font(.system(size: 12, weight: .semibold))
+                Spacer()
+                Text("\(done) of \(all.count) done").font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            ForEach(Array(open.prefix(3).enumerated()), id: \.element.id) { i, m in
+                HStack(alignment: .top, spacing: 7) {
+                    Image(systemName: i == 0 ? "circle.inset.filled" : "circle")
+                        .font(.system(size: 11))
+                        .foregroundStyle(i == 0 ? Color.accentColor : Color.secondary)
+                        .padding(.top, 1)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(m.title)
+                            .font(.system(size: 11, weight: i == 0 ? .semibold : .regular))
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let eta = m.eta {
+                            Text(eta).font(.system(size: 10)).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            if open.count > 3 {
+                Text("\(open.count - 3) more in roadmap.md").font(.system(size: 10)).foregroundStyle(.tertiary)
+            }
+        }
+    }
+
     @MainActor
     static func popover(_ poller: StatusPoller) -> some View {
             VStack(alignment: .leading, spacing: 10) {
@@ -165,11 +264,11 @@ struct ConveyerMonitorApp: App {
                     Image(nsImage: map)
                         .resizable()
                         .interpolation(.high)
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: .infinity, maxHeight: 240)
+                        .scaledToFill()
+                        .frame(width: 316, height: 220)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
-                if let r = poller.research, !r.current.isEmpty {
+                if poller.runnerAlive, let r = poller.research, !r.current.isEmpty {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack {
                             Text("Researching \(Research.nice(r.current).lowercased())")
@@ -185,38 +284,43 @@ struct ConveyerMonitorApp: App {
                             }
                         }
                         .frame(height: 6)
-                        let next = r.queue.dropFirst().map { Research.nice($0).lowercased() }
-                        Text(next.isEmpty ? "\(r.techs) techs done" : "\(r.techs) techs done. Next: \(next.joined(separator: ", "))")
+                        if let labs = r.labs, let working = r.labs_working {
+                            Label(working == 0 ? "Labs idle, waiting for science packs" : "\(working) of \(labs) labs working",
+                                  systemImage: working == 0 ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(working == 0 ? Color.orange : Color.secondary)
+                        }
+                        let next = r.queue.dropFirst().first.map { Research.nice($0).lowercased() }
+                        Text(next.map { "\(r.techs) techs done. Then \($0)" } ?? "\(r.techs) techs done")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
                 }
-                if let s = poller.status, s.skill != "?" {
-                    HStack(spacing: 4) {
-                        Text(s.skill)
-                            .font(.system(size: 12, weight: .semibold))
-                        Text(s.worked ? "done" : "didn't work")
-                            .font(.system(size: 11))
-                            .foregroundStyle(s.worked ? Color.secondary : Color.red)
-                        Spacer()
-                        Text("step \(s.step)")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                    }
-                    Text(s.message.replacingOccurrences(of: "SKILL_OK ", with: ""))
+                if !poller.milestones.isEmpty {
+                    Self.roadmap(poller.milestones)
+                }
+                if !poller.runnerAlive {
+                    Label("Stopped. It restarts on its own while the game is running.", systemImage: "stop.circle.fill")
                         .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(4)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if !poller.runnerAlive {
-                        Text("Stopped. It restarts on its own while the game is running.")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.red)
-                    } else if poller.stale {
-                        Text("Waiting on a slow step.")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+                        .foregroundStyle(.red)
+                } else if let s = poller.status, s.skill != "?" {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 5) {
+                            Circle().fill(s.worked ? Color.green : Color.red).frame(width: 7, height: 7)
+                            Text("Player is \(Self.narrate(s.skill))")
+                                .font(.system(size: 12, weight: .semibold))
+                            Spacer()
+                            if poller.stale {
+                                Text("slow step").font(.system(size: 11)).foregroundStyle(.secondary)
+                            }
+                        }
+                        if !s.worked {
+                            Text(s.message.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.last(where: { !$0.isEmpty }) ?? s.message)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.red)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 } else {
                     Text("Starting up")
@@ -272,15 +376,15 @@ struct ConveyerMonitorApp: App {
     private static func narrate(_ skill: String) -> String {
         switch skill {
         case "goto": return "walking"
-        case "harvest": return "harvesting"
-        case "mine": return "drilling"
+        case "harvest": return "gathering resources"
+        case "mine": return "placing drills"
         case "smelt": return "smelting"
         case "craft": return "crafting"
         case "place", "place_at", "place_inserter": return "building"
-        case "feed", "collect": return "loading"
+        case "feed", "collect", "pickup": return "moving items"
         case "auto_feed", "belt": return "automating"
-        case "research", "research_progress": return "researching"
-        case "inspect", "peek", "nearby", "dropcheck", "find", "recipe": return "scouting"
+        case "research", "research_progress": return "starting research"
+        case "inspect", "peek", "nearby", "dropcheck", "find", "recipe": return "looking around"
         default: return skill
         }
     }

@@ -100,7 +100,8 @@ Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 4
 - [x] Hand-crafted red and green science, labs fed over RCON, flammables researched (tech 39 to 40)
 - [x] Screenshot and benchmark every 5 minutes (`scripts/snap.py`, `shots/bench.jsonl`)
 - [x] Found why the base was idle: 0 furnaces working (no fuel), west outpost grid underpowered
-- [ ] Sulfur, advanced circuits, chemical science unlocked. Needs 425 red and 425 green. ETA about 1 hour of hand cycles
+- [x] Sulfur researched (tech 41)
+- [ ] Advanced circuits and chemical science unlocked. Needs about 160 more red and green. ETA about 30 minutes of hand cycles
 - [ ] Automated green science so research stops being hand-fed. ETA 1 to 2 days of agent time
 - [ ] Oil chain running (refineries, plastic, sulfur, advanced circuits, chemical packs). ETA 1 to 2 days
 - [ ] Advanced oil processing researched (500 red, 500 green, 75 chemical). ETA 1 to 2 days

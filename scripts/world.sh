@@ -1,10 +1,8 @@
 #!/bin/bash
 # Run FLE against a copy of your own Factorio save instead of the open_world scenario.
 #   scripts/world.sh [save.zip]   swap the server onto a copy of the save (default: a.zip)
-#   scripts/world.sh fresh [save] same, but throw away the agent's progress and recopy the save
 #   scripts/world.sh back         return to FLE's stock open_world container
-# The original save is never touched. The server autosaves every 5 min into .world and boots
-# from the newest file there, so a crash loses at most 5 minutes of the agent's building.
+# The original save is never touched; the server only ever sees conveyer-world.zip.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FLE="$ROOT/.venv/lib/python3.14/site-packages/fle"
@@ -18,17 +16,10 @@ if [ "${1:-}" = back ]; then
   exit 0
 fi
 
-FRESH=0; [ "${1:-}" = fresh ] && { FRESH=1; shift; }
 SAVE="${1:-$HOME/Library/Application Support/factorio/saves/a.zip}"
 docker stop "$STOCK" >/dev/null 2>&1 || true
 docker rm -f "$NAME" >/dev/null 2>&1 || true
-mkdir -p "$ROOT/.world"
-if [ "$FRESH" = 1 ] || [ ! -f "$ROOT/.world/conveyer-world.zip" ]; then
-  rm -f "$ROOT/.world/"*.zip && cp "$SAVE" "$ROOT/.world/conveyer-world.zip"
-fi
-# ponytail: own settings copy so autosave changes don't touch FLE's stock config
-sed -e 's/"autosave_interval": [0-9]*/"autosave_interval": 5/' -e 's/"autosave_slots": [0-9]*/"autosave_slots": 3/' \
-  "$FLE/cluster/config/server-settings.json" > "$ROOT/.world/server-settings.json"
+mkdir -p "$ROOT/.world" && cp "$SAVE" "$ROOT/.world/conveyer-world.zip"
 docker create --name "$NAME" -m 1536m \
   -p 34197:34197/udp -p 27000:27015/tcp \
   -v "$ROOT/.world:/opt/factorio/saves" \
@@ -36,11 +27,11 @@ docker create --name "$NAME" -m 1536m \
   -v "$FLE/cluster/mods:/opt/factorio/mods" \
   -v "$FLE/.fle/data/_screenshots:/opt/factorio/script-output" \
   --entrypoint /bin/sh factoriotools/factorio:2.0.77 -c \
-  'rm -rf /opt/factorio/data/elevated-rails /opt/factorio/data/quality /opt/factorio/data/space-age && exec /bin/box64 /opt/factorio/bin/x64/factorio --start-server-load-latest --port 34197 --server-settings /opt/factorio/saves/server-settings.json --rcon-port 27015 --rcon-password factorio --server-whitelist /opt/factorio/config/server-whitelist.json --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json --mod-directory /opt/factorio/mods' >/dev/null
+  'rm -rf /opt/factorio/data/elevated-rails /opt/factorio/data/quality /opt/factorio/data/space-age && exec /bin/box64 /opt/factorio/bin/x64/factorio --start-server /opt/factorio/saves/conveyer-world.zip --port 34197 --server-settings /opt/factorio/config/server-settings.json --rcon-port 27015 --rcon-password factorio --server-whitelist /opt/factorio/config/server-whitelist.json --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json --mod-directory /opt/factorio/mods' >/dev/null
 docker start "$NAME" >/dev/null
 touch "$ROOT/.world/active"
 for _ in $(seq 1 90); do
-  docker logs "$NAME" 2>&1 | grep -q "Starting RCON interface" && { echo "world up: $(ls -t "$ROOT/.world"/*.zip | head -1 | xargs basename)"; exit 0; }
+  docker logs "$NAME" 2>&1 | grep -q "Starting RCON interface" && { echo "world up: $(basename "$SAVE") (copy)"; exit 0; }
   sleep 2
 done
 echo "server didn't come up, last log:"; docker logs --tail 20 "$NAME"; exit 1

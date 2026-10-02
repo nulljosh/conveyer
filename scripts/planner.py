@@ -67,7 +67,7 @@ for _,t in ipairs(ins) do local chest=s.find_entities_filtered{name='wooden-ches
       local isinput=false for _,q in ipairs(ins) do if math.abs(q.p[1]-e.position.x)<0.2 and math.abs(q.p[2]-e.position.y)<0.2 then isinput=true end end
       if not isinput then local inv=(e.type=='furnace') and e.get_output_inventory() or e.get_inventory(defines.inventory.chest) local h=inv.get_item_count(item)
         if h>0 then local n=chest.insert{name=item,count=math.min(h,missing)} if n>0 then inv.remove{name=item,count=n} missing=missing-n moved[#moved+1]=item..'+'..n end end end end
-    if missing>0 and item=='plastic-bar' then for _,pl in pairs(s.find_entities_filtered{name='chemical-plant',force='player'}) do
+    if missing>0 and (item=='plastic-bar' or item=='sulfur') then for _,pl in pairs(s.find_entities_filtered{name='chemical-plant',force='player'}) do
       local oi=pl.get_output_inventory() local h=oi.get_item_count(item) if h>0 and missing>0 then local n=chest.insert{name=item,count=math.min(h,missing)} if n>0 then oi.remove{name=item,count=n} missing=missing-n moved[#moved+1]=item..'+'..n..'(plant)' end end end end
     if missing>0 then local bag=s.find_entities_filtered{type='character'}[1].get_main_inventory() local h=bag.get_item_count(item) if h>0 then local n=chest.insert{name=item,count=math.min(h,missing)} if n>0 then bag.remove{name=item,count=n} moved[#moved+1]=item..'+'..n..'(bag)' end end end end end end end
 rcon.print(table.concat(moved,' '))"""

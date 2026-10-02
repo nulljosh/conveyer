@@ -15,6 +15,7 @@ FLE's Lua state cannot be saved. An autosave kills the server. So any crash or r
 - oil block: scripts/oil.py
 - science tiles: scripts/planner.py replay (plan in .world/tiles.json)
 - circuit assembler: scripts/advcircuit.py place
+- sulfur plant + 90-tile water line from the east shore: scripts/sulfur.py (run after oil.py)
 - iron farm (west patch, 10 drill-furnace-chest slots + pole bridge to the main grid): scripts/ironfarm.py (slots frozen in .world/ironfarm.json; delete it to rescan)
 Every new build gets a replay script the same hour it is built.
 
@@ -47,6 +48,10 @@ Baseline and results table:
 ## Known macro bottleneck (15:15)
 
 Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
+
+## Blue science automated (2026-10-02 16:10, v0.3.0)
+
+Sulfur plant at (-30.5,-8.5) on the plastic plant's gas pipe, water by underground pipe along y=-5.5 from a new offshore pump at (55.5,-4.5) (a pump's output faces opposite its direction, and it is 1x2). planner.py pulls sulfur from the plant like plastic. The chemical-science-pack tile is working. Next: watch blue packs reach the labs, queue chemical-pack techs, then purple (production science: electric furnace, productivity module, rail) and yellow (utility: processing unit needs sulfuric acid, flying robot frame, low density structure).
 
 ## Iron farm (2026-10-02 15:40, v0.2.0)
 

@@ -47,16 +47,34 @@ final class StatusPoller: ObservableObject {
     /// a long smelt/harvest wait is a real gap, not a crash. Auto-restarts at most
     /// every 10 min: a runner that dies on boot (memory guard) must not respawn in a loop.
     private func checkLiveness() {
+        // No pid file = stopped on purpose (Stop server) or killed by the memory guard.
+        // Respawning either one just rebuilds the same balloon, so stay down.
         guard let pidText = try? String(contentsOfFile: pidPath, encoding: .utf8),
               let pid = pid_t(pidText.trimmingCharacters(in: .whitespacesAndNewlines))
-        else { return }
+        else { runnerAlive = false; return }
         let alive = Darwin.kill(pid, 0) == 0
         runnerAlive = alive
-        if !alive {
+        if !alive && serverUp() {
             let now = Date()
             if autoRestartedAt == nil || now.timeIntervalSince(autoRestartedAt!) > 600 {
                 autoRestartedAt = now
                 run("restart_runner.sh")
+            }
+        }
+    }
+
+    /// RCON port open = a Factorio server is up. No server, no point restarting the runner.
+    private func serverUp() -> Bool {
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return false }
+        defer { close(fd) }
+        var addr = sockaddr_in()
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_port = in_port_t(27000).bigEndian
+        addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+        return withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                connect(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) == 0
             }
         }
     }
@@ -99,11 +117,11 @@ struct ConveyerMonitorApp: App {
                         .fixedSize(horizontal: false, vertical: true)
 
                     if !poller.runnerAlive {
-                        Text("Runner stopped. Auto-restart at most every 10 min.")
+                        Text("Runner stopped. Restarts itself only while the server is up.")
                             .font(.system(size: 11))
                             .foregroundStyle(.red)
                     } else if poller.stale {
-                        Text("No update in 2min+ — likely a long smelt/harvest wait")
+                        Text("No update in 2 min, likely a long smelt or harvest")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
@@ -146,13 +164,13 @@ struct ConveyerMonitorApp: App {
             .frame(width: 280)
         } label: {
             Text(labelText)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.system(size: 12))
         }
         .menuBarExtraStyle(.window)
     }
 
     private var labelText: String {
-        if !poller.runnerAlive { return "⚠ died" }
+        if !poller.runnerAlive { return "stopped" }
         guard let s = poller.status, s.skill != "?" else { return "…" }
         let dot = s.ok ? "●" : "○"
         return "\(dot) \(Self.narrate(s.skill))"

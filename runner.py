@@ -104,6 +104,12 @@ def main() -> None:
             for ns in instance.namespaces:
                 ns._reset = lambda *a, **k: 1
                 ns._create_agent_characters = adopt
+                # Every observation calls get_entities() unfiltered at radius 1000, which
+                # serialises and belt-groups the whole base. That was the 18 GB balloon.
+                # ponytail: 30 tiles around the player; widen if the agent needs base-wide sight.
+                full = ns.get_entities
+                ns.get_entities = lambda entities=set(), position=None, radius=1000, _f=full: (
+                    _f(entities, position, 30 if position is None and radius == 1000 else radius))
 
         LuaScriptManager.setup_tools = setup_tools
         orig_init = FactorioInstance.__init__
@@ -128,8 +134,9 @@ def main() -> None:
             if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 3 * 1024**3:
                 print("[runner] over 3 GB, dumping stacks and exiting", flush=True)
                 faulthandler.dump_traceback(all_threads=True)
+                Path("runner.pid").unlink(missing_ok=True)  # no pid = menu bar won't respawn into the same balloon
                 os._exit(3)
-            time.sleep(1)
+            time.sleep(0.2)
     threading.Thread(target=memory_guard, daemon=True).start()
 
     env_id = args.env_id or pick_default_env()

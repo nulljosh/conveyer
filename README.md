@@ -13,7 +13,7 @@ Built on [FLE](https://github.com/JackHopkins/factorio-learning-environment), th
 ## Where it is
 
 <!-- progress:start -->
-**Road to the rocket: 84%** `################----` 37 of 44 techs the silo needs. Rockets launched: 0.
+**Road to the rocket: 89%** `#################---` 39 of 44 techs the silo needs. Rockets launched: 0.
 <!-- progress:end -->
 
 Plays on a copy of a real 2,300 entity base. Red, green, blue and purple science are automated. Next: yellow science, then the silo and the launch. [Roadmap](roadmap.md).

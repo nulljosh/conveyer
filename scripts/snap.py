@@ -24,7 +24,8 @@ while time.time() < end and (ROOT / "runner.pid").exists():
         techs = int(c.send_command(TECH).strip())
     except Exception:
         entities = -1
-    log = Path("/tmp/conveyer_runner.log").read_text(errors="ignore")
+    lp = Path("/tmp/conveyer_runner.log")
+    log = lp.read_text(errors="ignore") if lp.exists() else ""  # the log is gone after a reboot; the benchmark must not die with it
     steps = re.findall(r"\[runner\] (\w+) -> ok=(\w+)", log)
     ok = sum(1 for _, o in steps if o == "True")
     pid = (ROOT / "runner.pid").read_text().strip()

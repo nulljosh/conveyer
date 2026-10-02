@@ -47,6 +47,10 @@ Baseline and results table:
 
 Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
 
+## Plate survey (2026-10-02 15:12)
+
+Chests hold copper 6,972, steel 12,934, coal 60,679 but iron plate only 581 and iron ore 0. Iron is THE bottleneck, not copper or steel. Next chunk: find why iron drills stall (5 no_power, furnaces no_ingredients) and add iron drills plus smelting, scripted as a replay. RAM was 14% free this tick with other sessions open; game held at 2x.
+
 ## Tick (what the loop does every ~20 min)
 
 0. Run `scripts/tick.sh`: one call that does step 1 (health, restarts, replays), sets game speed from CPU load, and prints research, silo path, labs, every tile's status, usage, and what changed since the last tick (it flags a milestone when the silo path advances). Then do ONE chunk. The numbered steps below are what it covers.

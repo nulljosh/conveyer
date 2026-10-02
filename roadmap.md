@@ -208,3 +208,7 @@ Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 4
 
 ## Ingested 2026-10-01
 - [ ] Server keeps going down; not running in the background properly, especially once the Claude session closes. Start it back up and watch closely.
+
+## After the launch
+- [ ] Achievement run list (Steam, base 2.0): the real ones need the Steam client and a save with no console commands, so our RCON saves cannot earn them. Track the earnable ones in-game anyway: research with every pack, craft speed/efficiency/productivity module 3, Mass production 1, Circuit veteran 1, Computer age 1, Iron throne 1, Tech maniac
+- [ ] Reuse the skill layer, planner and live view on other games (Oxygen Not Included first), then build our own versions of them

@@ -15,6 +15,7 @@ FLE's Lua state cannot be saved. An autosave kills the server. So any crash or r
 - oil block: scripts/oil.py
 - science tiles: scripts/planner.py replay (plan in .world/tiles.json)
 - circuit assembler: scripts/advcircuit.py place
+- 12 labs (was 3; research was the wall): scripts/labs.py
 - sulfur plant + 90-tile water line from the east shore: scripts/sulfur.py (run after oil.py)
 - iron farm (west patch, 10 drill-furnace-chest slots + pole bridge to the main grid): scripts/ironfarm.py (slots frozen in .world/ironfarm.json; delete it to rescan)
 Every new build gets a replay script the same hour it is built.

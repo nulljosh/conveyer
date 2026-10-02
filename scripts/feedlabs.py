@@ -10,10 +10,11 @@ for _, pack in ipairs{'automation-science-pack','logistic-science-pack','chemica
   local have = inv.get_item_count(pack)
   if have > 0 then
     local each = math.floor(have / #labs)
+    if each < 1 then each = 1 end
     local moved = 0
     for _, l in ipairs(labs) do
-      local n = l.insert{name=pack, count=each}
-      inv.remove{name=pack, count=n}; moved = moved + n
+      local n = 0 if inv.get_item_count(pack) >= each then n = l.insert{name=pack, count=each} end
+      if n > 0 then inv.remove{name=pack, count=n}; moved = moved + n end
     end
     rcon.print(pack .. ' moved ' .. moved)
   end

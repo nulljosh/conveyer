@@ -1,5 +1,9 @@
 # Conveyer loop handoff (2026-10-02, afternoon)
 
+## Every milestone
+
+Run `scripts/ship_landing.sh "<milestone>"`. It repaints the map, rebuilds the landing page and README progress, commits, deploys to conveyer.heyitsmejosh.com and checks the live page. Open: the map centers on wherever the character stands (now the stone patch), not the main base. Walk the character to the hub before the shot.
+
 ## After any restart
 
 The server cannot save (FLE state), so it always boots the 10:55 copy. Run `scripts/withdraw.py coal 600`, `scripts/fuel.py`, then `scripts/oil.py` (refinery + plastic, 100 plastic in under a minute). Script every new build the same way so a crash costs seconds.

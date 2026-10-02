@@ -23,5 +23,5 @@ PY
     $W scripts/planner.py labs; $W scripts/feedlabs.py   # packs come from the planner tiles now, not hand-crafting
     $W scripts/oil.py
   fi
-  sleep 60
+  sleep 20   # at 10x game speed a tile outruns a 60 s refill
 done

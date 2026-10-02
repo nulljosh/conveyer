@@ -15,6 +15,7 @@ FLE's Lua state cannot be saved. An autosave kills the server. So any crash or r
 - oil block: scripts/oil.py
 - science tiles: scripts/planner.py replay (plan in .world/tiles.json)
 - circuit assembler: scripts/advcircuit.py place
+- copper farm (north patch ~470 tiles up, 6 slots, 65-pole bridge, only other copper is 450+ tiles away): scripts/ironfarm.py 24 copper
 - 12 labs (was 3; research was the wall): scripts/labs.py
 - sulfur plant + 90-tile water line from the east shore: scripts/sulfur.py (run after oil.py)
 - iron farm (west patch, 10 drill-furnace-chest slots + pole bridge to the main grid): scripts/ironfarm.py (slots frozen in .world/ironfarm.json; delete it to rescan)
@@ -49,6 +50,10 @@ Baseline and results table:
 ## Known macro bottleneck (15:15)
 
 Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
+
+## Throughput notes (v0.4.2)
+
+At 10x game speed a tile outruns a 60 s refill, so keepbusy now passes every 20 s and tile buffers hold 300 crafts. Iron is fine (18k plates in chests, 16 drills). Copper is the next wall: blue alone needs about 25k copper, the whole path 60k+, and the only near patch is built over. Copper farm placed on the north patch (6 drills, 0 to 6 working). More copper: the (5,-8) and (6,-8) 64-tile regions (1.5M ore, x 320 to 450, y -512 to -450) or mining-productivity techs.
 
 ## Blue research running (v0.4.0)
 

@@ -37,3 +37,4 @@ venv/
 .watching
 frame.json
 live.json
+conveyer-adapter/

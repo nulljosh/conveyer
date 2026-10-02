@@ -9,6 +9,19 @@ struct Status: Decodable {
     let updated_at: Double
 }
 
+struct Research: Decodable {
+    let current: String
+    let percent: Int
+    let techs: Int
+    let queue: [String]
+
+    /// "advanced-circuit" -> "Advanced circuit"
+    static func nice(_ name: String) -> String {
+        let t = name.replacingOccurrences(of: "-", with: " ")
+        return t.prefix(1).uppercased() + t.dropFirst()
+    }
+}
+
 @MainActor
 final class StatusPoller: ObservableObject {
     @Published var status: Status?
@@ -16,6 +29,10 @@ final class StatusPoller: ObservableObject {
     @Published var runnerAlive = true
     @Published var busy = false
     @Published var map: NSImage?
+    @Published var research: Research?
+    private let researchPath = NSString(
+        string: "~/Documents/Code/conveyer/research.json"
+    ).expandingTildeInPath
     private var mapStamp: Date?
     private let mapPath = NSString(
         string: "~/Documents/Code/conveyer/preview.png"
@@ -46,6 +63,8 @@ final class StatusPoller: ObservableObject {
             stale = Date().timeIntervalSince1970 - decoded.updated_at > 120
         }
         loadMap()
+        if let data = FileManager.default.contents(atPath: researchPath),
+           let r = try? JSONDecoder().decode(Research.self, from: data) { research = r }
         checkLiveness()
     }
 
@@ -145,6 +164,21 @@ struct ConveyerMonitorApp: App {
                         .frame(maxWidth: .infinity, maxHeight: 240)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
+                if let r = poller.research, !r.current.isEmpty {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack {
+                            Text("Researching \(Research.nice(r.current).lowercased())")
+                                .font(.system(size: 12, weight: .semibold))
+                            Spacer()
+                            Text("\(r.percent)%").font(.system(size: 12))
+                        }
+                        ProgressView(value: Double(r.percent), total: 100)
+                        let next = r.queue.dropFirst().map { Research.nice($0).lowercased() }
+                        Text(next.isEmpty ? "\(r.techs) techs done" : "\(r.techs) techs done. Next: \(next.joined(separator: ", "))")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 if let s = poller.status, s.skill != "?" {
                     HStack(spacing: 4) {
                         Text(s.skill)
@@ -213,6 +247,9 @@ struct ConveyerMonitorApp: App {
 
     private var labelText: String {
         if !poller.runnerAlive { return "stopped" }
+        if let r = poller.research, !r.current.isEmpty {
+            return "\(Research.nice(r.current)) \(r.percent)%"
+        }
         guard let s = poller.status, s.skill != "?" else { return "…" }
         let dot = s.ok ? "●" : "○"
         return "\(dot) \(Self.narrate(s.skill))"
@@ -222,6 +259,7 @@ struct ConveyerMonitorApp: App {
     /// chat ("smelting", "building a base") instead of the raw dispatch name.
     private static func narrate(_ skill: String) -> String {
         switch skill {
+        case "goto": return "walking"
         case "harvest": return "harvesting"
         case "mine": return "drilling"
         case "smelt": return "smelting"

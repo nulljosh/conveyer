@@ -43,8 +43,13 @@ Baseline and results table:
 
 - Blue science plan (2026-10-02 15:05): planner.py TARGETS now include chemical-science-pack, so the keeper builds pipe, engine-unit, advanced-circuit and chemical-science-pack tiles one per pass. Still missing: sulfur (a chemical plant on the petroleum pipe plus water: the nearest water is the boiler pumps near (57,-7) to (88,-22), about 95 tiles east of the oil block, so pipe the gas there or water here) and plastic for the advanced-circuit tile (the plastic sits in the chemical plant's output slot, not a chest: add it as a provider in planner.py supply). Red-green techs queued so labs stay busy: inserter-capacity-bonus-1, circuit-network, solar-panel-equipment, cliff-explosives, landfill, fluid-wagon.
 
+## Known macro bottleneck (15:15)
+
+Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
+
 ## Tick (what the loop does every ~20 min)
 
+0. Run `scripts/tick.sh`: one call that does step 1 (health, restarts, replays), sets game speed from CPU load, and prints research, silo path, labs, every tile's status, usage, and what changed since the last tick (it flags a milestone when the silo path advances). Then do ONE chunk. The numbered steps below are what it covers.
 1. `scripts/health.sh --fix`. Prints every moving part, starts what is down, and if the world reverted it replays journal, fuel, oil and tiles. Exit code is the number of open problems. If usage says 90% or more (session or weekly), run /checkpoint and stop the loop. No kill.
 2. Read research.json. Keep the research queue on the silo path (RCON: `F.research_queue = {...}`), cheapest red and green techs first while blue is built.
 3. Do ONE small chunk toward the next milestone. Order: automate blue science (sulfur plant, engine unit tile, advanced circuit tile, blue pack tile through planner.py), then purple, then yellow, then the silo.

@@ -67,6 +67,8 @@ for _,t in ipairs(ins) do local chest=s.find_entities_filtered{name='wooden-ches
       local isinput=false for _,q in ipairs(ins) do if math.abs(q.p[1]-e.position.x)<0.2 and math.abs(q.p[2]-e.position.y)<0.2 then isinput=true end end
       if not isinput then local inv=(e.type=='furnace') and e.get_output_inventory() or e.get_inventory(defines.inventory.chest) local h=inv.get_item_count(item)
         if h>0 then local n=chest.insert{name=item,count=math.min(h,missing)} if n>0 then inv.remove{name=item,count=n} missing=missing-n moved[#moved+1]=item..'+'..n end end end end
+    if missing>0 and item=='plastic-bar' then for _,pl in pairs(s.find_entities_filtered{name='chemical-plant',force='player'}) do
+      local oi=pl.get_output_inventory() local h=oi.get_item_count(item) if h>0 and missing>0 then local n=chest.insert{name=item,count=math.min(h,missing)} if n>0 then oi.remove{name=item,count=n} missing=missing-n moved[#moved+1]=item..'+'..n..'(plant)' end end end end
     if missing>0 then local bag=s.find_entities_filtered{type='character'}[1].get_main_inventory() local h=bag.get_item_count(item) if h>0 then local n=chest.insert{name=item,count=math.min(h,missing)} if n>0 then bag.remove{name=item,count=n} moved[#moved+1]=item..'+'..n..'(bag)' end end end end end end end
 rcon.print(table.concat(moved,' '))"""
 
@@ -119,5 +121,13 @@ if __name__ == "__main__":
     if cmd == "step": step()
     elif cmd == "replay": replay()
     elif cmd == "labs": print(run(LABS) or "no packs in chests")
+    elif cmd == "tiles":
+        for t in load():
+            ox, oy = OX + (t["cell"] % COLS) * CW, OY + (t["cell"] // COLS) * CH
+            print(run("""/silent-command local m={} for k,v in pairs(defines.entity_status) do m[v]=k end local s=game.surfaces[1]
+            local a=s.find_entities_filtered{name='assembling-machine-2',position={%g,%g},radius=0.2}[1]
+            local ci=s.find_entities_filtered{name='wooden-chest',position={%g,%g},radius=0.2}[1] local co=s.find_entities_filtered{name='wooden-chest',position={%g,%g},radius=0.2}[1]
+            if not a then rcon.print('%s MISSING') return end local inv={} for n,k in pairs(ci.get_inventory(defines.inventory.chest).get_contents()) do inv[#inv+1]=(type(k)=='table' and k.name..'='..k.count or n..'='..k) end
+            rcon.print('%s '..m[a.status]..' in['..table.concat(inv,',')..'] out='..co.get_inventory(defines.inventory.chest).get_item_count('%s'))""" % (ox + 3.5, oy + 1.5, ox + 0.5, oy + 1.5, ox + 6.5, oy + 1.5, t["item"], t["item"], t["item"])))
     else:
         rec, tr = build_order(); print("tiers:", {k: tr[k] for k in sorted(tr, key=tr.get)}); print("plan:", load()); print("stock:", stock(list(TARGETS) + list(rec)))

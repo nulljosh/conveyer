@@ -51,6 +51,10 @@ Baseline and results table:
 
 Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
 
+## Scaling the blue chain (v0.4.3)
+
+Labs sat idle on blue: one advanced-circuit assembler made 0.125/s against 12 labs. planner.py MULT now builds several tiles per item (adv circuit 3, engine 4, chem pack 4, cable 2, EC 2, red 2, green 3), one new tile per 20 s pass. Plastic plant has a coal chest and inserter (hand-feeding 50 coal lasted 5 s at 10x). Watch cells for BLOCKED skips and raw plate draw.
+
 ## Throughput notes (v0.4.2)
 
 At 10x game speed a tile outruns a 60 s refill, so keepbusy now passes every 20 s and tile buffers hold 300 crafts. Iron is fine (18k plates in chests, 16 drills). Copper is the next wall: blue alone needs about 25k copper, the whole path 60k+, and the only near patch is built over. Copper farm placed on the north patch (6 drills, 0 to 6 working). More copper: the (5,-8) and (6,-8) 64-tile regions (1.5M ore, x 320 to 450, y -512 to -450) or mining-productivity techs.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebuild the oil block in one shot (refinery, crude pipes, poles, plastic plant). Idempotent.
 FLE's Lua state can't be saved, so the server always reboots to the 10:55 copy. Rerun this after any crash.
-ponytail: create_entity over RCON, not the character walking; swap to skills when the agent builds this itself."""
+an inserter and chest feed the plant coal (hand-feeding 50 lasted 5 s at 10x). ponytail: create_entity over RCON, not the character walking; swap to skills when the agent builds this itself."""
 import factorio_rcon as f
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=30)
 LUA = """/silent-command local s=game.surfaces[1] local d=defines.direction local out={}
@@ -20,8 +20,13 @@ put('oil-refinery',-38.5,-2.5,d.north,'basic-oil-processing')
 put('medium-electric-pole',-43.5,-13.5) put('medium-electric-pole',-43.5,-9.5) put('medium-electric-pole',-38.5,-8.5) put('medium-electric-pole',-42.5,-3.5)
 put('chemical-plant',-35.5,-8.5,d.south,'plastic-bar')
 put('pipe',-36.5,-5.5) put('pipe',-36.5,-6.5)
+put('wooden-chest',-32.5,-8.5)
+local ci=s.find_entities_filtered{name='inserter',position={-33.5,-8.5},radius=0.3}[1] or s.create_entity{name='inserter',position={-33.5,-8.5},direction=d.west,force='player'}
+if ci and ci.drop_position.x>ci.position.x then ci.direction=(ci.direction+8)%16 end
+local cc=s.find_entities_filtered{name='wooden-chest',position={-32.5,-8.5},radius=0.3}[1]
 local pl=s.find_entities_filtered{name='chemical-plant',position={-35.5,-8.5},radius=0.3}[1]
 local bag=s.find_entities_filtered{type='character'}[1].get_main_inventory()
+if cc then local h=math.min(700-cc.get_inventory(defines.inventory.chest).get_item_count('coal'),bag.get_item_count('coal')) if h>0 then bag.remove{name='coal',count=cc.get_inventory(defines.inventory.chest).insert{name='coal',count=h}} end end
 if pl then local need=50-pl.get_item_count('coal') local h=math.min(need,bag.get_item_count('coal')) if h>0 then bag.remove{name='coal',count=pl.insert{name='coal',count=h}} end end
 local m={} for k,v in pairs(defines.entity_status) do m[v]=k end
 for _,n in ipairs{'oil-refinery','chemical-plant'} do local e=s.find_entities_filtered{name=n,area={{-42,-12},{-33,2}}}[1]

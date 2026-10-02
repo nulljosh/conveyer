@@ -13,6 +13,8 @@ import factorio_rcon as f
 ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / ".world" / "tiles.json"
 TARGETS = {"automation-science-pack": 300, "logistic-science-pack": 300, "chemical-science-pack": 300}
+# tiles per item (default 1). 12 labs eat about 0.6 packs/s of each color; one tile makes 0.08 to 0.15/s, so the blue chain is the wall
+MULT = {"automation-science-pack": 2, "logistic-science-pack": 3, "chemical-science-pack": 4, "advanced-circuit": 3, "engine-unit": 4, "copper-cable": 2, "electronic-circuit": 2}
 RAW = {"iron-plate", "copper-plate", "steel-plate", "stone-brick", "coal", "plastic-bar", "sulfur"}
 OX, OY, CW, CH, COLS = -28, 4, 9, 6, 3  # tile grid origin and cell size; cells that can't hold a tile are skipped
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=60)
@@ -92,8 +94,9 @@ def build_order():
     return rec, tiers(rec)
 
 def step():
-    rec, tr = build_order(); plan = load(); have = {t["item"] for t in plan}
-    missing = sorted((i for i in rec if i not in have), key=lambda i: tr[i])  # lowest tier first
+    rec, tr = build_order(); plan = load(); have = {}
+    for t in plan: have[t["item"]] = have.get(t["item"], 0) + 1
+    missing = sorted((i for i in rec if have.get(i, 0) < MULT.get(i, 1)), key=lambda i: tr[i])  # lowest tier first
     if missing:
         item = missing[0]; cell = len(plan)
         while True:

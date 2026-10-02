@@ -15,7 +15,14 @@ bench = (ROOT / "shots" / "bench.jsonl")
 entities = json.loads(bench.read_text().splitlines()[-1])["entities"] if bench.exists() else 0
 
 src = ROOT / "preview_map.png"
-if src.exists():
+def valid(p):
+    try:
+        from PIL import Image
+        Image.open(p).verify(); return True
+    except Exception:
+        return False
+
+if src.exists() and valid(src):
     shutil.copy(src, WEB / "base.png")
     subprocess.run(["magick", str(src), "-resize", "1200x", "-gravity", "center", "-crop", "1200x630+0+0", "+repage", str(WEB / "og.png")], check=False)
 

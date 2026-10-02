@@ -39,7 +39,9 @@ def refresh(rcon) -> bool:
     spread = fg.max(axis=2).astype(int) - fg.min(axis=2)
     bg = (fg.max(axis=2) < 75) & (spread < 10)  # the flat dark grid
     img[~bg] = fg[~bg]
-    Image.fromarray(img).save(OUT)
+    tmp = OUT.with_name(OUT.stem + ".tmp.png")
+    Image.fromarray(img).save(tmp)
+    tmp.replace(OUT)  # atomic: readers never see a half-written file
     return True
 
 if __name__ == "__main__":

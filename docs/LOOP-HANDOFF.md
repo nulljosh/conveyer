@@ -51,6 +51,10 @@ Baseline and results table:
 
 Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
 
+## Power (v0.4.4)
+
+Tiles read low_power once farms, 12 labs and 20 tiles came online: the grid was about 9 MW. scripts/power.py builds 5 boilers and 10 engines on the east shore (+9 MW), each boiler fed by an inserter from a coal chest that the script tops up from the big stores; keepbusy runs it every 5th pass. Pump must sit at (56.5,-0.5) facing east: can_place_entity accepts dry shore, so confirm water by fluid in the pipe. Next power step if needed: 5 more columns (power.py 10).
+
 ## Scaling the blue chain (v0.4.3)
 
 Labs sat idle on blue: one advanced-circuit assembler made 0.125/s against 12 labs. planner.py MULT now builds several tiles per item (adv circuit 3, engine 4, chem pack 4, cable 2, EC 2, red 2, green 3), one new tile per 20 s pass. Plastic plant has a coal chest and inserter (hand-feeding 50 coal lasted 5 s at 10x). Watch cells for BLOCKED skips and raw plate draw.

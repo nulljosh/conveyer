@@ -25,6 +25,8 @@ from fle.env.gym_env.registry import list_available_environments
 
 import skills
 
+WIDE_R = 60  # half-width of the screenshot in tiles; the view is 2*WIDE_R x 68 tiles
+
 CMD_PATH = Path("runner_cmd.json")
 RESULT_PATH = Path("runner_result.json")
 SEQ_PATH = Path("runner_seq.txt")  # bumped after every result write, so callers can
@@ -177,18 +179,25 @@ def main() -> None:
             # per ore/coal tile in a patch, via the icon-fallback, is a dense
             # repeated grid, not useful signal. Character/entities/trees/water
             # are untouched.
+            t0 = time.time()
+            # Wide view (touch .wide to enable): 120 x 68 tiles = 1920 x 1088 px, 1:1 on a 1080p screen. It draws the whole base
+            # (about 2,700 entities) and took 27.8 s a frame, so it stays off until the renderer is incremental.
+            wide = Path(__file__).with_name(".wide").exists()
+            R = WIDE_R if wide else 32
             renderer = render_tool.get_renderer_from_map(
-                include_status=False, radius=18, compression_level="binary",
-                max_render_radius=32, position=None,
+                include_status=False, radius=WIDE_R if wide else 18, compression_level="binary",
+                max_render_radius=R, position=None,
             )
             entity_names = sorted({e.name for e in renderer.entities})
             renderer.resources = []
-            size = renderer.get_size()
-            from fle.env.tools.admin.render.constants import DEFAULT_SCALING
-            width = min(1024, int(size["width"] * DEFAULT_SCALING))
-            height = min(1024, int(size["height"] * DEFAULT_SCALING))
-            image = renderer.render(width, height, render_tool.image_resolver)
+            if wide:
+                renderer.get_size = lambda: {"minX": -R, "minY": -34, "maxX": R, "maxY": 34, "width": 2 * R, "height": 68}
+                image = renderer.render(2 * R * 16, 68 * 16, render_tool.image_resolver)
+            else:
+                image = renderer.render(1024, 1024, render_tool.image_resolver)
             image.save("preview.png")
+            import resource
+            print(f"[runner] frame {image.size[0]}x{image.size[1]} {len(renderer.entities)} entities {time.time() - t0:.1f}s peak {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1048576} MB", flush=True)
             print(f"[runner] screenshot entities: {entity_names}", flush=True)
         except Exception as e:  # noqa: BLE001 - periodic capture, never fatal
             print(f"[runner] periodic screenshot failed: {e}", flush=True)

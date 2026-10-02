@@ -266,57 +266,63 @@ struct RefreshPicker: View {
 
 struct LiveView: View {
     @ObservedObject var poller: StatusPoller
+    /// The map fills the whole window; the status bar floats on top of it so nothing is letterboxed.
     var body: some View {
-        VStack(spacing: 10) {
-            if let map = poller.map {
-                Image(nsImage: map).resizable().interpolation(.high).scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            } else {
-                Text("Waiting for the first frame").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
+        Color(white: 0.11)
+            .overlay {   // blurred copy fills the window; overlays never change the parent's size
+                if let map = poller.map {
+                    Image(nsImage: map).resizable().scaledToFill().blur(radius: 38).opacity(0.55)
+                }
             }
+            .clipped()
+            .overlay {   // the sharp map at close to 1:1, never magnified to fill
+                if let map = poller.map {
+                    Image(nsImage: map).resizable().interpolation(.high).scaledToFit()
+                } else {
+                    Text("Waiting for the first frame").foregroundStyle(.secondary)
+                }
+            }
+            .overlay(alignment: .bottom) { hud }
+        .frame(minWidth: 520, minHeight: 420)
+        .ignoresSafeArea()
+        .environment(\.colorScheme, .dark)
+    }
+
+    private var hud: some View {
+        VStack(alignment: .leading, spacing: 6) {
             if let r = poller.research, !r.current.isEmpty {
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack {
-                        Text("Researching \(Research.nice(r.current).lowercased())").font(.system(size: 16, weight: .semibold))
-                        Spacer()
-                        Text("\(r.percent)%").font(.system(size: 16))
-                    }
-                    GeometryReader { g in
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(Color.secondary.opacity(0.25))
-                            Capsule().fill(Color.accentColor).frame(width: g.size.width * CGFloat(min(max(r.percent, 0), 100)) / 100)
-                        }
-                    }
-                    .frame(height: 6)
-                    if let labs = r.labs, let working = r.labs_working {
-                        Text(working == 0 && r.moving != true ? "Labs idle, waiting for science packs" : "Research moving, \(working) of \(labs) labs busy")
-                            .font(.system(size: 14)).foregroundStyle(working == 0 && r.moving != true ? Color.orange : Color.secondary)
-                    }
-                }
-            }
-            if let s = poller.status, s.skill != "?" {
-                HStack(spacing: 5) {
-                    Circle().fill(s.worked ? Color.green : Color.red).frame(width: 7, height: 7)
-                    Text("Player is \(ConveyerMonitorApp.narrate(s.skill))").font(.system(size: 14))
+                HStack {
+                    Text("Researching \(Research.nice(r.current).lowercased())").font(.system(size: 16, weight: .semibold))
                     Spacer()
+                    Text("\(r.percent)%").font(.system(size: 16))
+                }
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.22))
+                        Capsule().fill(Color.accentColor).frame(width: g.size.width * CGFloat(min(max(r.percent, 0), 100)) / 100)
+                    }
+                }
+                .frame(height: 6)
+                if let labs = r.labs, let working = r.labs_working {
+                    let stalled = working == 0 && r.moving != true
+                    Text(stalled ? "Labs idle, waiting for science packs" : "Research moving, \(working) of \(labs) labs busy")
+                        .font(.system(size: 14)).foregroundStyle(stalled ? Color.orange : Color.secondary)
                 }
             }
-            HStack {
+            HStack(spacing: 8) {
+                if let s = poller.status, s.skill != "?" {
+                    Circle().fill(s.worked ? Color.green : Color.red).frame(width: 7, height: 7)
+                    Text("Player is \(ConveyerMonitorApp.narrate(s.skill))").font(.system(size: 13))
+                }
                 Text(poller.lastFrame.map { "Frame \($0.formatted(date: .omitted, time: .standard))" } ?? "No frame yet")
                     .font(.system(size: 13)).foregroundStyle(.secondary)
                 Spacer()
-                Button { LiveWindow.window?.toggleFullScreen(nil) } label: {
-                    Label("Full screen", systemImage: "arrow.up.left.and.arrow.down.right").font(.system(size: 13))
-                }
                 Text("Refresh every").font(.system(size: 13)).foregroundStyle(.secondary)
                 RefreshPicker(poller: poller)
             }
         }
-        .padding(12)
-        .frame(minWidth: 520, minHeight: 480)
-        .background(Color(white: 0.11))
-        .environment(\.colorScheme, .dark)
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .background(.black.opacity(0.62))
     }
 }
 

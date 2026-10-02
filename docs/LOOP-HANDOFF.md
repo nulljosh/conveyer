@@ -19,6 +19,21 @@ Every new build gets a replay script the same hour it is built.
 
 - Live view: the menu bar popover has 2/5/10/30 s buttons and a Detach button that opens a resizable "Conveyer live" window. The choice is written to `.live`; runner.py captures and research_status.py repaints at that pace (floor 2 s, default 8 to 10 s). A 2 s setting costs about a second of CPU per frame, so leave it at 10 when nobody is watching. QA without clicking: `ConveyerMonitor --snapshot out.png [--live]`.
 
+## Live preview plan (in progress, started 2026-10-02 14:40)
+
+Goal: a truly live preview instead of refresh-every-x, super efficient. Done when it runs at 5 Hz or better under 5% of one core with the window open, and idle cost is near zero with it closed.
+Design: a static basemap (terrain + entities) re-rendered only when the entity set changes, plus a tiny live overlay (character position, machine status dots, research %) from one cheap RCON call at 5 to 10 Hz, drawn by the menu bar app on top of the basemap. The basemap is centered on the character at capture time at 16 px per tile; frame.json records that center so overlay positions map to pixels.
+Steps, one per tick, commit each:
+1. Viewer heartbeat. The app touches `.watching` while the popover is open or the live window is visible. runner.py and research_status.py render only when it is fresh (under 8 s), otherwise once a minute. DONE when measured idle cost drops.
+2. Change detection: hash the entity list from one RCON call; re-render the basemap only on change or every 60 s.
+3. Overlay feed: scripts/livefeed.py writes live.json at 5 to 10 Hz (character x/y, working machines, research %, tick). The Swift app reads it and draws the marker.
+4. CPU-aware: skip frames above 80% system CPU; game speed follows load (10 when idle, down to 3 when hot).
+5. QA by screenshot and by `ps` CPU deltas; record before and after numbers here.
+Baseline and results table:
+
+- Blue science is now the research bottleneck (2026-10-02 14:40). Red and green only techs left: mining-productivity-1, weapon-shooting-speed-2, modular-armor, efficiency-module, explosives, bulk-inserter, circuit-network, landfill, fluid-wagon (queue them so labs never idle). Everything on the silo path from here needs chemical packs: add 'chemical-science-pack' to planner.py TARGETS. Needs engine units (steel, gear, pipe), advanced circuits (tile), and sulfur (a second chemical plant on the petroleum pipe, needs water; none in the east base yet).
+- Wide screenshots (touch .wide) render the whole base, 2,700 entities, 28 s a frame. Off by default. The app shows the square map sharp at about 1:1 over a blurred copy instead of magnifying it. Real fix: incremental basemap (live preview plan, step 2).
+
 ## Tick (what the loop does every ~20 min)
 
 1. `scripts/health.sh --fix`. Prints every moving part, starts what is down, and if the world reverted it replays journal, fuel, oil and tiles. Exit code is the number of open problems. If usage says 90% or more (session or weekly), run /checkpoint and stop the loop. No kill.

@@ -9,7 +9,7 @@ import factorio_rcon
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC, OUT = ROOT / "preview.png", ROOT / "preview_map.png"
-N, PX = 67, 16  # tiles per side queried, pixels per tile
+PX = 16  # pixels per tile
 G = Path("/Users/joshua/Library/Application Support/Steam/steamapps/common/Factorio/factorio.app/Contents/data/base/graphics/terrain")
 # tile name -> (code, texture sheet). Sheets keep 64 px 1x1 variants along the top row.
 TILES = {"grass-1": "a", "grass-2": "b", "grass-3": "e", "grass-4": "f", "dry-dirt": "o", "landfill": "l",
@@ -41,31 +41,37 @@ def variants(code):
     return _cache[code]
 _LUA_MAP = "local m={" + ",".join(f"['{n}']='{c}'" for n, c in TILES.items()) + "} "
 LUA = ("/silent-command " + _LUA_MAP + "local s=game.surfaces[1] local ch=s.find_entities_filtered{type='character'}[1] local p=ch.position "
-       "local sx=math.floor(p.x)-33 local sy=math.floor(p.y)-33 local out={} "
-       "for r=%d,%d do local row={} for c=0,66 do row[#row+1]=m[s.get_tile(sx+c,sy+r).name] or 'o' end "
+       "local sx=math.floor(p.x)-%d local sy=math.floor(p.y)-%d local out={} "
+       "for r=%d,%d do local row={} for c=0,%d do row[#row+1]=m[s.get_tile(sx+c,sy+r).name] or 'o' end "
        "out[#out+1]=table.concat(row) end rcon.print(p.x..','..p.y..'|'..table.concat(out,','))")
 
 def refresh(rcon) -> bool:
     if not SRC.exists() or (OUT.exists() and OUT.stat().st_mtime >= SRC.stat().st_mtime):
         return False
-    a = rcon.send_command(LUA % (0, 33)); b = rcon.send_command(LUA % (34, 66))
-    (px, py), rows = (map(float, a.split("|")[0].split(",")), a.split("|")[1].split(",") + b.split("|")[1].split(","))
-    sx, sy = int(np.floor(px)) - 33, int(np.floor(py)) - 33
-    img = np.zeros((1024, 1024, 3), np.uint8)
-    for r, row in enumerate(rows):
-        for c, k in enumerate(row):
-            x0 = round(512 + (sx + c - px) * PX); y0 = round(512 + (sy + r - py) * PX)
-            span, v = variants(k); X, Y = sx + c, sy + r
-            big = v[((X // span) * 7919 + (Y // span) * 104729) % len(v)]
-            ox, oy = (X % span) * PX, (Y % span) * PX
-            tile = big[oy:oy + PX, ox:ox + PX]
-            ys, xs = slice(max(y0, 0), min(y0 + PX, 1024)), slice(max(x0, 0), min(x0 + PX, 1024))
-            if ys.start < ys.stop and xs.start < xs.stop:
-                img[ys, xs] = tile[ys.start - y0:ys.stop - y0, xs.start - x0:xs.stop - x0]
     try:
         fg = np.array(Image.open(SRC).convert("RGB"))
     except Exception:  # runner mid-write, try next time
         return False
+    H, W = fg.shape[:2]                       # any size: 1024x1024 square or the wide 1920x1088 view
+    nx, ny = W // PX + 3, H // PX + 3         # tiles to cover the picture plus a margin
+    hx, hy = nx // 2, ny // 2
+    rows, step = [], 24                       # RCON replies are capped near 4 KB, so ask for 24 rows at a time
+    for r0 in range(0, ny, step):
+        reply = rcon.send_command(LUA % (hx, hy, r0, min(r0 + step, ny) - 1, nx - 1))
+        head, body = reply.split("|", 1); rows += body.split(",")
+    px, py = map(float, head.split(","))
+    sx, sy = int(np.floor(px)) - hx, int(np.floor(py)) - hy
+    img = np.zeros((H, W, 3), np.uint8)
+    for r, row in enumerate(rows):
+        for c, k in enumerate(row):
+            x0 = round(W / 2 + (sx + c - px) * PX); y0 = round(H / 2 + (sy + r - py) * PX)
+            span, v = variants(k); X, Y = sx + c, sy + r
+            big = v[((X // span) * 7919 + (Y // span) * 104729) % len(v)]
+            ox, oy = (X % span) * PX, (Y % span) * PX
+            tile = big[oy:oy + PX, ox:ox + PX]
+            ys, xs = slice(max(y0, 0), min(y0 + PX, H)), slice(max(x0, 0), min(x0 + PX, W))
+            if ys.start < ys.stop and xs.start < xs.stop:
+                img[ys, xs] = tile[ys.start - y0:ys.stop - y0, xs.start - x0:xs.stop - x0]
     spread = fg.max(axis=2).astype(int) - fg.min(axis=2)
     bg = (fg.max(axis=2) < 75) & (spread < 10)  # the flat dark grid
     img[~bg] = fg[~bg]

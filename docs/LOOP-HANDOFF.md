@@ -51,6 +51,10 @@ Baseline and results table:
 
 Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
 
+## Purple prep (v0.4.6)
+
+scripts/ironfarm.py 10 stone: stone drill into steel furnace makes brick by itself, 2 slots fit on the near stone patch (152k ore). Production science needs brick (electric furnace) and stone (rails): about 20k stone total. Tech chain in the queue: advanced-material-processing-2, then production-science-pack. When both are done: add "production-science-pack" to TARGETS and MULT in planner.py, and add the pack to queue.py PACKS only once the tile makes packs.
+
 ## Power (v0.4.4)
 
 Tiles read low_power once farms, 12 labs and 20 tiles came online: the grid was about 9 MW. scripts/power.py builds 5 boilers and 10 engines on the east shore (+9 MW), each boiler fed by an inserter from a coal chest that the script tops up from the big stores; keepbusy runs it every 5th pass. Pump must sit at (56.5,-0.5) facing east: can_place_entity accepts dry shore, so confirm water by fluid in the pipe. Next power step if needed: 5 more columns (power.py 10).

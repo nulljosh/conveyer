@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ironfarm.py [N] [copper]: electric drill -> steel furnace -> inserter -> chest, N slots on the west iron patch. Idempotent replay.
+"""ironfarm.py [N] [copper|stone]: electric drill -> steel furnace -> inserter -> chest, N slots on the west iron patch. Idempotent replay.
 Iron plate is the raw bottleneck (chests held 581 iron against 6,972 copper). Slots land in .world/ironfarm.json so a
 reverted world is rebuilt by rerunning this with no scan. Layout per slot (dx,dy = drill top-left tile): drill 3x3 at
 (dx+.5,dy+.5) drops north into a 2x2 steel furnace at (dx+1,dy-2); an inserter at (dx+.5,dy-3.5) empties it into a
@@ -9,10 +9,11 @@ import json, sys, pathlib, factorio_rcon as f
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=90)
 run = lambda l: c.send_command(" ".join(l.split("\n")))
 COPPER = "copper" in sys.argv
-ORE = "copper-ore" if COPPER else "iron-ore"
-FILE = pathlib.Path(".world/copperfarm.json" if COPPER else ".world/ironfarm.json")
+STONE = "stone" in sys.argv
+ORE = "stone" if STONE else "copper-ore" if COPPER else "iron-ore"
+FILE = pathlib.Path(".world/stonefarm.json" if STONE else ".world/copperfarm.json" if COPPER else ".world/ironfarm.json")  # a steel furnace smelts stone into brick by itself
 N = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 16
-X0, Y0, X1, Y1 = (-62, -512, 62, -448) if COPPER else (-258, -130, -222, -62)   # west patch: 1.5M + 1.1M + 0.6M ore; the near patch is already built over
+X0, Y0, X1, Y1 = (-98, -66, -62, -30) if STONE else (-62, -512, 62, -448) if COPPER else (-258, -130, -222, -62)   # west patch: 1.5M + 1.1M + 0.6M ore; the near patch is already built over
 AREA = "{{%d,%d},{%d,%d}}" % (X0, Y0, X1, Y1)
 
 def scan():

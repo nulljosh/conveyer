@@ -15,6 +15,8 @@ PLAN = ROOT / ".world" / "tiles.json"
 TARGETS = {"automation-science-pack": 300, "logistic-science-pack": 300, "chemical-science-pack": 300}
 # tiles per item (default 1). 12 labs eat about 0.6 packs/s of each color; one tile makes 0.08 to 0.15/s, so the blue chain is the wall
 MULT = {"automation-science-pack": 2, "logistic-science-pack": 3, "chemical-science-pack": 4, "advanced-circuit": 3, "engine-unit": 4, "copper-cable": 2, "electronic-circuit": 2}
+# crafts of every ingredient kept on hand per tile; fast recipes burn a 300-craft buffer inside one 20 s pass at 10x, a chest holds 16 stacks
+BUF = {"copper-cable": 1400, "iron-gear-wheel": 700, "pipe": 700, "electronic-circuit": 500}
 RAW = {"iron-plate", "copper-plate", "steel-plate", "stone-brick", "coal", "plastic-bar", "sulfur"}
 OX, OY, CW, CH, COLS = -28, 4, 9, 6, 3  # tile grid origin and cell size; cells that can't hold a tile are skipped
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=60)
@@ -78,7 +80,7 @@ def supply(plan, rec):
     ins, outs = [], []
     for t in plan:
         ox, oy = OX + (t["cell"] % COLS) * CW, OY + (t["cell"] // COLS) * CH
-        need = {i: a * 300 for i, a in rec[t["item"]]["ing"].items()}  # 300 crafts of every ingredient on hand: at 10x speed a tile eats 100 crafts between 60 s passes
+        need = {i: a * BUF.get(t["item"], 300) for i, a in rec[t["item"]]["ing"].items()}  # 300 crafts of every ingredient on hand: at 10x speed a tile eats 100 crafts between 60 s passes
         cap = 400 if t["item"] in TARGETS else 200  # demand: a tile holding this much of its product stops being fed
         ins.append("{p={%g,%g},o={%g,%g},item='%s',cap=%d,need={%s}}" % (ox + 0.5, oy + 1.5, ox + 6.5, oy + 1.5, t["item"], cap, ",".join(f"['{k}']={v}" for k, v in need.items())))
     return run(SUPPLY % ("{}", ",".join(ins), "")) if ins else ""

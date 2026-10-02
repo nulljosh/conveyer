@@ -304,7 +304,8 @@ final class MarkerModel: ObservableObject {
             guard let c = self.shown else { self.shown = p; return }
             let dx = p.x - c.x, dy = p.y - c.y
             if abs(dx) < 0.005 && abs(dy) < 0.005 { return }   // arrived: no redraws
-            self.shown = abs(dx) > 30 || abs(dy) > 30 ? p : CGPoint(x: c.x + dx * 0.12, y: c.y + dy * 0.12)   // a teleport across the base snaps, a stroll glides
+            let d = (dx * dx + dy * dy).squareRoot(), k = min(0.12 * d, 1.0) / d   // 12% of the gap per frame, never faster than 60 tiles a second, so even a long trip glides
+            self.shown = CGPoint(x: c.x + dx * k, y: c.y + dy * k)
         } }
     }
     func stop() { timer?.invalidate(); timer = nil; ease?.invalidate(); ease = nil }
@@ -419,19 +420,35 @@ struct Triangle: Shape {
     }
 }
 
+/// Zooms the map layer and slides it so the player stays in the middle, clamped to the picture's edge. Only this view watches the eased position.
+struct CameraRig<Content: View>: View {
+    @ObservedObject var m: MarkerModel
+    let size: CGSize
+    let content: Content
+    private let zoom: CGFloat = 1.7
+    init(m: MarkerModel, size: CGSize, @ViewBuilder content: () -> Content) { self.m = m; self.size = size; self.content = content() }
+    var body: some View {
+        let o = offset()
+        content.scaleEffect(zoom).offset(x: o.width, y: o.height)
+    }
+    private func offset() -> CGSize {
+        guard let f = m.frame, let p = m.shown else { return .zero }
+        let s0 = max(size.width / f.w, size.height / f.h)
+        let qx = (p.x - f.cx) * f.ppt * s0, qy = (p.y - f.cy) * f.ppt * s0
+        let mx = max(0, zoom * f.w * s0 / 2 - size.width / 2), my = max(0, zoom * f.h * s0 / 2 - size.height / 2)
+        return CGSize(width: min(max(-zoom * qx, -mx), mx), height: min(max(-zoom * qy, -my), my))
+    }
+}
+
 struct LiveView: View {
     @ObservedObject var poller: StatusPoller
     /// The map fills the whole window; the status bar floats on top of it so nothing is letterboxed.
-    /// Follow camera: the map, dots and player share one zoomed layer that is panned so the player stays in the middle, clamped to the picture's edge.
-    private let zoom: CGFloat = 1.7
+    /// Follow camera: CameraRig re-renders at 60 fps on its own while this view (and the 4 MB map picture) stays still.
     var body: some View {
         GeometryReader { g in
-            let f = poller.marker.frame
-            let s0 = f.map { max(g.size.width / $0.w, g.size.height / $0.h) } ?? 1
-            let off = cameraOffset(g.size, f, s0)
             ZStack {
                 Color(white: 0.11)
-                Group {
+                CameraRig(m: poller.marker, size: g.size) {
                     ZStack {
                         if let map = poller.map {
                             Image(nsImage: map).resizable().interpolation(.high).scaledToFill().frame(width: g.size.width, height: g.size.height).clipped()
@@ -441,8 +458,6 @@ struct LiveView: View {
                         StatusDots(m: poller.marker)
                         PlayerMarker(m: poller.marker)
                     }
-                    .scaleEffect(zoom)
-                    .offset(x: off.width, y: off.height)
                 }
             }
             .clipped()
@@ -451,13 +466,6 @@ struct LiveView: View {
         .frame(minWidth: 520, minHeight: 420)
         .ignoresSafeArea()
         .environment(\.colorScheme, .dark)
-    }
-
-    private func cameraOffset(_ size: CGSize, _ f: LiveFrame?, _ s0: CGFloat) -> CGSize {
-        guard let f = f, let p = poller.marker.shown else { return .zero }
-        let qx = (p.x - f.cx) * f.ppt * s0, qy = (p.y - f.cy) * f.ppt * s0      // player relative to the picture's centre, unzoomed
-        let mx = max(0, zoom * f.w * s0 / 2 - size.width / 2), my = max(0, zoom * f.h * s0 / 2 - size.height / 2)   // how far the zoomed picture can slide before showing its edge
-        return CGSize(width: min(max(-zoom * qx, -mx), mx), height: min(max(-zoom * qy, -my), my))
     }
 
     private var hud: some View {

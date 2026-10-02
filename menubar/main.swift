@@ -261,11 +261,13 @@ enum LiveWindow {
         w.center()
         window = w
         poller.windowVisible = true
+        NSApp.setActivationPolicy(.regular)   // dock icon while the live window is open
+        NSApp.applicationIconImage = NSImage(contentsOfFile: Bundle.main.path(forResource: "AppIcon", ofType: "icns") ?? "")
         NotificationCenter.default.addObserver(forName: NSWindow.didChangeOcclusionStateNotification, object: w, queue: .main) { _ in
             Task { @MainActor in poller.windowVisible = w.occlusionState.contains(.visible) }
         }
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: w, queue: .main) { _ in
-            Task { @MainActor in LiveWindow.window = nil; poller.windowVisible = false }
+            Task { @MainActor in LiveWindow.window = nil; poller.windowVisible = false; NSApp.setActivationPolicy(.accessory) }
         }
         w.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -279,6 +281,8 @@ struct LivePos: Decodable { let x: Double; let y: Double }
 @MainActor
 final class MarkerModel: ObservableObject {
     @Published var pos: CGPoint?
+    @Published var shown: CGPoint?   // eased toward pos about 60 times a second: the marker and the camera follow this, so neither jumps
+    private var ease: Timer?
     @Published var heading: Double = 90   // degrees, 0 = east, 90 = south (screen y grows down)
     @Published var moving = false
     @Published var step = 0
@@ -295,8 +299,15 @@ final class MarkerModel: ObservableObject {
         guard timer == nil else { return }
         read()
         timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in Task { @MainActor in self.read() } }
+        ease = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in Task { @MainActor in
+            guard let p = self.pos else { return }
+            guard let c = self.shown else { self.shown = p; return }
+            let dx = p.x - c.x, dy = p.y - c.y
+            if abs(dx) < 0.005 && abs(dy) < 0.005 { return }   // arrived: no redraws
+            self.shown = abs(dx) > 30 || abs(dy) > 30 ? p : CGPoint(x: c.x + dx * 0.12, y: c.y + dy * 0.12)   // a teleport across the base snaps, a stroll glides
+        } }
     }
-    func stop() { timer?.invalidate(); timer = nil }
+    func stop() { timer?.invalidate(); timer = nil; ease?.invalidate(); ease = nil }
 
     private func readDots() {
         guard let m = (try? FileManager.default.attributesOfItem(atPath: dotsPath))?[.modificationDate] as? Date, m != dotsStamp,
@@ -354,7 +365,7 @@ struct PlayerMarker: View {
     @ObservedObject var m: MarkerModel
     var body: some View {
         GeometryReader { g in
-            if let p = m.pos, let f = m.frame {
+            if let p = m.shown, let f = m.frame {
                 // same fill transform as the map image: scale to cover, centered
                 let s = max(g.size.width / f.w, g.size.height / f.h)
                 let x = (g.size.width - f.w * s) / 2 + (f.w / 2 + (p.x - f.cx) * f.ppt) * s
@@ -371,7 +382,6 @@ struct PlayerMarker: View {
                     }
                 }
                 .position(x: x, y: y)
-                .animation(.linear(duration: 0.2), value: m.pos)
             }
         }
         .allowsHitTesting(false)
@@ -433,8 +443,6 @@ struct LiveView: View {
                     }
                     .scaleEffect(zoom)
                     .offset(x: off.width, y: off.height)
-                    .animation(.linear(duration: 0.25), value: off.width)
-                    .animation(.linear(duration: 0.25), value: off.height)
                 }
             }
             .clipped()
@@ -446,7 +454,7 @@ struct LiveView: View {
     }
 
     private func cameraOffset(_ size: CGSize, _ f: LiveFrame?, _ s0: CGFloat) -> CGSize {
-        guard let f = f, let p = poller.marker.pos else { return .zero }
+        guard let f = f, let p = poller.marker.shown else { return .zero }
         let qx = (p.x - f.cx) * f.ppt * s0, qy = (p.y - f.cy) * f.ppt * s0      // player relative to the picture's centre, unzoomed
         let mx = max(0, zoom * f.w * s0 / 2 - size.width / 2), my = max(0, zoom * f.h * s0 / 2 - size.height / 2)   // how far the zoomed picture can slide before showing its edge
         return CGSize(width: min(max(-zoom * qx, -mx), mx), height: min(max(-zoom * qy, -my), my))

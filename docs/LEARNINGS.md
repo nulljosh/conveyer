@@ -16,3 +16,4 @@ Newest at the bottom. One line each.
 - Game runs at ~7x real time and is not paused between steps, so labs finish units fast. Science pack supply is the limit, not lab count. Research queue held pack-wasting extras (fluid wagon, solar, defender); set a strict queue with force.research_queue.
 - Cable chest ran dry. Hand-craft cable from copper plates instead (science.sh withdraws N*3 copper). SKIP_IRON=1 reuses plates already in the bag.
 - The game was PAUSED between steps (FLE pause_after_action), so research and smelting froze whenever the player was not acting. runner.py now sets pause_after_action False. Check game.tick_paused first when research stalls with labs 'working'.
+- A lab placed off the power grid keeps whatever you feed it (4 labs ate 152 green packs). feedlabs.py now skips labs with no electric network.

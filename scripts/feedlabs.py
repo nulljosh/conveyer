@@ -5,7 +5,7 @@ import factorio_rcon
 LUA = """/silent-command 
 local ch = game.surfaces[1].find_entities_filtered{type='character'}[1]
 local inv = ch.get_main_inventory()
-local labs = game.surfaces[1].find_entities_filtered{name='lab'}
+local labs = {} for _, l in pairs(game.surfaces[1].find_entities_filtered{name='lab'}) do if l.electric_network_id then labs[#labs+1] = l end end
 for _, pack in ipairs{'automation-science-pack','logistic-science-pack','chemical-science-pack','production-science-pack','utility-science-pack'} do
   local have = inv.get_item_count(pack)
   if have > 0 then

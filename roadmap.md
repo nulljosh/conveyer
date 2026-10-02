@@ -60,7 +60,7 @@ Sub-bullets are the real, current blow-by-blow status.
 Conveyer now runs on a copy of Joshua's own Factorio save (`scripts/world.sh`), not a vanilla start.
 Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 41 steel furnaces,
 10 steam engines, a train and two cars. Goal: oil, then a rocket launch.
-- [ ] Advanced circuits and chemical science unlocked. Needs about 160 more red and green. ETA about 30 minutes of hand cycles
+- [x] Advanced circuits and chemical science unlocked (tech 43, 2026-10-02)
 - [ ] Automated green science so research stops being hand-fed. ETA 1 to 2 days of agent time
 - [ ] Oil chain running (refineries, plastic, sulfur, advanced circuits, chemical packs). ETA 1 to 2 days
 - [ ] Advanced oil processing researched (500 red, 500 green, 75 chemical). ETA 1 to 2 days

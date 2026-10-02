@@ -20,6 +20,10 @@ Plays on a copy of a real 2,300 entity base. Red, green, blue and purple science
 
 <img src="progress.svg" width="480" alt="Entities placed per run">
 
+## Assisted launch, and what is next
+
+v1.0.0 launched a rocket with a satellite, assisted. The labs were fed the last packs through the console and the silo was placed by script (`scripts/assist.py`, `scripts/silo.py`). Red through purple science ran on automated tiles. v2.0.0 is a launch with no help. The gap list is in [roadmap.md](roadmap.md), the training plan for a model of our own is in [docs/TRAINING.md](docs/TRAINING.md).
+
 ## Run it
 
 You need a licensed Factorio (2.0.73 or newer), Docker, and a token from [factorio.com/profile](https://www.factorio.com/profile). On a Mac, use [colima](https://github.com/abiosoft/colima) and keep the repo under `$HOME`.
@@ -39,7 +43,7 @@ python3 runner.py --env-id open_play
 
 ## Watch it
 
-- **Menu bar:** `menubar/build.sh`. Shows the live map, research, and the next milestones.
+- **Menu bar and live window:** `menubar/build.sh`, then `ConveyerMonitor.app --open-live`. The live window floats above everything (Ctrl+Option+P toggles), follows the player, shows the real engineer sprite and a pulsing dot on every machine. Ctrl+Option+H shows or hides the progress panel.
 - **Terminal:** `python3 scripts/tui.py`.
 - **Screenshots and benchmark:** `scripts/snap.py` saves a frame and a row to `shots/` every 5 minutes.
 - **Your own Factorio client:** connect to the server address. The version must match exactly. Under colima, start it with `--network-address` so UDP works.

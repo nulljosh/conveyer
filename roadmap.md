@@ -226,3 +226,7 @@ Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 4
 - [ ] Live view: refresh the map picture when new tiles are built, or draw our own tile sprites
 - [ ] Benchmarks: log planner decisions to runs/ so training data exists, and run the first LoRA from docs/TRAINING.md
 - [ ] QA: landing numbers generated from the game (rockets, techs, packs per minute), no typed numbers
+
+## Next games
+- [ ] Oxygen Not Included, then Pikmin and Pokemon: reuse the skill layer (pick one skill and JSON params, never code), the planner pattern, the status dots and the follow camera. Train Turing on the logged runs (docs/TRAINING.md)
+- [ ] Build our own versions of these games once the agent can play them

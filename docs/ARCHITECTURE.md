@@ -57,3 +57,29 @@ No central database. Every state lives in JSON files, so the system is transpare
 - **Factorio.com token required.** Not Steam credentials. Get the token from factorio.com/profile (after signing in with Steam if you own it there).
 - **Memory-tight.** 16 GB machine + colima + Factorio server + browser + agent session can OOM. Keep the cluster at `--workers 1`.
 - **UDP networking.** Colima's default bridged mode doesn't reliably forward UDP to `127.0.0.1`. Start colima with `--network-address` for a routable VM IP.
+
+
+## Real save scripts (2026-10-02)
+
+The agent plays Joshua's real save through a planner and a set of replay scripts, all under `scripts/`. Everything is Python over RCON, one persistent connection each, no daemons of ours (the loop runs them as Claude background tasks).
+
+| Script | What it does |
+|---|---|
+| `planner.py` | Builds and feeds tiles (assembler, input chest, inserters, output chest). `step` places one tile per pass and feeds every chest, `labs` feeds the labs, `replay` rebuilds tiles after a crash. Recipes, buffers (`BUF`) and tile counts (`MULT`) live at the top. |
+| `keepbusy.sh` | The 20 second loop: planner step, oil refill, speed governor, labs and lab feeding, fuel. Exits when `runner.pid` is gone. |
+| `tick.sh`, `health.sh` | One compact report per loop tick. `health.sh --fix` starts what is down and, after a world revert, replays every build. |
+| `speed.py`, `cpu.sh` | Game speed follows CPU load and free RAM (10, 6, 3, 2x). `cpu.sh` measures each process. |
+| `queue.py` | Keeps the research queue on the rocket-silo path, prerequisites first, cheapest first. |
+| `research_status.py`, `livefeed.py`, `livemap.py`, `snap.py` | The monitor's feeds. Research and labs (`research.json`), player position (`live.json`), machine status dots and the strolling player (`live_status.json`), benchmark rows (`shots/bench.jsonl`). The last three sleep unless the monitor touches `.watching`. |
+| `terrain.py` | Paints real ground under the FLE render, writes `preview_map.png`. |
+| `oil.py`, `sulfur.py`, `advcircuit.py`, `power.py` | The oil block (refinery, plastic plant with an output chest and a coal chest refilled every pass), the sulfur plant with 90 tiles of underground water, one advanced circuit assembler, and steam power columns. All idempotent. |
+| `ironfarm.py` | Drill, furnace, inserter, chest slots on the iron, copper or stone patch, plus a pole bridge back to the grid. Slot lists freeze in `.world/*farm.json`. |
+| `labs.py`, `feedlabs.py`, `withdraw.py`, `fuel.py` | Lab grid, moving packs into labs, pulling items from chests and furnaces into the bag, filling boilers and furnaces. |
+| `journal.py` | Snapshot, check and restore of the build list, because FLE's Lua state cannot be saved. |
+| `assist.py`, `silo.py` | Assisted mode: tops the labs with every pack while `.assist` exists, and builds the rocket silo, rocket parts and satellite and launches. This is how v1.0.0 was reached, and it is labeled that way everywhere. |
+| `milestone.py`, `ship_landing.sh`, `landing_sync.py`, `make_icon.py`, `statline.py`, `realshot.sh`, `oilprep.sh` | Proof GIFs, landing and README refresh and deploy, the icon, one detailed log line, a true graphics screenshot (needs a real client, crashes the server if left joined), and oil prep. |
+| `export_training.py` | Turns `runs/*.jsonl` into `data/train.jsonl` and `data/valid.jsonl` for LoRA. See [TRAINING.md](TRAINING.md). |
+
+## The monitor (`menubar/main.swift`)
+
+A SwiftUI menu bar app signed with the Developer ID so macOS keeps its Documents permission across rebuilds. The popover shows the map, research and roadmap. The live window (`--open-live`, `--fullscreen` to opt in) floats above all windows by default (Ctrl+Option+P toggles), follows the player with a zoomed camera eased at 60 fps, draws the real Factorio engineer sprite (copied from the Steam install by `build.sh`, never into git), and pulses a dot on every machine (green working, amber waiting, red stuck). Ctrl+Option+H shows or hides the progress panel. The map picture only redraws when the runner steps, so new builds show as dots before they show as sprites.

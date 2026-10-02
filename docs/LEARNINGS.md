@@ -25,3 +25,14 @@ Newest at the bottom. One line each.
 - A real Factorio client cannot join the server: joining forces the server to save the map to send it over, and FLE's Lua state cannot be saved, so it crashes exactly like an autosave (2026-10-02, 4753 s into the run). Live watching in the game is not possible while FLE is loaded. Screenshots from the runner are the only view. Recovery is `scripts/health.sh --fix`.
 - Video, "A.I. Learns to Optimize Factorio Blueprints" (Alex Wittman): a genetic algorithm over blueprints stalls on random entity grids, because almost no random design makes anything. Fix: score partial progress (has an assembler, inserter touching a belt or assembler, an ingredient or product inside a machine) so the search gets a gradient, then use wave function collapse to generate only valid designs and optimize cost and output. Takeaways for us: grade the agent on shaped partial progress, not only the final item; generate tiles from constraints (every recipe input needs an inserter, one output inserter) the way planner.py does. A GA over our tile layout is a possible later step; it was slow even for a green circuit.
 - Video, "Factorio Automated: A 1000SPM self-expanding factory" (Chris Uehlinger): the tier-and-demand tile idea behind scripts/planner.py. Tier = lowest tier with none of its ingredients. Build the lowest-tier missing ingredient first. Small tiles keep mistakes cheap. Robot logistics replaces belts; we use RCON moves until robotics is researched.
+
+
+## 2026-10-02 lessons
+- A stalled chain is usually one empty chest. The plastic plant's coal chest ran dry and starved advanced circuits, blue science and purple for hours. Look at the machine status of the first link before theorizing about the last.
+- Sixteen-slot chests fill up. Steel and circuits at 300 crafts filled the chests of the purple tiles and left no room for brick or advanced circuits. Cap the buffer per recipe.
+- At 10x game speed a plant fills its output between passes. Give every producer an output chest.
+- Background children die with the tool call. Run long scripts as Claude background tasks and refresh them every 20 minutes.
+- Lua in Factorio 2.0 has no `//` operator, and a `--` comment in a joined RCON line silences the rest of the script.
+- macOS ties a Documents permission to the code signature. Ad-hoc builds ask again after every rebuild. Sign with a stable identity.
+- The player never moves when everything runs over RCON, so the live view looked frozen. A strolling player and status dots made it readable.
+- Assisted is not legit. Console-fed packs and a scripted silo reached the launch, and the release says so. A legit launch needs advanced oil, cracking, sulfuric acid, lubricant, rocket fuel, about 1,300 processing units and 1,100 low density structures.

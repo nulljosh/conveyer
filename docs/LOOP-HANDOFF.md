@@ -2,11 +2,13 @@
 
 Read this first. Everything a fresh session needs is here and in git. Nothing lives only in a conversation.
 
-## State
+## State (2026-10-02, 17:00)
 
-Goal: launch a rocket on Joshua's real save (a.zip copy). Rocket-silo path: 27 of 44 techs. Remaining: 4,350 red, 4,350 green, 3,350 blue, 1,600 purple, 1,000 yellow packs. Route and reasoning are in roadmap.md ("Route to the silo").
-Built: refinery and plastic plant (scripts/oil.py), one advanced-circuit assembler (scripts/advcircuit.py), seven science tiles making red and green science (scripts/planner.py), a character armed with a submachine gun, heavy armor, 100 magazines, grenades.
-Running: colima, the conveyer-world container, runner.py, research_status.py, snap.py (a map shot every 5 min into shots/), keepbusy.sh (keeps labs fed, boilers fueled, tiles supplied).
+v1.0.0 shipped: a rocket and a satellite launched, assisted. Research is done (73 techs). Red, green, blue and purple science run on automated tiles (34 tiles). The labs were console-fed purple and yellow packs for the last techs (`.assist`, `scripts/assist.py`), and the silo, rocket parts and satellite came from `scripts/silo.py`. Say assisted whenever you say v1.0.
+
+Goal now: v2.0.0, a legit launch with no console help. The gap list is in roadmap.md under "Gaps to v2.0". The hard parts, with the exact recipes: processing unit (20 circuits, 2 advanced circuits, 5 sulfuric acid), low density structure (20 copper, 2 steel, 5 plastic), rocket fuel (10 solid fuel, 10 light oil), electric engine (lubricant), battery (sulfuric acid). A launch needs about 1,300 processing units, 1,100 low density structures, 1,050 rocket fuel, 200 electric engines, 100 solar panels, 100 accumulators and 5 radars. That means advanced oil processing with cracking, a sulfuric acid plant, a lubricant plant and fluid inputs in the planner.
+
+Running (all as Claude background tasks, refresh any older than about 20 minutes): `keepbusy.sh`, `livemap.py`, `livefeed.py`, `research_status.py`, `snap.py`. The monitor app is `menubar/ConveyerMonitor.app`, signed with the Developer ID, Documents permission granted once.
 
 ## The one rule that explains most of this repo
 

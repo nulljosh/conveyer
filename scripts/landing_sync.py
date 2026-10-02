@@ -83,6 +83,8 @@ PAGE = """<!doctype html>
   .sheet-rule > :first-child { order: 0; } .sheet-rule > :last-child { order: 2; }
   .sheet-rule a { text-decoration: none; display: inline-block; padding: 12px 6px; margin: -12px -6px; } .sheet-rule a:hover { text-decoration: underline; }
   /* hero: the map is the wallpaper, pinned; the page slides over it */
+  .hero { overflow: hidden; } .bgvid { position: absolute !important; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; image-rendering: pixelated; }
+  .hero .shade { position: absolute !important; inset: 0; z-index: -1; background: radial-gradient(ellipse 70% 55% at 50% 40%, rgba(16,12,8,.68), rgba(16,12,8,.28) 70%, rgba(16,12,8,.1)), linear-gradient(180deg, rgba(16,12,8,.35), rgba(16,12,8,.15) 60%, rgba(16,12,8,.55)); }
   .hero { position: sticky; top: 0; z-index: 0; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 72px 20px 56px; color: #fff;
           background: radial-gradient(ellipse 70% 55% at 50% 40%, rgba(16,12,8,.68), rgba(16,12,8,.28) 70%, rgba(16,12,8,.1)), linear-gradient(180deg, rgba(16,12,8,.35), rgba(16,12,8,.15) 60%, rgba(16,12,8,.55)), url(base.png) 40% 22% / cover no-repeat #3a2f23; }
   .hero > * { position: relative; }
@@ -127,12 +129,13 @@ PAGE = """<!doctype html>
     .btn { padding: 13px 20px; min-height: 44px; } .hero { background-position: 30% 22%; } .wrap { padding: 0 16px; }
     .facts, .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cols { grid-template-columns: minmax(0, 1fr); } .foot-dir { grid-template-columns: repeat(2, 1fr); }
   }
-  @media (prefers-reduced-motion: reduce) { .hero { position: relative; } .js .reveal { opacity: 1; transform: none; transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .bgvid { display: none; } .hero { position: relative; } .js .reveal { opacity: 1; transform: none; transition: none; } }
 </style>
 </head>
 <body id="top">
 <div class="sheet-rule" aria-hidden="true"><span>Conveyer</span><span><a href="https://github.com/nulljosh/conveyer" tabindex="-1">GitHub</a></span></div>
 <header class="hero">
+  <video class="bgvid" autoplay muted loop playsinline preload="metadata" poster="live-poster.jpg" aria-hidden="true"><source src="live.mp4" type="video/mp4"></video><div class="shade"></div>
   <img class="mark" src="icon.svg" alt="">
   <h1>Introducing<br>Conveyer.</h1>
   <p class="eyebrow">An LLM plays Factorio.</p>

@@ -49,6 +49,10 @@ Baseline and results table:
 
 Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
 
+## Blue research running (v0.4.0)
+
+scripts/queue.py keeps the research queue on the silo path (everything whose packs we make, prerequisites first, cheapest first; add purple and yellow to PACKS when their tiles run); keepbusy calls it every 5th pass. planner.py labs now pulls blue, purple and yellow packs from chests too. First blue research: advanced-oil-processing, 12 techs queued. Next: purple (production science) and yellow (utility science) tiles in planner TARGETS, sulfuric acid for processing units, then the silo.
+
 ## Blue science automated (2026-10-02 16:10, v0.3.0)
 
 Sulfur plant at (-30.5,-8.5) on the plastic plant's gas pipe, water by underground pipe along y=-5.5 from a new offshore pump at (55.5,-4.5) (a pump's output faces opposite its direction, and it is 1x2). planner.py pulls sulfur from the plant like plastic. The chemical-science-pack tile is working. Next: watch blue packs reach the labs, queue chemical-pack techs, then purple (production science: electric furnace, productivity module, rail) and yellow (utility: processing unit needs sulfuric acid, flying robot frame, low density structure).

@@ -113,7 +113,7 @@ def replay():
     print("supplied:", supply(load(), rec) or "nothing to move")
 
 LABS = """/silent-command local s=game.surfaces[1] local inv=s.find_entities_filtered{type='character'}[1].get_main_inventory() local o={}
-for _,n in ipairs{'automation-science-pack','logistic-science-pack'} do for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do
+for _,n in ipairs{'automation-science-pack','logistic-science-pack','chemical-science-pack','production-science-pack','utility-science-pack'} do for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do
   local ci=e.get_inventory(defines.inventory.chest) local h=ci.get_item_count(n) if h>0 then local k=inv.insert{name=n,count=h} if k>0 then ci.remove{name=n,count=k} o[#o+1]=n..'+'..k end end end end rcon.print(table.concat(o,' '))"""
 
 if __name__ == "__main__":

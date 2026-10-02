@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebuild the oil block in one shot (refinery, crude pipes, poles, plastic plant). Idempotent.
 FLE's Lua state can't be saved, so the server always reboots to the 10:55 copy. Rerun this after any crash.
-an inserter and chest feed the plant coal (hand-feeding 50 lasted 5 s at 10x). ponytail: create_entity over RCON, not the character walking; swap to skills when the agent builds this itself."""
+an output inserter and chest buffer plastic (a full plant stalled between 20 s passes); an inserter and chest feed the plant coal (hand-feeding 50 lasted 5 s at 10x). ponytail: create_entity over RCON, not the character walking; swap to skills when the agent builds this itself."""
 import factorio_rcon as f
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=30)
 LUA = """/silent-command local s=game.surfaces[1] local d=defines.direction local out={}
@@ -21,6 +21,9 @@ put('medium-electric-pole',-43.5,-13.5) put('medium-electric-pole',-43.5,-9.5) p
 put('chemical-plant',-35.5,-8.5,d.south,'plastic-bar')
 put('pipe',-36.5,-5.5) put('pipe',-36.5,-6.5)
 put('wooden-chest',-32.5,-8.5)
+put('wooden-chest',-35.5,-5.5)
+local oi=s.find_entities_filtered{name='inserter',position={-35.5,-6.5},radius=0.3}[1] or s.create_entity{name='inserter',position={-35.5,-6.5},direction=d.south,force='player'}
+if oi and oi.drop_position.y<oi.position.y then oi.direction=(oi.direction+8)%16 end
 local ci=s.find_entities_filtered{name='inserter',position={-33.5,-8.5},radius=0.3}[1] or s.create_entity{name='inserter',position={-33.5,-8.5},direction=d.west,force='player'}
 if ci and ci.drop_position.x>ci.position.x then ci.direction=(ci.direction+8)%16 end
 local cc=s.find_entities_filtered{name='wooden-chest',position={-32.5,-8.5},radius=0.3}[1]

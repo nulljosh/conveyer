@@ -18,6 +18,7 @@ PY
   $W scripts/planner.py step >> planner.log 2>&1   # keep the tiles supplied
   $W scripts/speed.py >> planner.log 2>&1            # CPU aware: game speed follows machine load
   echo "$(date +%H:%M:%S) idle labs: $idle"
+  $W scripts/planner.py labs >/dev/null 2>&1; $W scripts/feedlabs.py >/dev/null 2>&1   # every pass: the idle test only watched red and green, so blue packs sat in the chest
   if [ "${idle:-0}" -gt 0 ]; then
     $W scripts/withdraw.py coal 300 >/dev/null 2>&1; $W scripts/fuel.py >/dev/null 2>&1
     $W scripts/planner.py labs; $W scripts/feedlabs.py   # packs come from the planner tiles now, not hand-crafting

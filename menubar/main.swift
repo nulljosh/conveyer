@@ -109,14 +109,40 @@ final class StatusPoller: ObservableObject {
 struct ConveyerMonitorApp: App {
     @StateObject private var poller = StatusPoller()
 
+    /// `ConveyerMonitor --snapshot out.png` renders the popover to a PNG and exits, so the layout
+    /// can be checked without opening the menu bar item.
+    init() {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count else { return }
+        let renderer = ImageRenderer(content: Self.popover(StatusPoller()).background(Color(white: 0.16)).environment(\.colorScheme, .dark))
+        renderer.scale = 2
+        if let cg = renderer.cgImage {
+            let rep = NSBitmapImageRep(cgImage: cg)
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: args[i + 1]))
+        }
+        exit(0)
+    }
+
     var body: some Scene {
         MenuBarExtra {
+            Self.popover(poller)
+        } label: {
+            Text(labelText)
+                .font(.system(size: 12))
+        }
+        .menuBarExtraStyle(.window)
+    }
+
+
+    @MainActor
+    static func popover(_ poller: StatusPoller) -> some View {
             VStack(alignment: .leading, spacing: 10) {
                 if let map = poller.map {
                     Image(nsImage: map)
                         .resizable()
                         .interpolation(.high)
                         .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: 240)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 if let s = poller.status, s.skill != "?" {
@@ -159,13 +185,13 @@ struct ConveyerMonitorApp: App {
                     .foregroundStyle(.secondary)
 
                 VStack(spacing: 4) {
-                    controlButton("Restart runner", systemImage: "arrow.clockwise") {
+                    Self.controlButton(poller, "Restart runner", systemImage: "arrow.clockwise") {
                         poller.run("restart_runner.sh")
                     }
-                    controlButton("Restart server + runner", systemImage: "arrow.triangle.2.circlepath") {
+                    Self.controlButton(poller, "Restart server + runner", systemImage: "arrow.triangle.2.circlepath") {
                         poller.run("restart_server.sh")
                     }
-                    controlButton("Stop server", systemImage: "stop.circle") {
+                    Self.controlButton(poller, "Stop server", systemImage: "stop.circle") {
                         poller.run("stop_all.sh")
                     }
                 }
@@ -183,11 +209,6 @@ struct ConveyerMonitorApp: App {
             }
             .padding(12)
             .frame(width: 340)
-        } label: {
-            Text(labelText)
-                .font(.system(size: 12))
-        }
-        .menuBarExtraStyle(.window)
     }
 
     private var labelText: String {
@@ -215,7 +236,7 @@ struct ConveyerMonitorApp: App {
     }
 
     @ViewBuilder
-    private func controlButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+    private static func controlButton(_ poller: StatusPoller, _ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack {
                 Image(systemName: systemImage).frame(width: 16)

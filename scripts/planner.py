@@ -12,7 +12,7 @@ import factorio_rcon as f
 
 ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / ".world" / "tiles.json"
-TARGETS = {"automation-science-pack": 300, "logistic-science-pack": 300, "chemical-science-pack": 300, "production-science-pack": 300, "low-density-structure": 1100, "solar-panel": 100, "radar": 5, "accumulator": 100, "satellite": 1, "rocket-silo": 1}
+TARGETS = {"automation-science-pack": 300, "logistic-science-pack": 300, "chemical-science-pack": 300, "production-science-pack": 300, "low-density-structure": 1000, "rocket-silo": 1}   # no satellite: an empty rocket launch wins the game, so solar, radar, accumulator and satellite tiles are no longer fed
 # tiles per item (default 1). 12 labs eat about 0.6 packs/s of each color; one tile makes 0.08 to 0.15/s, so the blue chain is the wall
 MULT = {"accumulator": 2, "low-density-structure": 3, "automation-science-pack": 2, "logistic-science-pack": 3, "chemical-science-pack": 4, "production-science-pack": 3, "electric-furnace": 2, "productivity-module": 2, "rail": 2, "advanced-circuit": 6, "engine-unit": 4, "copper-cable": 4, "electronic-circuit": 6}
 # crafts of every ingredient kept on hand per tile; fast recipes burn a 300-craft buffer inside one 20 s pass at 10x, a chest holds 16 stacks

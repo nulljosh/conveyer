@@ -36,8 +36,8 @@ if not site:
 fx, fy = site["fx"], site["fy"]
 out = s.run("""local fx,fy=%g,%g
 put('assembling-machine-2',fx,fy,d.north,'crude-oil-barrel')
-put('inserter',fx-2,fy+1,d.west) put('steel-chest',fx-3,fy+1)
-put('inserter',fx+2,fy,d.west) put('steel-chest',fx+3,fy)
+put('fast-inserter',fx-2,fy+1,d.west) put('steel-chest',fx-3,fy+1)
+put('fast-inserter',fx+2,fy,d.west) put('steel-chest',fx+3,fy)
 power(fx,fy+2)
 rcon.print(table.concat(out,' | '))""" % (fx, fy))
 print("filler:", out or "ok", "| input route:", s.pipe((fx, fy - 2), first, box=40))

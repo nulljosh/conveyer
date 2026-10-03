@@ -22,7 +22,7 @@ while len(sites) < n:
 put('oil-refinery',rx,ry,d.north,'basic-oil-processing') put('pipe',rx+1,ry+3)
 local ex,ey=rx+1,ry+5
 put('assembling-machine-2',ex,ey,d.south,'empty-crude-oil-barrel')
-put('inserter',ex-1,ey+2,d.south) put('wooden-chest',ex-1,ey+3) put('inserter',ex+1,ey+2,d.north) put('wooden-chest',ex+1,ey+3)
+put('fast-inserter',ex-1,ey+2,d.south) put('wooden-chest',ex-1,ey+3) put('fast-inserter',ex+1,ey+2,d.north) put('wooden-chest',ex+1,ey+3)
 power(ex+2,ey+3) power(rx-3,ry) power(rx+3,ry-3)
 rcon.print(table.concat(out,' | '))""" % (X + 3.5, Y + 4.5))
     print("placed", sites[-1], out)

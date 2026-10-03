@@ -51,15 +51,15 @@ local function put(n,x,y,dir,rec) local e=s.find_entities_filtered{name=n,positi
 local FX,FY=%g,%g
 for x=269.5,FX,-1 do put('pipe',x,FY-2) end
 put('assembling-machine-2',FX,FY,d.north,'crude-oil-barrel')
-put('inserter',FX-2,FY+1,d.west) put('wooden-chest',FX-3,FY+1)
-put('inserter',FX+2,FY,d.west) put('wooden-chest',FX+3,FY)
+put('fast-inserter',FX-2,FY+1,d.west) put('wooden-chest',FX-3,FY+1)
+put('fast-inserter',FX+2,FY,d.west) put('wooden-chest',FX+3,FY)
 put('medium-electric-pole',FX+2,FY+1)
 local E={%s}
 for i,e in ipairs(E) do local EX,EY=e[1],e[2]
   put('assembling-machine-2',EX,EY,d.south,'empty-crude-oil-barrel')
   put('pipe',EX,EY-2)
-  put('inserter',EX-1,EY+2,d.south) put('wooden-chest',EX-1,EY+3)
-  put('inserter',EX+1,EY+2,d.north) put('wooden-chest',EX+1,EY+3)
+  put('fast-inserter',EX-1,EY+2,d.south) put('wooden-chest',EX-1,EY+3)
+  put('fast-inserter',EX+1,EY+2,d.north) put('wooden-chest',EX+1,EY+3)
   put('medium-electric-pole',EX-3+(i==1 and 0 or 6),EY+1)
   if i>1 then local px=E[1][1] for x=px+1,EX do put('pipe',x,EY-2) end end end
 put('medium-electric-pole',E[1][1]+2,E[1][2]+3)

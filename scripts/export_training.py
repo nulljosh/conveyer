@@ -10,7 +10,7 @@ SYS = "You play Factorio. Pick one skill and its parameters as JSON. Never write
 ap = argparse.ArgumentParser(); ap.add_argument("--valid", type=float, default=0.1); a = ap.parse_args()
 by_run = {}
 for f in sorted(glob.glob(str(ROOT / "runs" / "*.jsonl"))):
-    last = "Start of run."
+    last = "Start of run."; prev = ""  # prompt = the skill just called plus its result, so the model sees what it just did
     rows = by_run.setdefault(f, [])
     for line in open(f):
         if not line.strip(): continue
@@ -18,9 +18,18 @@ for f in sorted(glob.glob(str(ROOT / "runs" / "*.jsonl"))):
         if "SKILL_OK" in str(r.get("observation", "")) and r.get("skill"):
             try: params = json.loads(json.dumps(eval(str(r["params"])))) if isinstance(r["params"], str) else r["params"]
             except Exception: params = {}
-            rows.append({"messages": [{"role": "system", "content": SYS}, {"role": "user", "content": last[:1500]},
+            rows.append({"messages": [{"role": "system", "content": SYS}, {"role": "user", "content": (prev + last)[:1500]},
                                       {"role": "assistant", "content": json.dumps({"skill": r["skill"], "params": params})}]})
         last = str(r.get("observation", ""))
+        prev = f"Last skill: {r.get('skill')} {json.dumps(r.get('params'))}\n"
+CAP = 100  # place_inserter was 35 percent of the data and won every tie
+for k in by_run:
+    seen = {}
+    kept = []
+    for x in by_run[k]:
+        sk = json.loads(x["messages"][2]["content"])["skill"]; seen[sk] = seen.get(sk, 0) + 1
+        if sk != "place_inserter" or random.Random(seen[sk]).random() < CAP / 288: kept.append(x)
+    by_run[k] = kept
 # split by run file so near-duplicate calls from one run never sit on both sides
 runs = [k for k in by_run if by_run[k]]
 random.Random(7).shuffle(runs)

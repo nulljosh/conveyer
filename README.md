@@ -45,7 +45,7 @@ python3 runner.py --env-id open_play
 
 - **Menu bar and live window:** `menubar/build.sh`, then `ConveyerMonitor.app --open-live`. The live window floats above everything (Ctrl+Option+P toggles), follows the player, shows the real engineer sprite and a pulsing dot on every machine. Ctrl+Option+H shows or hides the progress panel.
 - **Terminal:** `python3 scripts/tui.py`.
-- **Screenshots and benchmark:** `scripts/snap.py` saves a frame and a row to `shots/` every 5 minutes.
+- **Screenshots and benchmark:** `scripts/snap.py` saves a frame and a row to `shots/` every 5 minutes. [docs/BENCHMARKS.md](docs/BENCHMARKS.md) and the graph above are regenerated from real data by a git pre-commit hook (`git config core.hooksPath .githooks`).
 - **Your own Factorio client:** connect to the server address. The version must match exactly. Under colima, start it with `--network-address` so UDP works.
 
 ## How it works

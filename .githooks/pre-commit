@@ -1,0 +1,4 @@
+#!/bin/sh
+# Keeps progress.svg and its data current on every commit. Never blocks a commit.
+python3 scripts/progress_svg.py >/dev/null 2>&1; python3 scripts/benchmarks.py >/dev/null 2>&1; git add progress.svg docs/progress.jsonl docs/BENCHMARKS.md 2>/dev/null
+exit 0

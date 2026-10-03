@@ -8,9 +8,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SYS = "You play Factorio. Pick one skill and its parameters as JSON. Never write code."
 ap = argparse.ArgumentParser(); ap.add_argument("--valid", type=float, default=0.1); a = ap.parse_args()
-rows = []
+by_run = {}
 for f in sorted(glob.glob(str(ROOT / "runs" / "*.jsonl"))):
     last = "Start of run."
+    rows = by_run.setdefault(f, [])
     for line in open(f):
         if not line.strip(): continue
         r = json.loads(line)
@@ -20,8 +21,14 @@ for f in sorted(glob.glob(str(ROOT / "runs" / "*.jsonl"))):
             rows.append({"messages": [{"role": "system", "content": SYS}, {"role": "user", "content": last[:1500]},
                                       {"role": "assistant", "content": json.dumps({"skill": r["skill"], "params": params})}]})
         last = str(r.get("observation", ""))
-random.Random(7).shuffle(rows)
-n = max(1, int(len(rows) * a.valid))
+# split by run file so near-duplicate calls from one run never sit on both sides
+runs = [k for k in by_run if by_run[k]]
+random.Random(7).shuffle(runs)
+total = sum(len(by_run[k]) for k in runs); valid_rows = []; train_rows = []
+for k in runs:
+    (valid_rows if len(valid_rows) < total * a.valid else train_rows).extend(by_run[k])
+random.Random(7).shuffle(train_rows); random.Random(7).shuffle(valid_rows)
+rows = valid_rows + train_rows; n = len(valid_rows)
 (ROOT / "data").mkdir(exist_ok=True)
 for name, part in (("valid", rows[:n]), ("train", rows[n:])):
     (ROOT / "data" / f"{name}.jsonl").write_text("\n".join(json.dumps(x) for x in part) + "\n")

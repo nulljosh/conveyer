@@ -11,7 +11,7 @@ Goal: Turing's own small model picks Conveyer's next skill, so we can run on our
 - Live test passed on a copy of the world: `agent.py --picker --picker-url http://127.0.0.1:8081 --model <fused dir>` ran 6 steps, valid skills, a drill got placed. Serve with `cd ~/Documents/Code/turing && ./.venv/bin/python -m mlx_lm server --model /private/tmp/claude-loop/fused-conveyer --port 8081`. The copy ran as a second container on ports 27001 and 34198 with `FACTORIO_SERVER_PORT=27001`, never the real server.
 
 ## Broken
-- GGUF: `training/export_gguf.py` output (Q8_0, F16 and BF16 all tried) answers with junk or an instant end token in llama.cpp and Ollama, while the same fused folder answers correct JSON in MLX. Not found yet. Ollama model `conveyer-picker` exists but is not trustworthy. Next probe: compare logits MLX vs llama.cpp on one prompt, check the tokenizer and the tied embedding.
+- GGUF: `training/export_gguf.py` output (Q8_0, F16 and BF16 all tried) answers with junk or an instant end token in llama.cpp and Ollama, while the same fused folder answers correct JSON in MLX. Not found yet. Ollama model `conveyer-picker` exists but is not trustworthy. Ruled out (2026-10-02 17:50): quantization (F16 and BF16 fail the same way as Q8_0), Metal (`-ngl 0` same), BOS handling, config and tokenizer values (look normal). Still open: a bad weight mapping in the converter, or the 4-bit base's tensors. Next probe: compare logits MLX vs llama.cpp on one prompt, check the tokenizer and the tied embedding.
 
 ## Next
 1. Fix GGUF (above), then `agent.py --picker --model conveyer-picker` on Ollama.

@@ -140,7 +140,7 @@ PAGE = """<!doctype html>
   <img class="mark" src="icon.svg" alt="">
   <h1>Introducing<br>Conveyer.</h1>
   <p class="eyebrow">An LLM plays Factorio.</p>
-  <p class="lede">On a real save. It reads the game, picks one move, and repeats. Launched its first rocket on 2 Oct 2026, with some help. Doing it with none is next.</p>
+  <p class="lede">On a real save. It reads the game, picks one move, and repeats. Launched its first rocket on 2 Oct 2026, with some help. The second launch, the same day, used no console-fed parts: its own factory built every rocket part. The last techs still used console-fed science packs.</p>
   <div class="cta"><a class="btn solid" href="https://github.com/nulljosh/conveyer">View on GitHub</a><a class="btn" href="#run">Run it</a></div>
   <div class="glass">
     <small>Researching now</small>
@@ -158,14 +158,14 @@ PAGE = """<!doctype html>
 <section class="copy wrap reveal">
   <h2>Road to the rocket</h2>
   <div class="meter" role="img" aria-label="__SILOPCT__ percent"><i style="width:__SILOPCT__%"></i></div>
-  <p>__SILOPCT__% of the research the rocket silo needs is done: __SILODONE__ of __SILOTOTAL__ techs. Rockets launched: 1 (v1.0, assisted: purple and yellow science were console-fed).</p>
+  <p>__SILOPCT__% of the research the rocket silo needs is done: __SILODONE__ of __SILOTOTAL__ techs. Rockets launched: 2 (v1.0 assisted: purple and yellow science were console-fed; v2.0 with no console-fed parts).</p>
 </section>
 
 <div class="facts reveal">
   <div class="fact"><b>__TECHS__</b><span>techs researched</span></div>
   <div class="fact"><b>__ENT__</b><span>things on the base</span></div>
   <div class="fact"><b>0</b><span>pixels read</span></div>
-  <div class="fact"><b>1</b><span>rocket launched (assisted)</span></div>
+  <div class="fact"><b>2</b><span>rockets launched (the second with no console-fed parts)</span></div>
 </div>
 
 <section class="copy wrap reveal">
@@ -239,7 +239,7 @@ print("built", len(out), "bytes;", len(nxt), "next items")
 # README progress line, between markers. Rockets are 0 until one launches.
 rd = ROOT / "README.md"; t = rd.read_text()
 bar = "#" * (spct // 5) + "-" * (20 - spct // 5)
-block = f"<!-- progress:start -->\n**Road to the rocket: {spct}%** `{bar}` {sd} of {st} techs the silo needs. Rockets launched: 1 (v1.0, assisted: purple and yellow science were console-fed).\n<!-- progress:end -->"
+block = f"<!-- progress:start -->\n**Road to the rocket: {spct}%** `{bar}` {sd} of {st} techs the silo needs. Rockets launched: 2 (v1.0 assisted: purple and yellow science were console-fed; v2.0 with no console-fed parts).\n<!-- progress:end -->"
 if "<!-- progress:start -->" in t:
     t = re.sub(r"<!-- progress:start -->.*?<!-- progress:end -->", lambda m: block, t, flags=re.S)
 else:

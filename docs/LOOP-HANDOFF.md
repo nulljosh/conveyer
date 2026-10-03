@@ -1,6 +1,6 @@
-# Conveyer loop handoff (2026-10-02, loop stopped by Joshua)
+# Conveyer loop handoff (2026-10-03, v2.1.0 released, loop paused)
 
-**Loop status: stopped as of 2026-10-02.** Restart prompt below for when to resume. Finishing everything is out of reach on this budget (huge majors, new games, rented server all blocked).
+**Loop status: paused as of 2026-10-03 after v2.1.0 release.** Restart prompt below when ready. Finishing is out of reach on this budget (huge majors, new games, rented server all blocked).
 
 ## Where things stand
 

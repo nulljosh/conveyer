@@ -73,6 +73,7 @@ The agent plays Joshua's real save through a planner and a set of replay scripts
 | `research_status.py`, `livefeed.py`, `livemap.py`, `snap.py` | The monitor's feeds. Research and labs (`research.json`), player position (`live.json`), machine status dots and the strolling player (`live_status.json`), benchmark rows (`shots/bench.jsonl`). The last three sleep unless the monitor touches `.watching`. |
 | `terrain.py` | Paints real ground under the FLE render, writes `preview_map.png`. |
 | `oil.py`, `sulfur.py`, `advcircuit.py`, `power.py` | The oil block (refinery, plastic plant with an output chest and a coal chest refilled every pass), the sulfur plant with 90 tiles of underground water, one advanced circuit assembler, and steam power columns. All idempotent. |
+| `acid.py` | Sulfuric acid plant beside the sulfur plant, an underground acid line to a free field, and four processing unit assemblers on it. `acid.py feed` moves iron, circuits and advanced circuits into their chests every pass. Idempotent replay. |
 | `ironfarm.py` | Drill, furnace, inserter, chest slots on the iron, copper or stone patch, plus a pole bridge back to the grid. Slot lists freeze in `.world/*farm.json`. |
 | `labs.py`, `feedlabs.py`, `withdraw.py`, `fuel.py` | Lab grid, moving packs into labs, pulling items from chests and furnaces into the bag, filling boilers and furnaces. |
 | `journal.py` | Snapshot, check and restore of the build list, because FLE's Lua state cannot be saved. |

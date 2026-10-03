@@ -69,7 +69,7 @@ Hand-crafting 4,350 of anything is 30 refill cycles, so automating red and green
 Conveyer now runs on a copy of Joshua's own Factorio save (`scripts/world.sh`), not a vanilla start.
 Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 41 steel furnaces,
 10 steam engines, a train and two cars. Goal: oil, then a rocket launch.
-- [ ] Yellow (utility) science on tiles: sulfuric acid, processing units, flying robot frames, low density structures
+- [ ] (processing units done, v1.1.0) Yellow (utility) science on tiles: sulfuric acid, processing units, flying robot frames, low density structures
 - [ ] A legit launch with no console help (v2.0): real silo, 100 rocket parts and a satellite from automated tiles
 - [ ] Crash proofing for every new build: a replay script the same hour
 - [x] Automated green science so research stops being hand-fed. ETA 1 to 2 days of agent time

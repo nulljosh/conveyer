@@ -40,3 +40,5 @@ Newest at the bottom. One line each.
 - Silent failure is the worst failure: fuel.py died on "count must be positive" whenever the bag held no coal, and keepbusy hid its errors, so the far copper furnaces sat at no_fuel with 49k coal in chests. It now draws from the storage chests and guards the empty bag. Check a producer's status, not just its chest.
 
 - Measure the camera instead of eyeballing it: CV_DEBUG=1 ConveyerMonitor logs every frame to /tmp/cv_cam.log (player position, screen position, black margins). It showed 16% of frames with black margins because the map picture was 68 tiles tall and the tile column runs 70 tiles. The picture is now 92 tiles tall: 0 black frames in 4,018.
+
+- An inserter's direction here is the side it picks from, not the side it drops to. Both acid inserters and all eight assembler inserters were backwards the first time. Always read pickup_position and drop_position after placing one.

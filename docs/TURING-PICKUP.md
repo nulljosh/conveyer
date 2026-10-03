@@ -23,7 +23,7 @@ Honest run-split eval, 79 held-out examples, plain base is 1% skill and 0% param
 | + known entity positions, one position format | 59% | 43% |
 `conveyer-picker` in Ollama is the last row (adapter7). Gate baseline: `eval/baseline.json`.
 Remaining skill misses: half are gold `inspect` predicted `peek` (inspect follows craft and feed most of the time, but the valid set is only 79 rows, so each point is noise of about 5). Ceiling is data and ambiguous next-skill choices; `step.sh` logs every Claude skill call to runs/, so retrain as runs grow. The prompt format lives in `scripts/export_training.py` and `agent.py`, keep them identical.
-Live test on a world copy through Ollama (adapter5): it ran, then looped on `inspect`; the repeat guard now retries once warm (temperature 0.8) before stopping. Not re-run since adapter7.
+Live test on a world copy through Ollama (adapter5): it ran, then looped on `inspect`; the repeat guard now retries once warm (temperature 0.8) before stopping. Re-run on adapter7 (14 steps, world copy, real server untouched): found a bug where a bad call left the picker prompt unchanged, so it answered the same bad call forever; fixed (the failure text and a warm retry now go back in, three bad calls in a row stop it). After the fix it recovers, mines (drill placed), places a belt, then repeats a belt call and the guard stops it. It runs but does not yet build anything useful alone.
 
 ## Next
 1. Train on the fp base, eval, export F16, then `agent.py --picker --model conveyer-picker` on Ollama (the picker prompt now carries the last skill call).

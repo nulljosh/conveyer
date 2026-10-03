@@ -85,6 +85,15 @@ Built scripts/ironfarm.py: electric drill into steel furnace into inserter into 
 
 Chests hold copper 6,972, steel 12,934, coal 60,679 but iron plate only 581 and iron ore 0. Iron is THE bottleneck, not copper or steel. Next chunk: find why iron drills stall (5 no_power, furnaces no_ingredients) and add iron drills plus smelting, scripted as a replay. RAM was 14% free this tick with other sessions open; game held at 2x.
 
+## After a Claude session crash (do this first)
+
+State lives in git and the game, never in the chat. The server, colima and runner survive a session crash; the workers and the loop do not.
+1. `scripts/tick.sh` (health, replays, status). It spawns nohup workers that die when the call ends, so kill those by PID (never `pkill -f`).
+2. Relaunch as Claude background tasks (run_in_background): `scripts/keepbusy.sh`, `.venv/bin/python scripts/livemap.py`, `scripts/livefeed.py`, `scripts/snap.py`, `scripts/research_status.py`, and `scripts/shuttle.sh` (fast crude barrels).
+3. Live window: `open -n menubar/ConveyerMonitor.app --args --open-live`.
+4. Check `.venv/bin/python scripts/ledger.py` (worst gap first), then re-arm the loop: `/loop until game is beat or we hit next major version. keep close eye on claude usage.`
+5. Commit by exact path after every chunk so a crash loses at most one tick.
+
 ## Tick (what the loop does every ~20 min)
 
 0. Run `scripts/tick.sh`: one call that does step 1 (health, restarts, replays), sets game speed from CPU load, and prints research, silo path, labs, every tile's status, usage, and what changed since the last tick (it flags a milestone when the silo path advances). Then do ONE chunk. The numbered steps below are what it covers.

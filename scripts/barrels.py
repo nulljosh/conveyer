@@ -45,6 +45,7 @@ for i,e in ipairs(E) do local EX,EY=e[1],e[2]
   put('inserter',EX+1,EY+2,d.north) put('wooden-chest',EX+1,EY+3)
   put('medium-electric-pole',EX-3+(i==1 and 0 or 6),EY+1)
   if i>1 then local px=E[1][1] for x=px+1,EX do put('pipe',x,EY-2) end end end
+put('medium-electric-pole',E[1][1]+2,E[1][2]+3)
 local m={} for k,v in pairs(defines.entity_status) do m[v]=k end
 local fa=s.find_entities_filtered{name='assembling-machine-2',position={FX,FY},radius=0.5}[1]
 if fa then out[#out+1]='filler '..m[fa.status]..' net '..tostring(fa.electric_network_id)..' crude '..(fa.fluidbox[1] and math.floor(fa.fluidbox[1].amount) or 0) end

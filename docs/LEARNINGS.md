@@ -42,3 +42,5 @@ Newest at the bottom. One line each.
 - Measure the camera instead of eyeballing it: CV_DEBUG=1 ConveyerMonitor logs every frame to /tmp/cv_cam.log (player position, screen position, black margins). It showed 16% of frames with black margins because the map picture was 68 tiles tall and the tile column runs 70 tiles. The picture is now 92 tiles tall: 0 black frames in 4,018.
 
 - An inserter's direction here is the side it picks from, not the side it drops to. Both acid inserters and all eight assembler inserters were backwards the first time. Always read pickup_position and drop_position after placing one.
+
+- An unpowered inserter hid the whole oil problem for hours. A medium pole powers 3.5 tiles each way, so an inserter 4 tiles from the pole sits at no_power and silently stalls its machine. The emptier looked "full_output" and the refinery "fluid_ingredient_shortage", and I chased fluid theories for an afternoon. After one pole the refinery went from 21% to 102% duty. Read every placed inserter status once, not just the machine. Barrels (scripts/barrels.py) stay as the crude route because joined pumpjacks on the old pipe still failed.

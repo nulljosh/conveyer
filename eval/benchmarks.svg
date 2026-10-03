@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" font-family="-apple-system,Helvetica,sans-serif" font-size="11">
+<rect width="640" height="300" fill="white"/><text x="50" y="24" font-size="14" font-weight="600">Conveyer picker, held-out eval</text>
+<line x1="50" x2="620" y1="40.0" y2="40.0" stroke="#eee"/><text x="42" y="44.0" text-anchor="end" fill="#888">100%</text>
+<line x1="50" x2="620" y1="82.0" y2="82.0" stroke="#eee"/><text x="42" y="86.0" text-anchor="end" fill="#888">80%</text>
+<line x1="50" x2="620" y1="124.0" y2="124.0" stroke="#eee"/><text x="42" y="128.0" text-anchor="end" fill="#888">60%</text>
+<line x1="50" x2="620" y1="166.0" y2="166.0" stroke="#eee"/><text x="42" y="170.0" text-anchor="end" fill="#888">40%</text>
+<line x1="50" x2="620" y1="208.0" y2="208.0" stroke="#eee"/><text x="42" y="212.0" text-anchor="end" fill="#888">20%</text>
+<line x1="50" x2="620" y1="250.0" y2="250.0" stroke="#eee"/><text x="42" y="254.0" text-anchor="end" fill="#888">0%</text>
+<polyline points="50.0,247.7" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+<circle cx="50.0" cy="247.7" r="3" fill="#1a1a1a"/>
+<polyline points="50.0,250.0" fill="none" stroke="#0a7d3c" stroke-width="2"/>
+<circle cx="50.0" cy="250.0" r="3" fill="#0a7d3c"/>
+<polyline points="50.0,159.0" fill="none" stroke="#999999" stroke-width="2"/>
+<circle cx="50.0" cy="159.0" r="3" fill="#999999"/>
+<text x="50.0" y="266" text-anchor="middle" fill="#888">base</text><text x="50.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:00</text>
+<rect x="50" y="286" width="10" height="10" fill="#1a1a1a"/><text x="66" y="295">Skill name</text>
+<rect x="170" y="286" width="10" height="10" fill="#0a7d3c"/><text x="186" y="295">Exact params</text>
+<rect x="290" y="286" width="10" height="10" fill="#999999"/><text x="306" y="295">Valid JSON</text>
+</svg>

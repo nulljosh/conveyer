@@ -25,7 +25,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--adapter"); ap.add_argument("--model", default=BASE)
     ap.add_argument("--data", default=str(ROOT / "data" / "valid.jsonl"))
-    ap.add_argument("--n", type=int, default=0); ap.add_argument("--out")
+    ap.add_argument("--n", type=int, default=0); ap.add_argument("--out"); ap.add_argument("--label", default="")
     a = ap.parse_args()
     from mlx_lm import load, generate
     model, tok = load(a.model, adapter_path=a.adapter)
@@ -44,8 +44,10 @@ def main():
             param_ok += params == g["params"]
     n = len(rows)
     res = {"n": n, "valid_json": valid_json / n, "skill_name": name_ok / n, "params_exact": param_ok / n,
-           "model": a.model, "adapter": a.adapter}
+           "model": a.model, "adapter": a.adapter, "label": a.label or ("base" if not a.adapter else "adapter"), "time": __import__("time").strftime("%m-%d %H:%M")}
     print(json.dumps(res))
+    (ROOT / "eval").mkdir(exist_ok=True)
+    with open(ROOT / "eval" / "history.jsonl", "a") as h: h.write(json.dumps(res) + "\n")
     if a.out:
         Path(a.out).parent.mkdir(exist_ok=True); Path(a.out).write_text(json.dumps(res) + "\n")
 

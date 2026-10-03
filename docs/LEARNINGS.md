@@ -36,3 +36,5 @@ Newest at the bottom. One line each.
 - macOS ties a Documents permission to the code signature. Ad-hoc builds ask again after every rebuild. Sign with a stable identity.
 - The player never moves when everything runs over RCON, so the live view looked frozen. A strolling player and status dots made it readable.
 - Assisted is not legit. Console-fed packs and a scripted silo reached the launch, and the release says so. A legit launch needs advanced oil, cracking, sulfuric acid, lubricant, rocket fuel, about 1,300 processing units and 1,100 low density structures.
+
+- Silent failure is the worst failure: fuel.py died on "count must be positive" whenever the bag held no coal, and keepbusy hid its errors, so the far copper furnaces sat at no_fuel with 49k coal in chests. It now draws from the storage chests and guards the empty bag. Check a producer's status, not just its chest.

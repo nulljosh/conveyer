@@ -161,7 +161,7 @@ def main() -> None:
             try:
                 if args.picker_url:  # mlx_lm.server from Turing's venv: OpenAI-style, same weights as the eval
                     r = httpx.post(args.picker_url.rstrip("/") + "/v1/chat/completions", timeout=300, json={
-                        "model": args.model, "max_tokens": 120, "temperature": 0,
+                        "model": args.model, "max_tokens": 120, "temperature": 0.8 if repeat_count else 0,
                         "messages": [{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": (last_call_line + last_obs)[:1500]}]}).json()
                     response = {"message": r["choices"][0]["message"]}
                 else: response = httpx.post(
@@ -171,7 +171,7 @@ def main() -> None:
                         "think": False,  # qwen3 etc. burn the whole token budget on hidden
                         # reasoning otherwise, leaving nothing in the response
                         "stream": False,
-                        "options": {"num_predict": args.max_tokens},
+                        "options": {"num_predict": args.max_tokens, "temperature": 0.8 if repeat_count else 0},  # ponytail: greedy picker loops on one skill; a repeat gets one warm retry before the stop rule
                         "messages": ([{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": (last_call_line + last_obs)[:1500]}]
                                      if args.picker or args.picker_url else [{"role": "system", "content": SYSTEM_PROMPT}, *messages]),
                     },

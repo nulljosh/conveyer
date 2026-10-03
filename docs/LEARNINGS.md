@@ -38,3 +38,5 @@ Newest at the bottom. One line each.
 - Assisted is not legit. Console-fed packs and a scripted silo reached the launch, and the release says so. A legit launch needs advanced oil, cracking, sulfuric acid, lubricant, rocket fuel, about 1,300 processing units and 1,100 low density structures.
 
 - Silent failure is the worst failure: fuel.py died on "count must be positive" whenever the bag held no coal, and keepbusy hid its errors, so the far copper furnaces sat at no_fuel with 49k coal in chests. It now draws from the storage chests and guards the empty bag. Check a producer's status, not just its chest.
+
+- Measure the camera instead of eyeballing it: CV_DEBUG=1 ConveyerMonitor logs every frame to /tmp/cv_cam.log (player position, screen position, black margins). It showed 16% of frames with black margins because the map picture was 68 tiles tall and the tile column runs 70 tiles. The picture is now 92 tiles tall: 0 black frames in 4,018.

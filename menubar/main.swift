@@ -495,7 +495,14 @@ struct CameraRig<Content: View>: View {
         let ox = min(max(-zoom * qx, -mx), mx), oy = min(max(-zoom * qy, -my), my)
         let hx = size.width / 2 * 0.85, hy = size.height / 2 * 0.85
         let px = min(max(zoom * qx + ox, -hx), hx), py = min(max(zoom * qy + oy, -hy), hy)
-        return CGSize(width: px - zoom * qx, height: py - zoom * qy)
+        let res = CGSize(width: px - zoom * qx, height: py - zoom * qy)
+        if ProcessInfo.processInfo.environment["CV_DEBUG"] != nil {   // QA aid: one line per frame to /tmp/cv_cam.log, then read it back
+            let hw = zoom * f.w * s0 / 2, hh = zoom * f.h * s0 / 2
+            let gapL = res.width - hw + size.width / 2, gapR = size.width / 2 - (res.width + hw), gapT = res.height - hh + size.height / 2, gapB = size.height / 2 - (res.height + hh)
+            let line = String(format: "%.2f p=(%.1f,%.1f) frame=(%.1f,%.1f) screenPlayer=(%.0f,%.0f) win=(%.0f,%.0f) blackMargins L%.0f R%.0f T%.0f B%.0f\n", Date().timeIntervalSince1970, p.x, p.y, f.cx, f.cy, zoom * qx + res.width, zoom * qy + res.height, size.width, size.height, max(0, gapL), max(0, gapR), max(0, gapT), max(0, gapB))
+            if let h = FileHandle(forWritingAtPath: "/tmp/cv_cam.log") ?? { FileManager.default.createFile(atPath: "/tmp/cv_cam.log", contents: nil); return FileHandle(forWritingAtPath: "/tmp/cv_cam.log") }() { h.seekToEndOfFile(); h.write(line.data(using: .utf8)!); try? h.close() }
+        }
+        return res
     }
 }
 

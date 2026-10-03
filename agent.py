@@ -70,6 +70,8 @@ CURRICULUM = [
     ("SKILL_OK research: set to Automation", "Automation research selected. Next: craft AutomationSciencePacks and `feed` them into a Lab to actually progress the research — don't leave it just selected."),
 ]
 
+PICKER_SYSTEM = "You play Factorio. Pick one skill and its parameters as JSON. Never write code."  # same text scripts/export_training.py trained on
+
 JSON_FENCE = re.compile(r"```json\s*(.*?)```", re.DOTALL)
 # ponytail: small models ignore the "reply with JSON" instruction and instead
 # echo the catalog's own `skill(param=val, ...)` call-signature notation. Parse
@@ -111,6 +113,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-id", help="FLE gym environment id (default: an iron-themed task, or the first registered one)")
     parser.add_argument("--model", default="qwen3:8b", help="Ollama model tag (ollama list to see available)")
+    parser.add_argument("--picker", action="store_true", help="Turing's trained picker (e.g. --model conveyer-picker): short system prompt, last observation only, raw JSON back")
     parser.add_argument("--ollama-host", default="http://localhost:11434/v1", help="Ollama's OpenAI-compatible endpoint")
     parser.add_argument("--max-steps", type=int, default=50)
     parser.add_argument("--max-tokens", type=int, default=1024)
@@ -148,6 +151,7 @@ def main() -> None:
         ]
 
         last_code = None
+        last_obs = "Start of run."  # --picker feeds exactly this, as in training
         repeat_count = 0
         base_memory: dict[str, str] = {}
         triggered_stages: set[int] = set()
@@ -162,7 +166,8 @@ def main() -> None:
                         # reasoning otherwise, leaving nothing in the response
                         "stream": False,
                         "options": {"num_predict": args.max_tokens},
-                        "messages": [{"role": "system", "content": SYSTEM_PROMPT}, *messages],
+                        "messages": ([{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": last_obs[:1500]}]
+                                     if args.picker else [{"role": "system", "content": SYSTEM_PROMPT}, *messages]),
                     },
                     timeout=300,
                 ).json()
@@ -209,6 +214,7 @@ def main() -> None:
             action = Action(agent_idx=0, game_state=game_state, code=code)
             obs, reward, terminated, truncated, info = env.step(action)
             observation_text = obs.get("raw_text", "")
+            last_obs = observation_text
 
             print(f"[reward={reward} terminated={terminated} truncated={truncated}]")
             print(observation_text[-2000:])

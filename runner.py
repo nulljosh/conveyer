@@ -27,7 +27,7 @@ import skills
 
 WIDE_R = 60  # half-width of the screenshot in tiles; the view is 2*WIDE_R x 68 tiles
 WIDE = {"sig": None, "c": None, "t": 0.0}
-VIEW_C = (-24.5, 39.0)  # the wide picture is always centered here (the tile area), so a roaming player never shifts it; the player walks inside it  # last wide render: base signature, player position, time
+VIEW_C = (-24.5, 44.0)  # the wide picture is always centered here (the tile area), so a roaming player never shifts it; the player walks inside it  # last wide render: base signature, player position, time
 VIEW_SIG = ("/silent-command local s=game.surfaces[1] local ch=s.find_entities_filtered{type='character'}[1] local n,h=0,0 "
             "for _,e in pairs(s.find_entities_filtered{position=ch.position,radius=70,force='player'}) do if e.type~='character' then "
             "n=n+1 h=(h*31+math.floor(e.position.x*2)*7+math.floor(e.position.y*2)*13+#e.name)%1000000007 end end "
@@ -226,8 +226,8 @@ def main() -> None:
             renderer.resources = []
             if not square:
                 renderer.entities = [e for e in renderer.entities if e.name != "character"]  # the live marker is the only character
-                renderer.get_size = lambda: {"minX": -R, "minY": -34, "maxX": R, "maxY": 34, "width": 2 * R, "height": 68}
-                image = renderer.render(2 * R * 16, 68 * 16, render_tool.image_resolver)
+                renderer.get_size = lambda: {"minX": -R, "minY": -46, "maxX": R, "maxY": 46, "width": 2 * R, "height": 92}  # 92 tiles tall: the tile column runs from y 11 to 81, the old 68 left the player walking off the bottom into black
+                image = renderer.render(2 * R * 16, 92 * 16, render_tool.image_resolver)
             else:
                 image = renderer.render(1024, 1024, render_tool.image_resolver)
             image.save("preview.png")

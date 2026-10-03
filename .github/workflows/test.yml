@@ -24,3 +24,11 @@ jobs:
           print("stale README refs:", bad)
           sys.exit(bool(bad))
           PY
+
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: training export check (skips when runs/ is absent)
+        run: python3 tests/test_export.py

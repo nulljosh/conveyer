@@ -3,6 +3,8 @@ import json, subprocess, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if not list((ROOT / "runs").glob("*.jsonl")):  # runs/ is not in git, so a fresh clone (CI) has nothing to export
+    print("skip: no runs/"); raise SystemExit(0)
 subprocess.run([sys.executable, str(ROOT / "scripts" / "export_training.py")], check=True, capture_output=True)
 for name in ("train", "valid"):
     lines = (ROOT / "data" / f"{name}.jsonl").read_text().splitlines()

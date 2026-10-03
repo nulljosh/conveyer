@@ -85,3 +85,34 @@ The agent plays Joshua's real save through a planner and a set of replay scripts
 ## The monitor (`menubar/main.swift`)
 
 A SwiftUI menu bar app signed with the Developer ID so macOS keeps its Documents permission across rebuilds. The popover shows the map, research and roadmap. The live window (`--open-live`, `--fullscreen` to opt in) floats above all windows by default (Ctrl+Option+P toggles), follows the player with a zoomed camera eased at 60 fps, draws the real Factorio engineer sprite (copied from the Steam install by `build.sh`, never into git), and pulses a dot on every machine (green working, amber waiting, red stuck). Ctrl+Option+H shows or hides the progress panel. The map picture only redraws when the runner steps, so new builds show as dots before they show as sprites.
+
+## The live view (v2.1)
+
+The menu bar app never talks to the game. It reads small files the loop writes, so a slow render or a crash cannot freeze it.
+
+| File | Written by | What the window draws |
+|---|---|---|
+| `preview_map.png`, `frame.json` | `runner.py` | The map picture. It centres on `.focus` ("x,y", or "x,y,silo" / "x,y,hold") and never moves the engineer. |
+| `live.json`, `live_status.json`, `engineer.json` | `livefeed.py`, `livemap.py` | The engineer, the machine status dots, the line saying what he is doing. |
+| `hotbar.json`, `silo.json` | `livefeed.py` | The key stock bar, and the silo (parts, status, rocket on the pad). |
+| `events.json` | `events.py` | The activity feed: ledger moves, research, power, pumpjacks, launches. |
+| `combat.json` | `combat.py` | Enemies, firing turrets. |
+| `minimap.png`, `minimap.json` | `minimap.py` | The terrain minimap with base, oil and nests. |
+
+The silo and rocket are the game's own sprites, composited by `scripts/silo_sprites.py` from the Steam install into `assets/silo/` (never committed).
+
+## The launch path
+
+`planner.py` builds low density structure tiles. The refinery and chemical plants make plastic and rocket fuel. `shuttle.sh` moves crude by barrel and runs `siloline.py`, which carries processing units, low density structure and rocket fuel from the base chests to three chests beside the silo. Fast inserters put them in, the silo crafts the 100 parts itself, and `siloline.py` calls `launch_rocket()` once the finished rocket stands on the pad. A `.hold` file pauses the launch, `.assist` disables it.
+
+## Assisted tools (labelled as such)
+
+`scripts/relaunch.py` puts the silo and a bank of parts back by console. `scripts/sweep.py` kills nests by console. The engineer is invulnerable on oil-field patrol. None of these count toward a legit launch.
+
+## Never join with the real client
+
+A client join forces a map save. FLE's Lua state cannot be saved, so the server quits and the world reverts. `scripts/realshot.sh` is disabled. See [LEARNINGS.md](LEARNINGS.md).
+
+## Video
+
+`scripts/record.sh` captures the screen with ffmpeg avfoundation (`screencapture -v` writes nothing here). `scripts/make_video.py` cuts the take and the landing wallpaper.

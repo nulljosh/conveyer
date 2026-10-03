@@ -1,5 +1,13 @@
 # Conveyer loop handoff (2026-10-02, 14:20)
 
+## State 2026-10-03 00:00 (read this first)
+
+v2.1.0. The legit launch happened at 20:45 on 2 October (v2.0.0, no console-fed parts). At 21:11 a real-client join killed the server (map save fails) and the world rolled back to the old copy plus replays: techs, oil, tiles came back, the silo, stock and nest sweep did not. Three later launches in the rolled-back world are assisted (`scripts/relaunch.py`) and labelled so. In-game `rockets_launched` is 3 for that reason, not for the record.
+
+Restart after any crash: `scripts/health.sh --fix`, then relaunch as Claude background tasks (never nohup): `keepbusy.sh`, `livemap.py`, `livefeed.py`, `events.py`, `combat.py`, `minimap.py`, `shuttle.sh`. Seven tasks, restart each at least every 15 minutes. Kill the runner by `cat runner.pid`, never `pgrep -f runner.py` (it matches the wrapper shell). Open the window with `ConveyerMonitor.app --open-live` (add `--fullscreen --zoom 1.7` for filming). Flags: `.focus` view centre, `.speed` film speed, `.hold` pauses the silo launch. Never join with the real client.
+
+Next: the military chain (military science, flamethrower turrets, tanks) so nests can be cleared for real; other games (Fez, Oxygen Not Included) on the same skill layer.
+
 Read this first. Everything a fresh session needs is here and in git. Nothing lives only in a conversation.
 
 ## State (2026-10-02, 17:00)

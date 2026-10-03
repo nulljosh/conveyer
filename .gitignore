@@ -63,3 +63,6 @@ combat.log
 .rendering
 assets/
 recordings/
+.hold
+.speed
+silo.json

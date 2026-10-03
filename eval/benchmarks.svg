@@ -6,49 +6,53 @@
 <line x1="50" x2="620" y1="166.0" y2="166.0" stroke="#eee"/><text x="42" y="170.0" text-anchor="end" fill="#888">40%</text>
 <line x1="50" x2="620" y1="208.0" y2="208.0" stroke="#eee"/><text x="42" y="212.0" text-anchor="end" fill="#888">20%</text>
 <line x1="50" x2="620" y1="250.0" y2="250.0" stroke="#eee"/><text x="42" y="254.0" text-anchor="end" fill="#888">0%</text>
-<polyline points="50.0,247.7 113.3,98.3 176.7,147.2 240.0,147.2 303.3,247.3 366.7,146.3 430.0,196.8 493.3,154.3 556.7,170.3 620.0,125.1" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+<polyline points="50.0,247.7 107.0,98.3 164.0,147.2 221.0,147.2 278.0,247.3 335.0,146.3 392.0,196.8 449.0,154.3 506.0,170.3 563.0,125.1 620.0,125.1" fill="none" stroke="#1a1a1a" stroke-width="2"/>
 <circle cx="50.0" cy="247.7" r="3" fill="#1a1a1a"/>
-<circle cx="113.3" cy="98.3" r="3" fill="#1a1a1a"/>
-<circle cx="176.7" cy="147.2" r="3" fill="#1a1a1a"/>
-<circle cx="240.0" cy="147.2" r="3" fill="#1a1a1a"/>
-<circle cx="303.3" cy="247.3" r="3" fill="#1a1a1a"/>
-<circle cx="366.7" cy="146.3" r="3" fill="#1a1a1a"/>
-<circle cx="430.0" cy="196.8" r="3" fill="#1a1a1a"/>
-<circle cx="493.3" cy="154.3" r="3" fill="#1a1a1a"/>
-<circle cx="556.7" cy="170.3" r="3" fill="#1a1a1a"/>
+<circle cx="107.0" cy="98.3" r="3" fill="#1a1a1a"/>
+<circle cx="164.0" cy="147.2" r="3" fill="#1a1a1a"/>
+<circle cx="221.0" cy="147.2" r="3" fill="#1a1a1a"/>
+<circle cx="278.0" cy="247.3" r="3" fill="#1a1a1a"/>
+<circle cx="335.0" cy="146.3" r="3" fill="#1a1a1a"/>
+<circle cx="392.0" cy="196.8" r="3" fill="#1a1a1a"/>
+<circle cx="449.0" cy="154.3" r="3" fill="#1a1a1a"/>
+<circle cx="506.0" cy="170.3" r="3" fill="#1a1a1a"/>
+<circle cx="563.0" cy="125.1" r="3" fill="#1a1a1a"/>
 <circle cx="620.0" cy="125.1" r="3" fill="#1a1a1a"/>
-<polyline points="50.0,250.0 113.3,119.3 176.7,191.9 240.0,191.9 303.3,250.0 366.7,178.2 430.0,231.4 493.3,175.6 556.7,196.8 620.0,191.5" fill="none" stroke="#0a7d3c" stroke-width="2"/>
+<polyline points="50.0,250.0 107.0,119.3 164.0,191.9 221.0,191.9 278.0,250.0 335.0,178.2 392.0,231.4 449.0,175.6 506.0,196.8 563.0,191.5 620.0,159.6" fill="none" stroke="#0a7d3c" stroke-width="2"/>
 <circle cx="50.0" cy="250.0" r="3" fill="#0a7d3c"/>
-<circle cx="113.3" cy="119.3" r="3" fill="#0a7d3c"/>
-<circle cx="176.7" cy="191.9" r="3" fill="#0a7d3c"/>
-<circle cx="240.0" cy="191.9" r="3" fill="#0a7d3c"/>
-<circle cx="303.3" cy="250.0" r="3" fill="#0a7d3c"/>
-<circle cx="366.7" cy="178.2" r="3" fill="#0a7d3c"/>
-<circle cx="430.0" cy="231.4" r="3" fill="#0a7d3c"/>
-<circle cx="493.3" cy="175.6" r="3" fill="#0a7d3c"/>
-<circle cx="556.7" cy="196.8" r="3" fill="#0a7d3c"/>
-<circle cx="620.0" cy="191.5" r="3" fill="#0a7d3c"/>
-<polyline points="50.0,159.0 113.3,40.0 176.7,40.0 240.0,40.0 303.3,188.9 366.7,40.0 430.0,45.3 493.3,40.0 556.7,40.0 620.0,40.0" fill="none" stroke="#999999" stroke-width="2"/>
+<circle cx="107.0" cy="119.3" r="3" fill="#0a7d3c"/>
+<circle cx="164.0" cy="191.9" r="3" fill="#0a7d3c"/>
+<circle cx="221.0" cy="191.9" r="3" fill="#0a7d3c"/>
+<circle cx="278.0" cy="250.0" r="3" fill="#0a7d3c"/>
+<circle cx="335.0" cy="178.2" r="3" fill="#0a7d3c"/>
+<circle cx="392.0" cy="231.4" r="3" fill="#0a7d3c"/>
+<circle cx="449.0" cy="175.6" r="3" fill="#0a7d3c"/>
+<circle cx="506.0" cy="196.8" r="3" fill="#0a7d3c"/>
+<circle cx="563.0" cy="191.5" r="3" fill="#0a7d3c"/>
+<circle cx="620.0" cy="159.6" r="3" fill="#0a7d3c"/>
+<polyline points="50.0,159.0 107.0,40.0 164.0,40.0 221.0,40.0 278.0,188.9 335.0,40.0 392.0,45.3 449.0,40.0 506.0,40.0 563.0,40.0 620.0,40.0" fill="none" stroke="#999999" stroke-width="2"/>
 <circle cx="50.0" cy="159.0" r="3" fill="#999999"/>
-<circle cx="113.3" cy="40.0" r="3" fill="#999999"/>
-<circle cx="176.7" cy="40.0" r="3" fill="#999999"/>
-<circle cx="240.0" cy="40.0" r="3" fill="#999999"/>
-<circle cx="303.3" cy="188.9" r="3" fill="#999999"/>
-<circle cx="366.7" cy="40.0" r="3" fill="#999999"/>
-<circle cx="430.0" cy="45.3" r="3" fill="#999999"/>
-<circle cx="493.3" cy="40.0" r="3" fill="#999999"/>
-<circle cx="556.7" cy="40.0" r="3" fill="#999999"/>
+<circle cx="107.0" cy="40.0" r="3" fill="#999999"/>
+<circle cx="164.0" cy="40.0" r="3" fill="#999999"/>
+<circle cx="221.0" cy="40.0" r="3" fill="#999999"/>
+<circle cx="278.0" cy="188.9" r="3" fill="#999999"/>
+<circle cx="335.0" cy="40.0" r="3" fill="#999999"/>
+<circle cx="392.0" cy="45.3" r="3" fill="#999999"/>
+<circle cx="449.0" cy="40.0" r="3" fill="#999999"/>
+<circle cx="506.0" cy="40.0" r="3" fill="#999999"/>
+<circle cx="563.0" cy="40.0" r="3" fill="#999999"/>
 <circle cx="620.0" cy="40.0" r="3" fill="#999999"/>
 <text x="50.0" y="266" text-anchor="middle" fill="#888">base</text><text x="50.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:00</text>
-<text x="113.3" y="266" text-anchor="middle" fill="#888">lora600</text><text x="113.3" y="280" text-anchor="middle" fill="#bbb">10-02 17:10</text>
-<text x="176.7" y="266" text-anchor="middle" fill="#888">gate</text><text x="176.7" y="280" text-anchor="middle" fill="#bbb">10-02 17:19</text>
-<text x="240.0" y="266" text-anchor="middle" fill="#888">lora600b</text><text x="240.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:36</text>
-<text x="303.3" y="266" text-anchor="middle" fill="#888">base2</text><text x="303.3" y="280" text-anchor="middle" fill="#bbb">10-02 17:39</text>
-<text x="366.7" y="266" text-anchor="middle" fill="#888">gate</text><text x="366.7" y="280" text-anchor="middle" fill="#bbb">10-02 17:52</text>
-<text x="430.0" y="266" text-anchor="middle" fill="#888">fp-fused3</text><text x="430.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:58</text>
-<text x="493.3" y="266" text-anchor="middle" fill="#888">gate</text><text x="493.3" y="280" text-anchor="middle" fill="#bbb">10-02 18:13</text>
-<text x="556.7" y="266" text-anchor="middle" fill="#888">fp-lora5</text><text x="556.7" y="280" text-anchor="middle" fill="#bbb">10-02 18:25</text>
-<text x="620.0" y="266" text-anchor="middle" fill="#888">fp-hist</text><text x="620.0" y="280" text-anchor="middle" fill="#bbb">10-02 18:36</text>
+<text x="107.0" y="266" text-anchor="middle" fill="#888">lora600</text><text x="107.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:10</text>
+<text x="164.0" y="266" text-anchor="middle" fill="#888">gate</text><text x="164.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:19</text>
+<text x="221.0" y="266" text-anchor="middle" fill="#888">lora600b</text><text x="221.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:36</text>
+<text x="278.0" y="266" text-anchor="middle" fill="#888">base2</text><text x="278.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:39</text>
+<text x="335.0" y="266" text-anchor="middle" fill="#888">gate</text><text x="335.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:52</text>
+<text x="392.0" y="266" text-anchor="middle" fill="#888">fp-fused3</text><text x="392.0" y="280" text-anchor="middle" fill="#bbb">10-02 17:58</text>
+<text x="449.0" y="266" text-anchor="middle" fill="#888">gate</text><text x="449.0" y="280" text-anchor="middle" fill="#bbb">10-02 18:13</text>
+<text x="506.0" y="266" text-anchor="middle" fill="#888">fp-lora5</text><text x="506.0" y="280" text-anchor="middle" fill="#bbb">10-02 18:25</text>
+<text x="563.0" y="266" text-anchor="middle" fill="#888">fp-hist</text><text x="563.0" y="280" text-anchor="middle" fill="#bbb">10-02 18:36</text>
+<text x="620.0" y="266" text-anchor="middle" fill="#888">fp-known</text><text x="620.0" y="280" text-anchor="middle" fill="#bbb">10-02 18:46</text>
 <rect x="50" y="286" width="10" height="10" fill="#1a1a1a"/><text x="66" y="295">Skill name</text>
 <rect x="170" y="286" width="10" height="10" fill="#0a7d3c"/><text x="186" y="295">Exact params</text>
 <rect x="290" y="286" width="10" height="10" fill="#999999"/><text x="306" y="295">Valid JSON</text>

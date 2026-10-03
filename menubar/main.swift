@@ -108,7 +108,7 @@ final class StatusPoller: ObservableObject {
     /// Something is on screen: the popover is open or the live window is visible. Everything expensive keys off this.
     @Published var popoverShown = false { didSet { applyWatching() } }
     @Published var windowVisible = false { didSet { applyWatching() } }
-    @Published var hudVisible = false   // the progress panel top left starts hidden; Ctrl+Option+H shows or hides it
+    @Published var hudVisible = true   // the progress panel top left starts visible; Ctrl+Option+H shows or hides it
     @Published var lastFrame: Date?
     let marker = MarkerModel()
     private var timer: Timer?
@@ -294,6 +294,9 @@ struct LivePos: Decodable { let x: Double; let y: Double }
 struct MiniMeta: Decodable { let x0: Double; let y0: Double; let w: Double; let h: Double }   // minimap.json: tile coords of the picture's top-left and the span it covers
 struct HotbarSlot: Decodable { let name: String; let count: Int }
 struct HotbarData: Decodable { let slots: [HotbarSlot] }
+struct Event: Decodable { let t: Double; let kind: String; let text: String }
+struct EventData: Decodable { let events: [Event] }
+struct EngineerData: Decodable { let item: String; let t: Double }
 
 @MainActor
 final class MarkerModel: ObservableObject {
@@ -308,6 +311,8 @@ final class MarkerModel: ObservableObject {
     @Published var mini: NSImage?
     @Published var miniMeta: MiniMeta?
     @Published var hotbar: [HotbarSlot] = []
+    @Published var events: [Event] = []
+    @Published var engineer: EngineerData?
     private var miniStamp: Date?
     private let miniPath = NSString(string: "~/Documents/Code/conveyer/minimap.png").expandingTildeInPath
     private let miniMetaPath = NSString(string: "~/Documents/Code/conveyer/minimap.json").expandingTildeInPath
@@ -319,6 +324,10 @@ final class MarkerModel: ObservableObject {
     private let framePath = NSString(string: "~/Documents/Code/conveyer/frame.json").expandingTildeInPath
     private var hotbarStamp: Date?
     private let hotbarPath = NSString(string: "~/Documents/Code/conveyer/hotbar.json").expandingTildeInPath
+    private var eventsStamp: Date?
+    private let eventsPath = NSString(string: "~/Documents/Code/conveyer/events.json").expandingTildeInPath
+    private var engineerStamp: Date?
+    private let engineerPath = NSString(string: "~/Documents/Code/conveyer/engineer.json").expandingTildeInPath
 
     func start() {
         guard timer == nil else { return }
@@ -359,10 +368,26 @@ final class MarkerModel: ObservableObject {
         hotbarStamp = m; hotbar = h.slots
     }
 
+    private func readEvents() {
+        guard let m = (try? FileManager.default.attributesOfItem(atPath: eventsPath))?[.modificationDate] as? Date, m != eventsStamp,
+              let d = FileManager.default.contents(atPath: eventsPath),
+              let e = try? JSONDecoder().decode(EventData.self, from: d) else { return }
+        eventsStamp = m; events = e.events
+    }
+
+    private func readEngineer() {
+        guard let m = (try? FileManager.default.attributesOfItem(atPath: engineerPath))?[.modificationDate] as? Date, m != engineerStamp,
+              let d = FileManager.default.contents(atPath: engineerPath),
+              let eng = try? JSONDecoder().decode(EngineerData.self, from: d) else { return }
+        engineerStamp = m; engineer = eng
+    }
+
     private func read() {
         readDots()
         readMini()
         readHotbar()
+        readEvents()
+        readEngineer()
         if let m = (try? FileManager.default.attributesOfItem(atPath: framePath))?[.modificationDate] as? Date, m != frameStamp,
            let d = FileManager.default.contents(atPath: framePath), let f = try? JSONDecoder().decode(LiveFrame.self, from: d) {
             frameStamp = m; frame = f
@@ -417,6 +442,15 @@ struct PlayerMarker: View {
                 let y = (g.size.height - f.h * s) / 2 + (f.h / 2 + (p.y - f.cy) * f.ppt) * s
                 ZStack {
                     Circle().fill(Color.accentColor.opacity(m.moving ? 0.28 : 0.14)).frame(width: 30 * s, height: 30 * s)
+                    if m.moving {
+                        TimelineView(.animation(minimumInterval: 1.0 / 20)) { ctx in
+                            let scale = 1.0 + 0.25 * sin(ctx.date.timeIntervalSinceReferenceDate * 4)
+                            Circle().stroke(Color.accentColor.opacity(0.9), lineWidth: 2).frame(width: 34 * s, height: 34 * s)
+                                .scaleEffect(scale)
+                        }
+                    } else {
+                        Circle().stroke(Color.accentColor.opacity(0.9), lineWidth: 2).frame(width: 34 * s, height: 34 * s)
+                    }
                     if Engineer.available {
                         EngineerSprite(heading: m.heading, walking: m.moving, scale: s)
                     } else if m.moving {
@@ -561,6 +595,48 @@ struct MiniMap: View {
     }
 }
 
+/// Activity feed: recent events (last 40s) shown as small pills with color-coded status dots.
+struct Feed: View {
+    @ObservedObject var m: MarkerModel
+    let win: CGSize
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            if !m.events.isEmpty {
+                let now = Date().timeIntervalSince1970
+                let filtered = m.events.filter { now - $0.t < 40 }
+                if !filtered.isEmpty {
+                    let u = min(max(min(win.width / 900, win.height / 800), 0.7), 2.0)   // same window scale as the HUD
+                    let maxWidth = win.width * 0.28
+                    let hotbarHeight = min(max(win.width * 0.045, 28), 64)
+                    VStack(alignment: .leading, spacing: 4 * u) {
+                        ForEach(Array(filtered.enumerated()), id: \.offset) { i, event in
+                            let age = now - event.t
+                            let isFading = age > 30
+                            let fadeAlpha = isFading ? max(0, 1.0 - (age - 30) / 10.0) : 1.0
+                            let color: Color = event.kind == "ok" ? .green : (event.kind == "warn" ? .orange : .red)
+                            HStack(spacing: 6 * u) {
+                                Circle().fill(color).frame(width: 8 * u, height: 8 * u)
+                                Text(event.text)
+                                    .font(.system(size: 12 * u, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                            }
+                            .padding(.horizontal, 8 * u)
+                            .padding(.vertical, 5 * u)
+                            .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 8 * u))
+                            .opacity(fadeAlpha)
+                        }
+                    }
+                    .frame(maxWidth: maxWidth, alignment: .trailing)
+                    .padding(8)
+                    .padding(.bottom, hotbarHeight + 4)
+                    .allowsHitTesting(false)
+                }
+            }
+        }
+    }
+}
+
 /// Game-style hotbar: 10 inventory slots showing the player's most abundant items.
 struct Hotbar: View {
     @ObservedObject var m: MarkerModel
@@ -634,6 +710,7 @@ struct LiveView: View {
             .clipped()
             .overlay(alignment: .topLeading) { if poller.hudVisible { hud.scaleEffect(min(max(min(g.size.width / 900, g.size.height / 800), 0.7), 2.2), anchor: .topLeading) } }   // HUD grows and shrinks with the window
             .overlay(alignment: .bottom) { Hotbar(m: poller.marker, win: g.size) }
+            .overlay(alignment: .bottomLeading) { Feed(m: poller.marker, win: g.size) }
             .overlay(alignment: .bottomTrailing) { MiniMap(m: poller.marker, win: g.size) }
         }
         .frame(minWidth: 520, minHeight: 420)
@@ -666,6 +743,12 @@ struct LiveView: View {
                 HStack(spacing: 5) {
                     Circle().fill(s.worked ? Color.green : Color.red).frame(width: 6, height: 6)
                     Text("Player is \(ConveyerMonitorApp.narrate(s.skill))").font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            TimelineView(.periodic(from: .now, by: 1)) { _ in   // the marker model is a separate object the HUD does not observe, so re-read it every second
+                if let eng = poller.marker.engineer, !eng.item.isEmpty, Date().timeIntervalSince1970 - eng.t < 20 {
+                    let niceName = eng.item.replacingOccurrences(of: "-", with: " ")
+                    Text("Checking the \(niceName) tile").font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
                 }
             }
         }

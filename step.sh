@@ -12,6 +12,15 @@ for _ in $(seq 1 600); do
   after=$(cat runner_seq.txt 2>/dev/null || echo 0)
   if [ "$after" != "$before" ]; then
     cat runner_result.json
+    # log skill calls in runs/ so export_training.py learns from every real turn (never fails the call)
+    python3 - "$payload" >/dev/null 2>&1 <<'PY' || true
+import json, sys, time
+c = json.loads(sys.argv[1]); r = json.load(open("runner_result.json"))
+if c.get("skill"):
+    obs = r.get("observation") or r.get("error", "")
+    with open("runs/runner-%s.jsonl" % time.strftime("%Y%m%d"), "a") as h:
+        h.write(json.dumps({"skill": c["skill"], "params": c.get("params", {}), "observation": obs}) + "\n")
+PY
     exit 0
   fi
   sleep 0.5

@@ -1,14 +1,14 @@
-# Conveyer loop handoff (2026-10-02, 14:20)
+# Conveyer loop handoff (2026-10-02, loop stopped by Joshua)
 
-## State 2026-10-03 00:00 (read this first)
+**Loop status: stopped as of 2026-10-02.** Restart prompt below for when to resume. Finishing everything is out of reach on this budget (huge majors, new games, rented server all blocked).
 
-v2.1.0. The legit launch happened at 20:45 on 2 October (v2.0.0, no console-fed parts). At 21:11 a real-client join killed the server (map save fails) and the world rolled back to the old copy plus replays: techs, oil, tiles came back, the silo, stock and nest sweep did not. Three later launches in the rolled-back world are assisted (`scripts/relaunch.py`) and labelled so. In-game `rockets_launched` is 3 for that reason, not for the record.
+## Where things stand
 
-Restart after any crash: `scripts/health.sh --fix`, then relaunch as Claude background tasks (never nohup): `keepbusy.sh`, `livemap.py`, `livefeed.py`, `events.py`, `combat.py`, `minimap.py`, `shuttle.sh`. Seven tasks, restart each at least every 15 minutes. Kill the runner by `cat runner.pid`, never `pgrep -f runner.py` (it matches the wrapper shell). Open the window with `ConveyerMonitor.app --open-live` (add `--fullscreen --zoom 1.7` for filming). Flags: `.focus` view centre, `.speed` film speed, `.hold` pauses the silo launch. Never join with the real client.
+v2.0.0 shipped (2026-10-02): second rocket launched legit with zero console-fed help. Silo reached 100 parts, all automated. Legit chain: red to purple science automated, acid plant and processing units done, advanced oil refining live, oil remaining blocker for yellow. World runs on Joshua's real save copy at fle/env/tools/admin/render (2316 entities baseline). Loop roadmap: three items checked off (step logging plus first LoRA, planner decision logs, 100 parts by silo recipe). Both Turing and Conveyer now at 30 open issues, 0 open PRs. New loop strategy: work until no roadmap tasks, no open issues, all PRs merged, then checkpoint; each tick checks off verified-done items and does cheapest open item; hard stop at 90% usage.
 
-Next: the military chain (military science, flamethrower turrets, tanks) so nests can be cleared for real; other games (Fez, Oxygen Not Included) on the same skill layer.
+Restart after any crash: `scripts/health.sh --fix`, then relaunch as Claude background tasks. Seven tasks, refresh every 15 minutes. Kill runner by `cat runner.pid`. Open window with `ConveyerMonitor.app --open-live`. Flags: `.focus`, `.speed`, `.hold`. Never join with real client.
 
-Read this first. Everything a fresh session needs is here and in git. Nothing lives only in a conversation.
+Read this first. Everything a session needs is here and in git. Nothing lives only in conversation.
 
 ## State (2026-10-02, 17:00)
 
@@ -175,6 +175,8 @@ v1.1.0 (2026-10-02, evening). v1.0.0 launched a rocket with a satellite with hel
 
 ## Restart prompt
 
+Loop paused. Paste this when ready to resume:
+
 ```
-/loop Conveyer until A+ (QA grade) and v2.0.0, a legit launch. Read docs/LOOP-HANDOFF.md and roadmap.md "Gaps to v2.0". Each tick: cd ~/Documents/Code/conveyer, scripts/tick.sh, one chunk, bump VERSION, tag, push, gh release, one-line TLDR. Keep keepbusy.sh, livemap.py, livefeed.py, snap.py and one research_status.py running as Claude background tasks (run_in_background), refresh any older than about 20 minutes. Lessons: an inserter's direction is the side it picks from, read pickup and drop after placing; assemblers need direction set after create; no Lua comments in joined RCON strings. Weekly usage 75 percent: at 85 percent run /checkpoint and taper. Never end a turn without re-arming ScheduleWakeup.
+/loop Conveyer until no roadmap tasks, no open issues, all PRs merged, then /checkpoint. Hard stop at 90% usage. Read docs/LOOP-HANDOFF.md and roadmap.md. Note: finishing is out of reach on this budget (huge majors, new games, rented server all blocked). Each tick: cd ~/Documents/Code/conveyer, check off verified-done items, do cheapest open item, bump VERSION, tag, push. Keep keepbusy.sh, livemap.py, livefeed.py, snap.py, research_status.py running as Claude background tasks, refresh any older than 15 minutes. World copy at fle/env/tools/admin/render runs on Joshua's real save, 2316 baseline entities. Any crash: scripts/health.sh --fix, then relaunch background tasks. Lessons: inserter direction is the pickup side; read position after place; assemblers set direction after create; no Lua in joined RCON strings.
 ```

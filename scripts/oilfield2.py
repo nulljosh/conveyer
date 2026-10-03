@@ -23,6 +23,7 @@ if not e and s.can_place_entity{name='pumpjack',position={%g,%g},direction=d.nor
 if not e then rcon.print('FAILED') return end local c=e.fluidbox.get_pipe_connections(1)[1] rcon.print(c.target_position.x..','..c.target_position.y)""" % ((wx, wy) * 3))
     if r == "FAILED": print("pumpjack failed at", wx, wy); continue
     ox, oy = [float(v) for v in r.split(",")]
+    s.run("local p=power(%g,%g) rcon.print(p and p.electric_network_id or 'none')" % (wx, wy))  # a pole beside every pumpjack: the chain only reached the first three
     s.run("local x,y=%g,%g if not s.find_entities_filtered{name='pipe',position={x,y},radius=0.3}[1] and s.can_place_entity{name='pipe',position={x,y},force=F} then s.create_entity{name='pipe',position={x,y},force=F} end rcon.print('ok')" % (ox, oy))
     if first is None: first = (ox, oy)
     else: print("trunk", (wx, wy), s.pipe((ox, oy), first, box=40))

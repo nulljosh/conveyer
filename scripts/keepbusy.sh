@@ -18,6 +18,7 @@ PY
   $W scripts/planner.py step >> planner.log 2>&1   # keep the tiles supplied
   $W scripts/oil.py >/dev/null 2>&1                 # every pass: at 10x the plastic plant eats its coal chest in minutes
   [ -f .assist ] && $W scripts/assist.py >/dev/null 2>&1   # assisted mode, see scripts/assist.py
+  (cd scripts && $W fuelsupply.py >/dev/null 2>&1)   # solid fuel into the rocket fuel assemblers
   $W scripts/barrels.py move >/dev/null 2>&1        # crude by barrel: field to refinery and empties back
   $W scripts/acid.py feed >/dev/null 2>&1           # acid plant iron and the processing unit chests
   $W scripts/speed.py >> planner.log 2>&1            # CPU aware: game speed follows machine load

@@ -49,23 +49,26 @@ for r=0,%d,%d do for dx=-r,r,%d do for _,dy in ipairs{-r,r} do local x,y=%g+dx,%
   for dy=-r,r,%d do for _,dx in ipairs{-r,r} do local x,y=%g+dx,%g+dy if not best and free(x,y,x+W,y+H) then best={x,y} end end end end
 rcon.print(best and (best[1]..','..best[2]) or 'none')""" % (w, h, maxr, step, step, near[0], near[1], step, near[0], near[1]))
 
-    def pipe(self, start, goal_fluid_near, avoid_names=("pipe", "pipe-to-ground")):
+    def pipe(self, start, goal_fluid_near, box=45, reserved=(), strict=False):
         """Route pipes from start (x,y, a free tile or an existing pipe) to the first existing pipe whose network holds the same fluid as the pipe at
         goal_fluid_near. Never lets a new pipe touch a pipe of a different fluid. Returns the number of pipes placed or an error."""
         return self.run("""local function pat(x,y) return s.find_entities_filtered{name={'pipe','pipe-to-ground'},position={x,y},radius=0.3}[1] end
 local sx,sy=%g,%g local gx,gy=%g,%g local goal=pat(gx,gy) if not goal then rcon.print('no goal pipe') return end
 local gseg=goal.fluidbox.get_fluid_segment_id(1) local gfluid=goal.fluidbox[1] and goal.fluidbox[1].name
 local function key(x,y) return x..','..y end
-local function foreign(x,y) for _,dd in ipairs{{1,0},{-1,0},{0,1},{0,-1}} do local n=pat(x+dd[1],y+dd[2]) if n and n.fluidbox.get_fluid_segment_id(1)~=gseg then local nf=n.fluidbox[1] if nf and gfluid and nf.name~=gfluid then return true end end end return false end
+local STRICT=%s local forb={} for _,e in pairs(s.find_entities_filtered{area={{sx-%d,sy-%d},{sx+%d,sy+%d}}}) do if e.type=='assembling-machine' or e.type=='storage-tank' or e.type=='mining-drill' or e.type=='offshore-pump' or e.type=='pump' then for i=1,#e.fluidbox do for _,c in ipairs(e.fluidbox.get_pipe_connections(i)) do for _,dd in ipairs(STRICT) do forb[math.floor(c.target_position.x+dd[1])..','..math.floor(c.target_position.y+dd[2])]=true end end end end end
+for _,r in ipairs{%s} do for _,dd in ipairs{{0,0},{1,0},{-1,0},{0,1},{0,-1}} do forb[math.floor(r[1]+dd[1])..','..math.floor(r[2]+dd[2])]=true end end
+for _,dd in ipairs{{0,0},{1,0},{-1,0},{0,1},{0,-1}} do forb[math.floor(sx+dd[1])..','..math.floor(sy+dd[2])]=nil end
+local function foreign(x,y) if forb[math.floor(x)..','..math.floor(y)] then return true end for _,dd in ipairs{{1,0},{-1,0},{0,1},{0,-1}} do local n=pat(x+dd[1],y+dd[2]) if n and n.fluidbox.get_fluid_segment_id(1)~=gseg then local nf=n.fluidbox[1] if nf and gfluid and nf.name~=gfluid then return true end end end return false end
 local q={{sx,sy}} local seen={[key(sx,sy)]=true} local prev={} local head=1 local found
 while head<=#q and not found do local cur=q[head] head=head+1
   for _,dd in ipairs{{1,0},{-1,0},{0,1},{0,-1}} do local nx,ny=cur[1]+dd[1],cur[2]+dd[2]
-    if math.abs(nx-sx)<=45 and math.abs(ny-sy)<=45 and not seen[key(nx,ny)] then local pe=pat(nx,ny)
+    if math.abs(nx-sx)<=%d and math.abs(ny-sy)<=%d and not seen[key(nx,ny)] then local pe=pat(nx,ny)
       if pe and pe.fluidbox.get_fluid_segment_id(1)==gseg then prev[key(nx,ny)]=cur found={nx,ny} break end
       if not pe and s.can_place_entity{name='pipe',position={nx,ny},force=F} and not foreign(nx,ny) then seen[key(nx,ny)]=true prev[key(nx,ny)]=cur q[#q+1]={nx,ny} end end end end
 if not found then rcon.print('NO PATH') return end
 local n=0 local cur=prev[key(found[1],found[2])] while cur do if not pat(cur[1],cur[2]) then s.create_entity{name='pipe',position={cur[1],cur[2]},force=F} n=n+1 end cur=prev[key(cur[1],cur[2])] end
-rcon.print('piped '..n)""" % (start[0], start[1], goal_fluid_near[0], goal_fluid_near[1]))
+rcon.print('piped '..n)""" % (start[0], start[1], goal_fluid_near[0], goal_fluid_near[1], "{{0,0},{1,0},{-1,0},{0,1},{0,-1}}" if strict else "{{0,0}}", box, box, box, box, ",".join("{%g,%g}" % t for t in reserved), box, box))
 
 if __name__ == "__main__":
     s = Site()

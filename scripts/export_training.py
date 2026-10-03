@@ -2,15 +2,17 @@
 """Turns runs/*.jsonl into chat-format train/valid files for LoRA fine-tuning (mlx_lm lora, same recipe as Turing's hands-adapter).
 One example per successful skill call: the prompt is the last observation, the answer is {"skill", "params"}. Failed calls are dropped.
 Usage: export_training.py [--valid 0.1]"""
-import argparse, glob, json, random
+import argparse, glob, json, random, re
 from pathlib import Path
 
+ENT = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s+at\s+x=(-?[\d.]+)\s*,?\s*y=(-?[\d.]+)")  # same as agent.py
+PAIR = re.compile(r"^(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)$")
 ROOT = Path(__file__).resolve().parent.parent
 SYS = "You play Factorio. Pick one skill and its parameters as JSON. Never write code."
 ap = argparse.ArgumentParser(); ap.add_argument("--valid", type=float, default=0.1); a = ap.parse_args()
 by_run = {}
 for f in sorted(glob.glob(str(ROOT / "runs" / "*.jsonl"))):
-    last = "Start of run."; prev = ""; hist = []  # prompt = the skill just called plus its result, so the model sees what it just did
+    last = "Start of run."; prev = ""; hist = []; known = {}  # prompt = the skill just called plus its result, so the model sees what it just did
     rows = by_run.setdefault(f, [])
     for line in open(f):
         if not line.strip(): continue
@@ -18,10 +20,12 @@ for f in sorted(glob.glob(str(ROOT / "runs" / "*.jsonl"))):
         if "SKILL_OK" in str(r.get("observation", "")) and r.get("skill"):
             try: params = json.loads(json.dumps(eval(str(r["params"])))) if isinstance(r["params"], str) else r["params"]
             except Exception: params = {}
-            rows.append({"messages": [{"role": "system", "content": SYS}, {"role": "user", "content": ("Recent skills: " + ", ".join(hist[-3:]) + "\n" + prev + last[:700])[:1500]},
+            params = {k: (f"x={m.group(1)},y={m.group(2)}" if isinstance(v, str) and (m := PAIR.match(v)) else v) for k, v in params.items()} if isinstance(params, dict) else params  # one position format: x=..,y=..
+            rows.append({"messages": [{"role": "system", "content": SYS}, {"role": "user", "content": ("Recent skills: " + ", ".join(hist[-3:]) + "\nKnown: " + "; ".join(f"{k}@{v}" for k, v in list(known.items())[-4:]) + "\n" + prev + last[:700])[:1500]},
                                       {"role": "assistant", "content": json.dumps({"skill": r["skill"], "params": params})}]})
         last = str(r.get("observation", ""))
         hist.append(str(r.get("skill")))
+        for pr, x, y in ENT.findall(last): known[pr] = f"x={x},y={y}"
         prev = f"Last skill: {r.get('skill')} {json.dumps(r.get('params'))}\n"
 CAP = 100  # place_inserter was 35 percent of the data and won every tie
 for k in by_run:

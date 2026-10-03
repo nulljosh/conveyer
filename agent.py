@@ -162,7 +162,7 @@ def main() -> None:
                 if args.picker_url:  # mlx_lm.server from Turing's venv: OpenAI-style, same weights as the eval
                     r = httpx.post(args.picker_url.rstrip("/") + "/v1/chat/completions", timeout=300, json={
                         "model": args.model, "max_tokens": 120, "temperature": 0.8 if repeat_count else 0,
-                        "messages": [{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": ("Recent skills: " + ", ".join(hist[-3:]) + "\n" + last_call_line + last_obs[:700])[:1500]}]}).json()
+                        "messages": [{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": ("Recent skills: " + ", ".join(hist[-3:]) + "\nKnown: " + "; ".join(f"{k}@{v}" for k, v in list(base_memory.items())[-4:]) + "\n" + last_call_line + last_obs[:700])[:1500]}]}).json()
                     response = {"message": r["choices"][0]["message"]}
                 else: response = httpx.post(
                     ollama_url,

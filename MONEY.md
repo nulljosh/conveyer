@@ -7,9 +7,10 @@
 **Cost to serve**: $0. Runs on this Mac with local Ollama and the Factorio license Joshua already owns. No paid APIs.
 
 **Where we are**
+- 2026-10-02: rocket chain unblocked (planner crash, unpowered oil pumps, dead boilers, no steel feed, silent fuel script path); the silo is fed by a line of chests and inserters. The v1.0 launch was console-assisted; a legit launch is pending and not verified.
 - 2026-10-02: plays Joshua's real save; refinery and plastic plant running; labs fed automatically; screenshots use real game art.
 
-**Next**: ship the first milestone GIF on the landing page. It's the proof anyone would pay for.
+**Next**: the legit launch, recorded as a GIF on the landing page. It's the proof anyone would pay for.
 
 **Million, billion, trillion**
 - Million: a $1 Mac app that plays your own save while you sleep. No number yet.

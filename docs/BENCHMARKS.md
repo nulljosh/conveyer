@@ -6,7 +6,7 @@ Generated from real data at every commit by `scripts/benchmarks.py`. Nothing her
 
 - Version: 1.6.0
 - Techs researched: 73 (rocket silo path: 44 of 44)
-- Assembler tiles built by the planner: 52
+- Assembler tiles built by the planner: 54
 - Entities on the map: 4287
 - Labs working: 0 of 12
 
@@ -43,7 +43,6 @@ Generated from real data at every commit by `scripts/benchmarks.py`. Nothing her
 
 | When | Version | Techs | Entities | Tiles |
 |---|---|---|---|---|
-| Oct 2 18:02 |  | 73 | 3025 |  |
 | Oct 2 18:12 | 1.2.0 | 73 | 3036 | 42 |
 | Oct 2 18:29 | 1.2.1 | 73 | 3114 | 42 |
 | Oct 2 18:31 | 1.2.1 | 73 | 3114 | 43 |
@@ -55,5 +54,6 @@ Generated from real data at every commit by `scripts/benchmarks.py`. Nothing her
 | Oct 2 20:08 | 1.6.0 | 73 | 4227 | 52 |
 | Oct 2 20:14 | 1.6.0 | 73 | 4321 | 52 |
 | Oct 2 20:18 | 1.6.0 | 73 | 4287 | 52 |
+| Oct 2 20:20 | 1.6.0 | 73 | 4287 | 54 |
 
 ![techs and entities over time](../progress.svg)

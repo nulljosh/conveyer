@@ -34,6 +34,8 @@ while (ROOT / "runner.pid").exists():
         if not tgt: tgt = targets()
         if tgt and not (ROOT / ".rendering").exists():   # runner parks the player at the picture center while it reads the map
             d = float(walker.send_command(WALK % (*tgt[ti % len(tgt)], 2.5, 2.5, 2.5)).strip() or 0)
+            tl = P.load(); cur = tl[ti % len(tl)]["item"] if tl else ""   # what he is walking to: engineer.json feeds the HUD line
+            tmp2 = ROOT / "engineer.tmp"; tmp2.write_text(json.dumps({"item": cur, "t": time.time()})); os.replace(tmp2, ROOT / "engineer.json")
             if d <= 2.5: ti += 1; tgt = targets() if ti % len(tgt) == 0 else tgt
         if time.time() - lastmap < 0.8: time.sleep(0.25); continue
         lastmap = time.time()

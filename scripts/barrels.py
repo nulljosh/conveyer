@@ -5,29 +5,42 @@ the same remote chest-to-chest move the planner already uses for every other ite
 `barrels.py move` shuttles barrels (keepbusy runs it every pass). Ports were read from the game; an inserter's direction is the side it picks
 from; an assembler's direction must be set after create. EMPTIERS is a list because one emptier fed the refinery at only ~4 crude/s.
 ponytail: one filler (about 180 crude/s); add emptiers by adding a row to EMPTIERS."""
-import sys, factorio_rcon as f
+import sys, json
+from pathlib import Path
+import factorio_rcon as f
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=60)
 run = lambda l: c.send_command(" ".join(l.split("\n")))
-FX, FY = 264.5, 82.5                       # filler assembler at the field
+_F = Path(__file__).resolve().parent.parent / ".world" / "fillers.json"   # oilfield2.py appends here
+FILLERS = [tuple(x) for x in (json.loads(_F.read_text()) if _F.exists() else [[264.5, 82.5]])]
+FX, FY = FILLERS[0]                       # the first filler at the east field is the one this script builds
 import json
 from pathlib import Path
 _E = Path(__file__).resolve().parent.parent / ".world" / "emptiers.json"   # refineries.py appends here
 EMPTIERS = [tuple(e) for e in (json.loads(_E.read_text()) if _E.exists() else [[-37.5, 3.5], [-33.5, 3.5]])]
 LIST = ",".join("{%g,%g}" % e for e in EMPTIERS)
 BUILD_LIST = ",".join("{%g,%g}" % e for e in EMPTIERS[:2])   # only the first two are built here; refineries.py builds the rest with their refineries
+if len(sys.argv) > 2 and sys.argv[1] == "stock":   # barrels.py stock N: steel from stores becomes N empty barrels in the filler input chests (hand-crafted barrels, one steel each)
+    FL = ",".join("{%g,%g}" % f_ for f_ in FILLERS)
+    print(run("""/silent-command local s=game.surfaces[1] local need=%d local got=0
+for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do if got>=need then break end local inv=e.get_inventory(defines.inventory.chest) local h=inv.get_item_count('steel-plate') if h>200 then local n=math.min(need-got,h-150) got=got+inv.remove{name='steel-plate',count=n} end end
+local FL={%s} local per=math.ceil(got/#FL) local ins=0
+for _,f in ipairs(FL) do local c=s.find_entities_filtered{name={'wooden-chest','steel-chest'},position={f[1]-3,f[2]+1},radius=0.3}[1] if c and got>0 then local k=c.insert{name='barrel',count=math.min(per,got)} ins=ins+k got=got-k end end
+rcon.print('barrels stocked '..ins)""" % (int(sys.argv[2]), FL)))
+    raise SystemExit
 if len(sys.argv) > 1 and sys.argv[1] == "move":
+    FL = ",".join("{%g,%g}" % f_ for f_ in FILLERS)
     print(run("""/silent-command local s=game.surfaces[1] local moved=0
-local function ch(x,y) return s.find_entities_filtered{name='wooden-chest',position={x,y},radius=0.3}[1] end
+local function ch(x,y) return s.find_entities_filtered{name={'wooden-chest','steel-chest'},position={x,y},radius=0.3}[1] end
 local function take(c,item) if not c then return 0 end local inv=c.get_inventory(defines.inventory.chest) local n=inv.get_item_count(item) if n>0 then inv.remove{name=item,count=n} end return n end
-local E={%s}
-local full=take(ch(%g,%g),'crude-oil-barrel')
+local E={%s} local FL={%s}
+local full=0 for _,f in ipairs(FL) do full=full+take(ch(f[1]+3,f[2]),'crude-oil-barrel') end
 for _,e in ipairs(E) do full=full+take(ch(e[1]-1,e[2]+3),'crude-oil-barrel') end
 local per=math.ceil(full/#E)
 for _,e in ipairs(E) do local c=ch(e[1]-1,e[2]+3) local give=math.min(per,full) if c and give>0 then local k=c.insert{name='crude-oil-barrel',count=give} full=full-k moved=moved+k end end
-if full>0 then local c=ch(%g,%g) if c then c.insert{name='crude-oil-barrel',count=full} end end
+if full>0 then local c=ch(E[1][1]-1,E[1][2]+3) if c then c.insert{name='crude-oil-barrel',count=full} end end
 local empty=0 for _,e in ipairs(E) do empty=empty+take(ch(e[1]+1,e[2]+3),'barrel') end
-local fc=ch(%g,%g) if fc and empty>0 then fc.insert{name='barrel',count=empty} end
-rcon.print('barrels moved full '..moved..' empty back '..empty)""" % (LIST, FX + 3, FY, EMPTIERS[0][0] - 1, EMPTIERS[0][1] + 3, FX - 3, FY + 1)))
+local per2=math.ceil(empty/#FL) for _,f in ipairs(FL) do local give=math.min(per2,empty) local c=ch(f[1]-3,f[2]+1) if c and give>0 then c.insert{name='barrel',count=give} empty=empty-give end end
+rcon.print('barrels moved full '..moved)""" % (LIST, FL)))
     raise SystemExit
 print(run("""/silent-command local s=game.surfaces[1] local d=defines.direction local F=game.forces.player local out={}
 local function put(n,x,y,dir,rec) local e=s.find_entities_filtered{name=n,position={x,y},radius=0.3}[1]

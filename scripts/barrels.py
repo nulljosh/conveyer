@@ -38,8 +38,10 @@ for _,e in ipairs(E) do full=full+take(ch(e[1]-1,e[2]+3),'crude-oil-barrel') end
 local per=math.ceil(full/#E)
 for _,e in ipairs(E) do local c=ch(e[1]-1,e[2]+3) local give=math.min(per,full) if c and give>0 then local k=c.insert{name='crude-oil-barrel',count=give} full=full-k moved=moved+k end end
 if full>0 then local c=ch(E[1][1]-1,E[1][2]+3) if c then c.insert{name='crude-oil-barrel',count=full} end end
+local live={} for _,f in ipairs(FL) do if #s.find_entities_filtered{name='pumpjack',position={f[1],f[2]},radius=60}>0 then live[#live+1]=f end end
 local empty=0 for _,e in ipairs(E) do empty=empty+take(ch(e[1]+1,e[2]+3),'barrel') end
-local per2=math.ceil(empty/#FL) for _,f in ipairs(FL) do local give=math.min(per2,empty) local c=ch(f[1]-3,f[2]+1) if c and give>0 then c.insert{name='barrel',count=give} empty=empty-give end end
+for _,f in ipairs(FL) do local dead=true for _,l in ipairs(live) do if l==f then dead=false end end if dead then empty=empty+take(ch(f[1]-3,f[2]+1),'barrel') end end
+local per2=math.ceil(empty/math.max(#live,1)) for _,f in ipairs(live) do local give=math.min(per2,empty) local c=ch(f[1]-3,f[2]+1) if c and give>0 then c.insert{name='barrel',count=give} empty=empty-give end end
 rcon.print('barrels moved full '..moved)""" % (LIST, FL)))
     raise SystemExit
 print(run("""/silent-command local s=game.surfaces[1] local d=defines.direction local F=game.forces.player local out={}

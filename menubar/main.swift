@@ -489,13 +489,11 @@ struct CameraRig<Content: View>: View {
         guard let f = m.frame, let p = m.shown else { return .zero }
         let s0 = max(size.width / f.w, size.height / f.h)
         let qx = (p.x - f.cx) * f.ppt * s0, qy = (p.y - f.cy) * f.ppt * s0
-        // Center on the player, but never slide the picture past its own edge (that shows dark margins). Where those two disagree the player wins:
-        // he is held inside 85% of the window, so he can never walk off screen even when he is outside the picture.
+        // Center on the player, but never slide the picture past its own edge: the picture always covers the window, so there is never a dark bar.
+        // When the player walks outside the picture (it re-renders on change or every 60 s) he leaves the view until the next frame re-centers it.
         let mx = max(0, zoom * f.w * s0 / 2 - size.width / 2), my = max(0, zoom * f.h * s0 / 2 - size.height / 2)
         let ox = min(max(-zoom * qx, -mx), mx), oy = min(max(-zoom * qy, -my), my)
-        let hx = size.width / 2 * 0.85, hy = size.height / 2 * 0.85
-        let px = min(max(zoom * qx + ox, -hx), hx), py = min(max(zoom * qy + oy, -hy), hy)
-        let res = CGSize(width: px - zoom * qx, height: py - zoom * qy)
+        let res = CGSize(width: ox, height: oy)
         if ProcessInfo.processInfo.environment["CV_DEBUG"] != nil {   // QA aid: one line per frame to /tmp/cv_cam.log, then read it back
             let hw = zoom * f.w * s0 / 2, hh = zoom * f.h * s0 / 2
             let gapL = res.width - hw + size.width / 2, gapR = size.width / 2 - (res.width + hw), gapT = res.height - hh + size.height / 2, gapB = size.height / 2 - (res.height + hh)
@@ -517,7 +515,11 @@ struct LiveView: View {
                 CameraRig(m: poller.marker, size: g.size) {
                     ZStack {
                         if let map = poller.map {
-                            Image(nsImage: map).resizable().interpolation(.high).scaledToFill().frame(width: g.size.width, height: g.size.height).clipped()
+                            // The layer is the whole picture at cover scale, not a window-sized crop of it: CameraRig's edge clamp assumes exactly this size.
+                            let f = poller.marker.frame
+                            let s0 = f.map { max(g.size.width / $0.w, g.size.height / $0.h) } ?? 1
+                            Image(nsImage: map).resizable().interpolation(.high)
+                                .frame(width: (f?.w ?? g.size.width) * s0, height: (f?.h ?? g.size.height) * s0)
                         } else {
                             Text("Waiting for the first frame").foregroundStyle(.secondary)
                         }

@@ -98,6 +98,13 @@ def build_order():
         if run("/silent-command rcon.print(game.forces.player.recipes['%s'].enabled)" % tgt) == "true": rec.update(recipes(tgt))  # a tile cannot take a recipe the tech tree has not unlocked yet
     return rec, tiers(rec)
 
+def log_decision(row):
+    """One JSON line per decision in runs/planner/ (not runs/*.jsonl, so export_training.py skips it until we decide the model owns picking tiles)."""
+    try:
+        d = ROOT / "runs" / "planner"; d.mkdir(parents=True, exist_ok=True)
+        with open(d / (time.strftime("%Y%m%d") + ".jsonl"), "a") as h: h.write(json.dumps(row) + "\n")
+    except Exception: pass
+
 def step():
     rec, tr = build_order(); plan = load(); have = {}
     for t in plan: have[t["item"]] = have.get(t["item"], 0) + 1
@@ -111,7 +118,10 @@ def step():
         plan.append({"item": item, "cell": cell}); save(plan)
         print(f"built {item} (tier {tr[item]}) at cell {cell}: {res}")
     print("supplied:", supply(plan, rec) or "nothing to move")
-    print("stock:", stock(list(TARGETS) + list(rec)))
+    st = stock(list(TARGETS) + list(rec))
+    print("stock:", st)
+    log_decision({"t": int(time.time()), "skill": "build_tile" if missing else "wait", "params": {"item": item, "cell": cell} if missing else {},
+                  "tiles": have, "stock": st, "result": res if missing else "nothing missing", "observation": "SKILL_OK stock: " + json.dumps(st)})
     return bool(missing)
 
 def replay():

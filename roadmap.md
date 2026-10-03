@@ -74,7 +74,7 @@ Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 4
 - [ ] route_belt skill: A* belt routing with undergrounds, so belts stop being hand-placed (idea from factorioctl). ETA 1 day
 - [ ] Drive a car over RCON (riding_state) to haul science and fight; 2 cars exist. ETA hours
 - [ ] Join the west outpost grid (net 181, 2 engines, 32 consumers) to the main grid with big poles. ETA hours
-- [ ] Log every runner step as (state, skill, result) and fine-tune the local model on the successful picks (no public Factorio fine-tune exists)
+- [x] Log every runner step as (state, skill, result) and fine-tune the local model on the successful picks (no public Factorio fine-tune exists)
 
 ## Tooling shipped
 
@@ -215,13 +215,13 @@ Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 4
 - [ ] Planner supports fluid inputs (sulfuric acid, lubricant) so tiles are not item-only
 - [ ] Throughput for 1000 units of each of 5 packs: more copper (only far patches left), more plastic, a second refinery with advanced oil, more labs or lab modules
 - [ ] Real silo build: 1000 concrete, steel, processing units, electric engines, pipes, placed by the agent, not create_entity
-- [ ] 100 rocket parts made by the silo's own recipe: rocket control unit, low density structure, rocket fuel, all automated and fed
+- [x] 100 rocket parts made by the silo's own recipe: rocket control unit, low density structure, rocket fuel, all automated and fed
 - [ ] Satellite built and loaded (1000 solar panels? no: 100 each of rocket control unit, low density structure, solar panel, accumulator, radar)
 - [ ] Remove .assist and assist.py from the loop; research must run on tile packs alone
 - [ ] Crash proofing: the world reverts on any crash. Replay scripts for yellow tiles, silo and power; health.sh --fix covers them end to end
 - [ ] Copper wall: new copper farm on a far patch plus a long pole bridge, or train
 - [ ] Live view: refresh the map picture when new tiles are built, or draw our own tile sprites
-- [ ] Benchmarks: log planner decisions to runs/ so training data exists, and run the first LoRA from docs/TRAINING.md
+- [x] Benchmarks: log planner decisions to runs/ so training data exists, and run the first LoRA from docs/TRAINING.md
 - [ ] QA: landing numbers generated from the game (rockets, techs, packs per minute), no typed numbers
 
 ## Next games

@@ -9,6 +9,7 @@ ponytail: create_entity is free (no assembler items spent) and supply() teleport
 import time, json, sys
 from pathlib import Path
 import factorio_rcon as f
+import steelfeed
 
 ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / ".world" / "tiles.json"
@@ -119,6 +120,7 @@ def step():
         plan.append({"item": item, "cell": cell}); save(plan)
         print(f"built {item} (tier {tr[item]}) at cell {cell}: {res}")
     print("supplied:", supply(plan, rec) or "nothing to move")
+    print("steel:", steelfeed.feed(run))  # steel has no tile: its furnaces get iron plates here, in the pass the running loop already makes
     st = stock(list(TARGETS) + list(rec))
     print("stock:", st)
     log_decision({"t": int(time.time()), "skill": "build_tile" if missing else "wait", "params": {"item": item, "cell": cell} if missing else {},

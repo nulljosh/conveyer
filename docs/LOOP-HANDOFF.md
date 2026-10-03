@@ -49,7 +49,7 @@ Baseline and results table:
 
 - Blue science plan (2026-10-02 15:05): planner.py TARGETS now include chemical-science-pack, so the keeper builds pipe, engine-unit, advanced-circuit and chemical-science-pack tiles one per pass. Still missing: sulfur (a chemical plant on the petroleum pipe plus water: the nearest water is the boiler pumps near (57,-7) to (88,-22), about 95 tiles east of the oil block, so pipe the gas there or water here) and plastic for the advanced-circuit tile (the plastic sits in the chemical plant's output slot, not a chest: add it as a provider in planner.py supply). Red-green techs queued so labs stay busy: inserter-capacity-bonus-1, circuit-network, solar-panel-equipment, cliff-explosives, landfill, fluid-wagon.
 
-- Low density structure stuck at 0 (2026-10-02 20:30): three causes stacked. (1) Five of eight NW pumpjacks had no pole beside them, so crude stalled: oilfield2.py now powers every pumpjack, rerun it after a revert. (2) Coal dropped on the ground by a boiler inserter (its boiler had been destroyed) blocked the rebuild at x 47.5 and 43.5, cutting water to six boilers and the grid went low_power: clear `item-on-ground` and corpses there, then `scripts/power.py 10`. (3) Barrels were scarce: `scripts/barrels.py stock 400`. Plastic is the input the LDS tiles wait on; one plant makes 2 a second.
+- Low density structure stuck at 0 (2026-10-02 20:30): three causes stacked. (1) Five of eight NW pumpjacks had no pole beside them, so crude stalled: oilfield2.py now powers every pumpjack, rerun it after a revert. (2) Coal dropped on the ground by a boiler inserter (its boiler had been destroyed) blocked the rebuild at x 47.5 and 43.5, cutting water to six boilers and the grid went low_power: clear `item-on-ground` and corpses there, then `scripts/power.py 10`. (3) Barrels were scarce: `scripts/barrels.py stock 400`. Plastic is the input the LDS tiles wait on; one plant makes 2 a second. Then steel ran out (nothing made it): scripts/steelfeed.py feeds the steel furnaces iron plates every pass, and LDS buffer is capped at 40 crafts (wooden chest = 16 slots). fuelsupply.py had been silently failing since keepbusy ran it after a cd with a relative venv path.
 
 ## Known macro bottleneck (15:15)
 
@@ -116,7 +116,7 @@ State lives in git and the game, never in the chat. The server, colima and runne
 
 ## Files
 
-health.sh, journal.py, oil.py, advcircuit.py, planner.py, keepbusy.sh, ship_landing.sh, milestone.py, world.sh, fuel.py, withdraw.py, feedlabs.py, terrain.py, snap.py, research_status.py (all in scripts/).
+health.sh, steelfeed.py, journal.py, oil.py, advcircuit.py, planner.py, keepbusy.sh, ship_landing.sh, milestone.py, world.sh, fuel.py, withdraw.py, feedlabs.py, terrain.py, snap.py, research_status.py (all in scripts/).
 
 # History
 

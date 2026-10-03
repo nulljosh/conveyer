@@ -9,15 +9,9 @@
 {"t": 1790985822.0, "techs": 73, "entities": 2814}
 {"t": 1790987624.0, "techs": 73, "entities": 2950}
 {"t": 1790989342.0, "techs": 73, "entities": 3025}
-{"t": 1790989946, "version": "1.2.0", "techs": 73, "entities": 3036, "tiles": 42}
-{"t": 1790990978, "version": "1.2.1", "techs": 73, "entities": 3114, "tiles": 42}
-{"t": 1790991097, "version": "1.2.1", "techs": 73, "entities": 3114, "tiles": 43}
-{"t": 1790991212, "version": "1.3.0", "techs": 73, "entities": 3172, "tiles": 48}
-{"t": 1790991845, "version": "1.4.0", "techs": 73, "entities": 3941, "tiles": 48}
-{"t": 1790992206, "version": "1.5.0", "techs": 73, "entities": 4251, "tiles": 52}
-{"t": 1790993701, "version": "1.6.0", "techs": 73, "entities": 4262, "tiles": 52}
-{"t": 1790995652, "version": "1.6.0", "techs": 73, "entities": 4264, "tiles": 52}
-{"t": 1790996898, "version": "1.6.0", "techs": 73, "entities": 4227, "tiles": 52}
-{"t": 1790997275, "version": "1.6.0", "techs": 73, "entities": 4321, "tiles": 52}
-{"t": 1790997528, "version": "1.6.0", "techs": 73, "entities": 4287, "tiles": 52}
-{"t": 1790997633, "version": "1.6.0", "techs": 73, "entities": 4287, "tiles": 54}
+{"t": 1790990896.0, "techs": 73, "entities": 3114}
+{"t": 1790992690.0, "techs": 73, "entities": 4149}
+{"t": 1790994492.0, "techs": 73, "entities": 4262}
+{"t": 1790995810.0, "techs": 73, "entities": 4264}
+{"t": 1790997471.0, "techs": 73, "entities": 4287}
+{"t": 1790997743, "version": "1.6.0", "techs": 73, "entities": 4287, "tiles": 55}

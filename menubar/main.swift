@@ -291,6 +291,7 @@ enum LiveWindow {
 /// Live position of the player, read from live.json (written ~5 times a second by scripts/livefeed.py while someone watches).
 struct LiveFrame: Decodable { let cx: Double; let cy: Double; let w: Double; let h: Double; let ppt: Double }
 struct LivePos: Decodable { let x: Double; let y: Double }
+struct MiniMeta: Decodable { let x0: Double; let y0: Double; let w: Double; let h: Double }   // minimap.json: tile coords of the picture's top-left and the span it covers
 
 @MainActor
 final class MarkerModel: ObservableObject {
@@ -302,6 +303,11 @@ final class MarkerModel: ObservableObject {
     @Published var step = 0
     @Published var frame: LiveFrame?
     @Published var dots: [[Double]] = []   // [x, y, code] per machine, from live_status.json: 0 working, 1 waiting, 2 stuck
+    @Published var mini: NSImage?
+    @Published var miniMeta: MiniMeta?
+    private var miniStamp: Date?
+    private let miniPath = NSString(string: "~/Documents/Code/conveyer/minimap.png").expandingTildeInPath
+    private let miniMetaPath = NSString(string: "~/Documents/Code/conveyer/minimap.json").expandingTildeInPath
     private var dotsStamp: Date?
     private let dotsPath = NSString(string: "~/Documents/Code/conveyer/live_status.json").expandingTildeInPath
     private var timer: Timer?
@@ -331,8 +337,19 @@ final class MarkerModel: ObservableObject {
         dotsStamp = m; dots = arr
     }
 
+    private func readMini() {
+        let mod = (try? FileManager.default.attributesOfItem(atPath: miniMetaPath))?[.modificationDate] as? Date
+        guard let m = mod, m != miniStamp else { return }
+        let data = FileManager.default.contents(atPath: miniMetaPath)
+        let meta = data.flatMap { try? JSONDecoder().decode(MiniMeta.self, from: $0) }
+        let img = NSImage(contentsOfFile: miniPath)
+        guard let meta, let img else { return }
+        miniStamp = m; miniMeta = meta; mini = img
+    }
+
     private func read() {
         readDots()
+        readMini()
         if let m = (try? FileManager.default.attributesOfItem(atPath: framePath))?[.modificationDate] as? Date, m != frameStamp,
            let d = FileManager.default.contents(atPath: framePath), let f = try? JSONDecoder().decode(LiveFrame.self, from: d) {
             frameStamp = m; frame = f
@@ -504,6 +521,33 @@ struct CameraRig<Content: View>: View {
     }
 }
 
+/// Whole-base overview in the corner: base (light), oil (orange), enemy nests (red), and a dot where the player stands right now.
+struct MiniMap: View {
+    @ObservedObject var m: MarkerModel
+    let win: CGSize   // the live window's size: the minimap is about a fifth of its width, never more than 40% of its height
+    var body: some View {
+        if let img = m.mini, let meta = m.miniMeta {
+            let aspect = img.size.height / max(img.size.width, 1)
+            let w = min(max(win.width * 0.2, 110), 480, win.height * 0.4 / max(aspect, 0.1)), h = w * aspect
+            let dot = max(6, w * 0.055)
+            ZStack(alignment: .topLeading) {
+                Image(nsImage: img).resizable().interpolation(.none).frame(width: w, height: h)
+                if let p = m.shown {
+                    let x = (p.x - meta.x0) / meta.w * w, y = (p.y - meta.y0) / meta.h * h
+                    Circle().fill(Color.accentColor).overlay(Circle().stroke(Color.white, lineWidth: 1.5)).frame(width: dot, height: dot)
+                        .offset(x: min(max(x, 0), w) - dot / 2, y: min(max(y, 0), h) - dot / 2)
+                }
+            }
+            .frame(width: w, height: h)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.25), lineWidth: 1))
+            .shadow(radius: 6, y: 2)
+            .padding(max(8, w * 0.07))
+            .allowsHitTesting(false)
+        }
+    }
+}
+
 struct LiveView: View {
     @ObservedObject var poller: StatusPoller
     /// The map fills the whole window; the status bar floats on top of it so nothing is letterboxed.
@@ -528,8 +572,10 @@ struct LiveView: View {
                     }
                 }
             }
+            .frame(width: g.size.width, height: g.size.height)   // the map layer is bigger than the window; without this the corner overlays anchor off-window
             .clipped()
-            .overlay(alignment: .topLeading) { if poller.hudVisible { hud } }
+            .overlay(alignment: .topLeading) { if poller.hudVisible { hud.scaleEffect(min(max(min(g.size.width / 900, g.size.height / 800), 0.7), 2.2), anchor: .topLeading) } }   // HUD grows and shrinks with the window
+            .overlay(alignment: .bottomTrailing) { MiniMap(m: poller.marker, win: g.size) }
         }
         .frame(minWidth: 520, minHeight: 420)
         .ignoresSafeArea()

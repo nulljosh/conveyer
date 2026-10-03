@@ -31,7 +31,7 @@ def main():
     model, tok = load(a.model, adapter_path=a.adapter)
     rows = [json.loads(l) for l in open(a.data) if l.strip()]
     rows = rows[: a.n] if a.n else rows
-    name_ok = param_ok = valid_json = 0
+    name_ok = param_ok = valid_json = 0; misses = []
     for r in rows:
         sysm, user, gold = (m["content"] for m in r["messages"])
         prompt = tok.apply_chat_template([{"role": "system", "content": sysm}, {"role": "user", "content": user}],
@@ -39,6 +39,7 @@ def main():
         skill, params = parse(generate(model, tok, prompt=prompt, max_tokens=120))
         g = json.loads(gold)
         valid_json += skill is not None
+        if skill != g["skill"] or params != g["params"]: misses.append({"gold": g, "got": [skill, params]})
         if skill == g["skill"]:
             name_ok += 1
             param_ok += params == g["params"]
@@ -48,6 +49,7 @@ def main():
     print(json.dumps(res))
     (ROOT / "eval").mkdir(exist_ok=True)
     with open(ROOT / "eval" / "history.jsonl", "a") as h: h.write(json.dumps(res) + "\n")
+    (ROOT / "eval" / "misses.jsonl").write_text("\n".join(json.dumps(m) for m in misses) + "\n")
     if a.out:
         Path(a.out).parent.mkdir(exist_ok=True); Path(a.out).write_text(json.dumps(res) + "\n")
 

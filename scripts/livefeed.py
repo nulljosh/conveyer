@@ -8,9 +8,15 @@ from pathlib import Path
 import factorio_rcon as f
 
 ROOT = Path(__file__).resolve().parent.parent
-LIVE, WATCH = ROOT / "live.json", ROOT / ".watching"
+LIVE, WATCH, HOTBAR = ROOT / "live.json", ROOT / ".watching", ROOT / "hotbar.json"
 LUA = ("/silent-command local c=storage.cv_char if not (c and c.valid) then c=game.surfaces[1].find_entities_filtered{type='character'}[1] storage.cv_char=c end "
        "rcon.print(c.position.x..','..c.position.y..','..game.tick)")
+HOTBAR_LUA = ("/silent-command local c=storage.cv_char if not (c and c.valid) then c=game.surfaces[1].find_entities_filtered{type='character'}[1] storage.cv_char=c end "
+              "local inv=c.get_main_inventory() if not inv then rcon.print('') return end "
+              "local items={} for _,v in pairs(inv.get_contents()) do table.insert(items,{name=v.name,count=v.count}) end "
+              "table.sort(items,function(a,b) return a.count>b.count end) "
+              "local out='' for i=1,math.min(10,#items) do out=out..items[i].name..','..items[i].count..';' end "
+              "rcon.print(out)")
 
 def watching() -> bool:
     try: return time.time() - WATCH.stat().st_mtime < 8
@@ -23,6 +29,7 @@ def runner_alive(gone=[0.0]) -> bool:
     return time.time() - gone[0] < 60
 
 rcon, last = None, None
+hotbar_tick = 0
 while runner_alive():
     if not watching():
         time.sleep(1.0); continue
@@ -32,6 +39,19 @@ while runner_alive():
         if (x, y) != last:
             tmp = LIVE.with_suffix(".tmp"); tmp.write_text(json.dumps({"x": float(x), "y": float(y), "tick": int(tick)}))
             os.replace(tmp, LIVE); last = (x, y)  # atomic, the app never reads half a file
+        hotbar_tick += 1
+        if hotbar_tick >= 5:  # about once per second
+            hotbar_tick = 0
+            raw = rcon.send_command(HOTBAR_LUA).strip()
+            slots = []
+            if raw:
+                for item_str in raw.split(";"):
+                    if item_str:
+                        parts = item_str.split(",")
+                        if len(parts) >= 2:
+                            slots.append({"name": parts[0], "count": int(parts[1])})
+            tmp = HOTBAR.with_suffix(".tmp"); tmp.write_text(json.dumps({"slots": slots}))
+            os.replace(tmp, HOTBAR)
     except Exception:
         rcon = None; time.sleep(1.0); continue
     time.sleep(0.2)

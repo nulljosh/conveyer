@@ -292,6 +292,8 @@ enum LiveWindow {
 struct LiveFrame: Decodable { let cx: Double; let cy: Double; let w: Double; let h: Double; let ppt: Double }
 struct LivePos: Decodable { let x: Double; let y: Double }
 struct MiniMeta: Decodable { let x0: Double; let y0: Double; let w: Double; let h: Double }   // minimap.json: tile coords of the picture's top-left and the span it covers
+struct HotbarSlot: Decodable { let name: String; let count: Int }
+struct HotbarData: Decodable { let slots: [HotbarSlot] }
 
 @MainActor
 final class MarkerModel: ObservableObject {
@@ -305,6 +307,7 @@ final class MarkerModel: ObservableObject {
     @Published var dots: [[Double]] = []   // [x, y, code] per machine, from live_status.json: 0 working, 1 waiting, 2 stuck
     @Published var mini: NSImage?
     @Published var miniMeta: MiniMeta?
+    @Published var hotbar: [HotbarSlot] = []
     private var miniStamp: Date?
     private let miniPath = NSString(string: "~/Documents/Code/conveyer/minimap.png").expandingTildeInPath
     private let miniMetaPath = NSString(string: "~/Documents/Code/conveyer/minimap.json").expandingTildeInPath
@@ -314,6 +317,8 @@ final class MarkerModel: ObservableObject {
     private var frameStamp: Date?
     private let livePath = NSString(string: "~/Documents/Code/conveyer/live.json").expandingTildeInPath
     private let framePath = NSString(string: "~/Documents/Code/conveyer/frame.json").expandingTildeInPath
+    private var hotbarStamp: Date?
+    private let hotbarPath = NSString(string: "~/Documents/Code/conveyer/hotbar.json").expandingTildeInPath
 
     func start() {
         guard timer == nil else { return }
@@ -347,9 +352,17 @@ final class MarkerModel: ObservableObject {
         miniStamp = m; miniMeta = meta; mini = img
     }
 
+    private func readHotbar() {
+        guard let m = (try? FileManager.default.attributesOfItem(atPath: hotbarPath))?[.modificationDate] as? Date, m != hotbarStamp,
+              let d = FileManager.default.contents(atPath: hotbarPath),
+              let h = try? JSONDecoder().decode(HotbarData.self, from: d) else { return }
+        hotbarStamp = m; hotbar = h.slots
+    }
+
     private func read() {
         readDots()
         readMini()
+        readHotbar()
         if let m = (try? FileManager.default.attributesOfItem(atPath: framePath))?[.modificationDate] as? Date, m != frameStamp,
            let d = FileManager.default.contents(atPath: framePath), let f = try? JSONDecoder().decode(LiveFrame.self, from: d) {
             frameStamp = m; frame = f
@@ -548,6 +561,51 @@ struct MiniMap: View {
     }
 }
 
+/// Game-style hotbar: 10 inventory slots showing the player's most abundant items.
+struct Hotbar: View {
+    @ObservedObject var m: MarkerModel
+    let win: CGSize
+    var body: some View {
+        if !m.hotbar.isEmpty {
+            let slotSize = min(max(win.width * 0.045, 28), 64)
+            let totalWidth = min(slotSize * CGFloat(m.hotbar.count), win.width * 0.55)
+            HStack(spacing: slotSize * 0.05) {
+                ForEach(0..<10, id: \.self) { i in
+                    ZStack(alignment: .bottomTrailing) {
+                        RoundedRectangle(cornerRadius: 3).fill(Color(white: 0.18))
+                            .overlay(RoundedRectangle(cornerRadius: 3).stroke(Color(white: 0.28), lineWidth: 1))
+                        if i < m.hotbar.count {
+                            let slot = m.hotbar[i]
+                            VStack(spacing: 0) {
+                                if let icon = loadIcon(slot.name, size: slotSize * 0.8) {
+                                    Image(nsImage: icon).resizable().scaledToFit()
+                                        .frame(width: slotSize * 0.8, height: slotSize * 0.8)
+                                } else {
+                                    Text(String(slot.name.prefix(2))).font(.system(size: slotSize * 0.3, weight: .bold)).foregroundStyle(.white.opacity(0.5))
+                                }
+                            }
+                            Text("\(slot.count)").font(.system(size: slotSize * 0.25, weight: .semibold)).foregroundStyle(.white)
+                                .shadow(radius: 1).padding(2)
+                        }
+                    }
+                    .frame(width: slotSize, height: slotSize)
+                }
+            }
+            .frame(width: totalWidth)
+            .padding(8)
+            .allowsHitTesting(false)
+        }
+    }
+
+    private func loadIcon(_ itemName: String, size: CGFloat) -> NSImage? {
+        if let bundlePath = Bundle.main.path(forResource: itemName, ofType: "png", inDirectory: "icons"),
+           let img = NSImage(contentsOfFile: bundlePath) { return img }
+        let steamPath = NSString(string: "~/Library/Application Support/Steam/steamapps/common/Factorio/factorio.app/Contents/data/base/graphics/icons/\(itemName).png").expandingTildeInPath
+        guard FileManager.default.fileExists(atPath: steamPath) else { return nil }
+        return NSImage(contentsOfFile: steamPath)
+    }
+}
+
 struct LiveView: View {
     @ObservedObject var poller: StatusPoller
     /// The map fills the whole window; the status bar floats on top of it so nothing is letterboxed.
@@ -575,6 +633,7 @@ struct LiveView: View {
             .frame(width: g.size.width, height: g.size.height)   // the map layer is bigger than the window; without this the corner overlays anchor off-window
             .clipped()
             .overlay(alignment: .topLeading) { if poller.hudVisible { hud.scaleEffect(min(max(min(g.size.width / 900, g.size.height / 800), 0.7), 2.2), anchor: .topLeading) } }   // HUD grows and shrinks with the window
+            .overlay(alignment: .bottom) { Hotbar(m: poller.marker, win: g.size) }
             .overlay(alignment: .bottomTrailing) { MiniMap(m: poller.marker, win: g.size) }
         }
         .frame(minWidth: 520, minHeight: 420)

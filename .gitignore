@@ -40,4 +40,11 @@ live.json
 conveyer-adapter/
 live_status.json
 menubar/ConveyerMonitor.app/Contents/Resources/engineer_*.png
+menubar/ConveyerMonitor.app/Contents/Resources/icons/
 models/
+hotbar.json
+minimap.json
+minimap.png
+minimap.tmp.png
+minimap.tmp.json
+minimap.log

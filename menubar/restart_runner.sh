@@ -8,4 +8,4 @@ sleep 1
 rm -f runner_cmd.json runner_result.json runner_seq.txt status.json
 FLAGS=""; [ -f .world/active ] && FLAGS="--keep-world"
 nohup .venv/bin/python runner.py --env-id open_play $FLAGS > /tmp/conveyer_runner.log 2>&1 &
-nohup .venv/bin/python scripts/research_status.py > /tmp/conveyer_research.log 2>&1 &
+pgrep -f scripts/research_status.py >/dev/null || nohup .venv/bin/python scripts/research_status.py > /tmp/conveyer_research.log 2>&1 &   # one research feed only, restarts used to stack duplicates

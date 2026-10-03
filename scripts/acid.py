@@ -25,7 +25,8 @@ print(run("""/silent-command local s=game.surfaces[1] local d=defines.direction 
 local function put(n,x,y,dir,rec) local e=s.find_entities_filtered{name=n,position={x,y},radius=0.3}[1]
   if not e then if not s.can_place_entity{name=n,position={x,y},direction=dir,force=F} then out[#out+1]='BLOCKED '..n..' '..x..','..y return nil end
     e=s.create_entity{name=n,position={x,y},direction=dir,force=F} end
-  if e and rec and e.get_recipe()==nil then e.set_recipe(rec) end return e end
+  if e and rec and e.get_recipe()==nil then e.set_recipe(rec) end
+  if e and rec and dir and e.direction~=dir then e.direction=dir end return e end
 put('chemical-plant',-26.5,-8.5,d.south,'sulfuric-acid')
 put('pipe',-28.5,-6.5) put('pipe',-27.5,-6.5)
 put('inserter',-28.5,-8.5,d.west)

@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""barrels.py: crude by barrel instead of by the 320-tile pipe. Joining the four rich wells to the old line killed all flow (tested eight ways,
+see docs/LEARNINGS.md), so the wells fill barrels at the field and the loop moves the full barrels to emptying assemblers beside the refinery,
+the same remote chest-to-chest move the planner already uses for every other item. `barrels.py` builds both ends (idempotent),
+`barrels.py move` shuttles barrels (keepbusy runs it every pass). Ports were read from the game; an inserter's direction is the side it picks
+from; an assembler's direction must be set after create. EMPTIERS is a list because one emptier fed the refinery at only ~4 crude/s.
+ponytail: one filler (about 180 crude/s); add emptiers by adding a row to EMPTIERS."""
+import sys, factorio_rcon as f
+c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=60)
+run = lambda l: c.send_command(" ".join(l.split("\n")))
+FX, FY = 264.5, 82.5                       # filler assembler at the field
+EMPTIERS = [(-37.5, 3.5), (-33.5, 3.5)]    # emptier assemblers under the refinery, four tiles apart
+LIST = ",".join("{%g,%g}" % e for e in EMPTIERS)
+if len(sys.argv) > 1 and sys.argv[1] == "move":
+    print(run("""/silent-command local s=game.surfaces[1] local moved=0
+local function ch(x,y) return s.find_entities_filtered{name='wooden-chest',position={x,y},radius=0.3}[1] end
+local function take(c,item) if not c then return 0 end local inv=c.get_inventory(defines.inventory.chest) local n=inv.get_item_count(item) if n>0 then inv.remove{name=item,count=n} end return n end
+local E={%s}
+local full=take(ch(%g,%g),'crude-oil-barrel')
+for _,e in ipairs(E) do full=full+take(ch(e[1]-1,e[2]+3),'crude-oil-barrel') end
+local per=math.ceil(full/#E)
+for _,e in ipairs(E) do local c=ch(e[1]-1,e[2]+3) local give=math.min(per,full) if c and give>0 then local k=c.insert{name='crude-oil-barrel',count=give} full=full-k moved=moved+k end end
+if full>0 then local c=ch(%g,%g) if c then c.insert{name='crude-oil-barrel',count=full} end end
+local empty=0 for _,e in ipairs(E) do empty=empty+take(ch(e[1]+1,e[2]+3),'barrel') end
+local fc=ch(%g,%g) if fc and empty>0 then fc.insert{name='barrel',count=empty} end
+rcon.print('barrels moved full '..moved..' empty back '..empty)""" % (LIST, FX + 3, FY, EMPTIERS[0][0] - 1, EMPTIERS[0][1] + 3, FX - 3, FY + 1)))
+    raise SystemExit
+print(run("""/silent-command local s=game.surfaces[1] local d=defines.direction local F=game.forces.player local out={}
+local function put(n,x,y,dir,rec) local e=s.find_entities_filtered{name=n,position={x,y},radius=0.3}[1]
+  if not e then if not s.can_place_entity{name=n,position={x,y},direction=dir,force=F} then out[#out+1]='BLOCKED '..n..' '..x..','..y return nil end
+    e=s.create_entity{name=n,position={x,y},direction=dir,force=F} end
+  if e and rec and e.get_recipe()==nil then e.set_recipe(rec) end
+  if e and rec and dir and e.direction~=dir then e.direction=dir end return e end
+local FX,FY=%g,%g
+for x=269.5,FX,-1 do put('pipe',x,FY-2) end
+put('assembling-machine-2',FX,FY,d.north,'crude-oil-barrel')
+put('inserter',FX-2,FY+1,d.west) put('wooden-chest',FX-3,FY+1)
+put('inserter',FX+2,FY,d.west) put('wooden-chest',FX+3,FY)
+put('medium-electric-pole',FX+2,FY+1)
+local E={%s}
+for i,e in ipairs(E) do local EX,EY=e[1],e[2]
+  put('assembling-machine-2',EX,EY,d.south,'empty-crude-oil-barrel')
+  put('pipe',EX,EY-2)
+  put('inserter',EX-1,EY+2,d.south) put('wooden-chest',EX-1,EY+3)
+  put('inserter',EX+1,EY+2,d.north) put('wooden-chest',EX+1,EY+3)
+  put('medium-electric-pole',EX-3+(i==1 and 0 or 6),EY+1)
+  if i>1 then local px=E[1][1] for x=px+1,EX do put('pipe',x,EY-2) end end end
+local m={} for k,v in pairs(defines.entity_status) do m[v]=k end
+local fa=s.find_entities_filtered{name='assembling-machine-2',position={FX,FY},radius=0.5}[1]
+if fa then out[#out+1]='filler '..m[fa.status]..' net '..tostring(fa.electric_network_id)..' crude '..(fa.fluidbox[1] and math.floor(fa.fluidbox[1].amount) or 0) end
+for i,e in ipairs(E) do local ea=s.find_entities_filtered{name='assembling-machine-2',position={e[1],e[2]},radius=0.5}[1] if ea then out[#out+1]='emptier'..i..' '..m[ea.status]..' net '..tostring(ea.electric_network_id) end end
+rcon.print(table.concat(out,' | '))""" % (FX, FY, LIST)))

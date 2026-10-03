@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" width="720" height="220" font-family="-apple-system,Helvetica,Arial,sans-serif">
 <rect width="720" height="220" fill="#ffffff" rx="10"/>
-<line x1="46" y1="184.0" x2="674" y2="184.0" stroke="#ececf1"/><line x1="46" y1="145.0" x2="674" y2="145.0" stroke="#ececf1"/><line x1="46" y1="106.0" x2="674" y2="106.0" stroke="#ececf1"/><line x1="46" y1="67.0" x2="674" y2="67.0" stroke="#ececf1"/><line x1="46" y1="28.0" x2="674" y2="28.0" stroke="#ececf1"/><line x1="659.5" y1="28" x2="659.5" y2="184" stroke="#c9ccd6" stroke-dasharray="2 3"/><text x="659.5" y="20" text-anchor="middle" font-size="9" fill="#8a8d99">v1.1.0</text>
-<polyline points="46.0,64.5 91.6,64.2 136.8,64.2 182.4,63.0 300.3,63.1 353.5,61.0 517.0,39.2 547.6,39.2 584.4,38.9 630.0,31.9 659.5,28.3 669.5,29.0 674.0,28.0" fill="none" stroke="#d98a2b" stroke-width="2" stroke-linejoin="round"/>
-<polyline points="46.0,100.7 91.6,96.4 136.8,96.4 182.4,92.1 300.3,85.7 353.5,79.3 517.0,40.8 547.6,32.3 584.4,28.0 630.0,28.0 659.5,28.0 669.5,28.0 674.0,28.0" fill="none" stroke="#3d7ab5" stroke-width="2.4" stroke-linejoin="round"/>
+<line x1="46" y1="184.0" x2="674" y2="184.0" stroke="#ececf1"/><line x1="46" y1="145.0" x2="674" y2="145.0" stroke="#ececf1"/><line x1="46" y1="106.0" x2="674" y2="106.0" stroke="#ececf1"/><line x1="46" y1="67.0" x2="674" y2="67.0" stroke="#ececf1"/><line x1="46" y1="28.0" x2="674" y2="28.0" stroke="#ececf1"/><line x1="652.4" y1="28" x2="652.4" y2="184" stroke="#c9ccd6" stroke-dasharray="2 3"/><text x="652.4" y="20" text-anchor="middle" font-size="9" fill="#8a8d99">v1.1.0</text>
+<polyline points="46.0,64.9 91.1,64.5 135.8,64.5 180.8,63.4 297.4,63.5 350.0,61.4 511.6,39.7 541.9,39.7 578.2,39.4 623.3,32.4 652.4,28.8 662.3,29.5 666.8,28.5 674.0,28.0" fill="none" stroke="#d98a2b" stroke-width="2" stroke-linejoin="round"/>
+<polyline points="46.0,100.7 91.1,96.4 135.8,96.4 180.8,92.1 297.4,85.7 350.0,79.3 511.6,40.8 541.9,32.3 578.2,28.0 623.3,28.0 652.4,28.0 662.3,28.0 666.8,28.0 674.0,28.0" fill="none" stroke="#3d7ab5" stroke-width="2.4" stroke-linejoin="round"/>
 <text x="38" y="32" text-anchor="end" font-size="10" fill="#3d7ab5">73</text><text x="38" y="188" text-anchor="end" font-size="10" fill="#3d7ab5">0</text>
-<text x="682" y="32" font-size="10" fill="#d98a2b">3025</text><text x="682" y="188" font-size="10" fill="#d98a2b">0</text>
-<text x="46" y="208" font-size="10" fill="#8a8d99">Oct 2 11:09</text><text x="674" y="208" text-anchor="end" font-size="10" fill="#8a8d99">Oct 2 18:02</text>
+<text x="682" y="32" font-size="10" fill="#d98a2b">3035</text><text x="682" y="188" font-size="10" fill="#d98a2b">0</text>
+<text x="46" y="208" font-size="10" fill="#8a8d99">Oct 2 11:09</text><text x="674" y="208" text-anchor="end" font-size="10" fill="#8a8d99">Oct 2 18:07</text>
 <text x="360.0" y="208" text-anchor="middle" font-size="10" fill="#8a8d99"><tspan fill="#3d7ab5">techs researched</tspan>  and  <tspan fill="#d98a2b">entities built</tspan>, one row per commit</text>
 </svg>

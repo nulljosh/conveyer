@@ -36,6 +36,13 @@ def current():
     return {"t": round(time.time()), "version": (ROOT / "VERSION").read_text().strip(), "techs": r.get("techs") or b.get("techs"),
             "entities": b.get("entities"), "tiles": len(tiles) if isinstance(tiles, list) else None}
 
+def badge():
+    r = ROOT / "README.md"
+    if r.exists():
+        import re
+        v = (ROOT / "VERSION").read_text().strip()
+        r.write_text(re.sub(r"version-v[\d.]+-blue", f"version-v{v}-blue", r.read_text(), 1))
+
 def append():
     backfill()
     now, rs = current(), rows()
@@ -76,4 +83,4 @@ def render():
     OUT.write_text(svg)
 
 if __name__ == "__main__":
-    append(); render(); print(f"wrote {OUT} from {len(rows())} rows")
+    badge(); append(); render(); print(f"wrote {OUT} from {len(rows())} rows")

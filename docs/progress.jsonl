@@ -8,8 +8,5 @@
 {"t": 1790984370.0, "techs": 71, "entities": 2808}
 {"t": 1790985822.0, "techs": 73, "entities": 2814}
 {"t": 1790987624.0, "techs": 73, "entities": 2950}
-{"t": 1790988787, "version": "1.1.0", "techs": 73, "entities": 3019, "tiles": 42}
-{"t": 1790989182, "version": "1.1.0", "techs": 73, "entities": 3005, "tiles": 42}
-{"t": 1790989361, "version": "1.1.0", "techs": 73, "entities": 3025, "tiles": 42}
-{"t": 1790989648, "version": "1.1.0", "techs": 73, "entities": 3035, "tiles": 42}
-{"t": 1790989923, "version": "1.2.0", "techs": 73, "entities": 3035, "tiles": 42}
+{"t": 1790989342.0, "techs": 73, "entities": 3025}
+{"t": 1790989946, "version": "1.2.0", "techs": 73, "entities": 3036, "tiles": 42}

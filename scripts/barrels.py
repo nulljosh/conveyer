@@ -9,8 +9,12 @@ import sys, factorio_rcon as f
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=60)
 run = lambda l: c.send_command(" ".join(l.split("\n")))
 FX, FY = 264.5, 82.5                       # filler assembler at the field
-EMPTIERS = [(-37.5, 3.5), (-33.5, 3.5)]    # emptier assemblers under the refinery, four tiles apart
+import json
+from pathlib import Path
+_E = Path(__file__).resolve().parent.parent / ".world" / "emptiers.json"   # refineries.py appends here
+EMPTIERS = [tuple(e) for e in (json.loads(_E.read_text()) if _E.exists() else [[-37.5, 3.5], [-33.5, 3.5]])]
 LIST = ",".join("{%g,%g}" % e for e in EMPTIERS)
+BUILD_LIST = ",".join("{%g,%g}" % e for e in EMPTIERS[:2])   # only the first two are built here; refineries.py builds the rest with their refineries
 if len(sys.argv) > 1 and sys.argv[1] == "move":
     print(run("""/silent-command local s=game.surfaces[1] local moved=0
 local function ch(x,y) return s.find_entities_filtered{name='wooden-chest',position={x,y},radius=0.3}[1] end
@@ -50,4 +54,4 @@ local m={} for k,v in pairs(defines.entity_status) do m[v]=k end
 local fa=s.find_entities_filtered{name='assembling-machine-2',position={FX,FY},radius=0.5}[1]
 if fa then out[#out+1]='filler '..m[fa.status]..' net '..tostring(fa.electric_network_id)..' crude '..(fa.fluidbox[1] and math.floor(fa.fluidbox[1].amount) or 0) end
 for i,e in ipairs(E) do local ea=s.find_entities_filtered{name='assembling-machine-2',position={e[1],e[2]},radius=0.5}[1] if ea then out[#out+1]='emptier'..i..' '..m[ea.status]..' net '..tostring(ea.electric_network_id) end end
-rcon.print(table.concat(out,' | '))""" % (FX, FY, LIST)))
+rcon.print(table.concat(out,' | '))""" % (FX, FY, BUILD_LIST)))

@@ -200,6 +200,12 @@ def main() -> None:
             except (json.JSONDecodeError, KeyError, ValueError) as e:
                 print(f"[conveyer] bad skill call, feeding error back: {e}")
                 messages.append({"role": "user", "content": f"SKILL_FAIL: {e}"})
+                # picker mode sees only last_obs: without this it re-reads the same prompt and answers the same bad call forever
+                last_obs = f"SKILL_FAIL: {e}"; last_call_line = f"Last skill: {reply_text[:150]}\n"
+                repeat_count += 1  # next try runs warm (temperature 0.8)
+                if repeat_count >= 3:
+                    print("[conveyer] three bad calls in a row, stopping episode")
+                    break
                 continue
 
             # ponytail: local models sometimes ignore the "don't repeat" prompt rule and

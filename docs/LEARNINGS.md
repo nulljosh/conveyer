@@ -48,3 +48,5 @@ Newest at the bottom. One line each.
 - Coal is a flow, not a stock. Ten steam boilers at 10x game speed ate 44,000 coal in two hours and the plastic plant, which uses coal too, starved on an empty chest. The old coal drills sat blocked on a jammed belt. New drills that drop straight into chests (scripts/coalfarm.py) fixed it, but a new pole island is not on the grid until a pole bridges it: read the network id of anything you power.
 
 - Pipe routers contaminate. A breadth-first pipe route laid through tank port tiles and next to another fluid's pipes sent 24,000 water into the heavy oil tank. Rules that worked: build every machine and its own pipes first, route the long water pipe last, keep the planned tiles of other fluids reserved, and join machines with a single pipe on the shared port tile instead of routing. Check the fluid in every tank and port pipe after a route.
+
+- A negative number after a minus sign is a Lua comment: x-%g with %g = -12.5 became x--12.5 and silently ate the rest of the joined line. Wrap substituted numbers in parentheses.

@@ -11,6 +11,9 @@ load = os.getloadavg()[0] / (os.cpu_count() or 1)
 want = 10 if load < 0.6 else 6 if load < 0.8 else 3 if load < 1.0 else 2
 free = int(re.search(r"(\d+)%", subprocess.run(["memory_pressure"], capture_output=True, text=True).stdout.splitlines()[-1]).group(1))
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=10)
+_ov = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".speed")   # ".speed" holds one number: filming a launch at a watchable speed, delete it to go back to load-based
+if os.path.exists(_ov):
+    c.send_command("/silent-command game.speed=%g" % float(open(_ov).read())); print("speed override", open(_ov).read().strip()); raise SystemExit
 now = float(c.send_command("/silent-command rcon.print(game.speed)"))
 cur = min(STEPS, key=lambda s: abs(s - now))
 nxt = STEPS[max(0, min(len(STEPS) - 1, STEPS.index(cur) + (1 if want > cur else -1 if want < cur else 0)))]

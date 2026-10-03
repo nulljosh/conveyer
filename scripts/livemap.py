@@ -2,7 +2,7 @@
 """livemap.py: the live part of the map. While someone watches (.watching touched in the last 8 s) it writes live_status.json about once a
 second: every machine in view with a status code (0 working, 1 waiting for items, 2 stuck: no power, no fuel or output full). The menu bar
 app draws these as pulsing dots over the map, so the view moves even when the map picture is a minute old. Stops when runner.pid is gone."""
-import json, math, os, time
+import json, math, os, subprocess, time
 from pathlib import Path
 import sys
 import factorio_rcon as f
@@ -54,6 +54,14 @@ def field_tour(walker, fx, fy):
         nxt = min(pts, key=lambda q: (q[0] - cur[0]) ** 2 + (q[1] - cur[1]) ** 2); pts.remove(nxt); out.append(nxt); cur = nxt[:2]
     return out
 
+def silo_run():
+    """Low density structure tile -> silo chests, back and forth. Stops stay inside the picture (centred at -30,32)."""
+    lds = [(P.OX + (t["cell"] % P.COLS) * P.CW + 3.5, P.OY + (t["cell"] // P.COLS) * P.CH + 5) for t in P.load() if t["item"] == "low-density-structure"]
+    lds = [q for q in lds if q[1] < 72] or lds
+    out = []
+    for q in lds[:2]: out += [(q[0], q[1], "Collecting low density structures"), (-64.5, 10.5, "Delivering parts to the silo")]
+    return out or [(-64.5, 10.5, "Delivering parts to the silo")]
+
 rcon, walker, tgt, ti, lastmap, armored = None, None, [], 0, 0.0, False
 tour, tour_i, arrived = [], 0, None
 while (ROOT / "runner.pid").exists():
@@ -62,7 +70,8 @@ while (ROOT / "runner.pid").exists():
     try:
         walker = walker or f.RCONClient("127.0.0.1", 27000, "factorio", timeout=8)  # the player strolls tile to tile, 2.5 tiles per 0.25 s, like a brisk walk
         focus = FOCUS.read_text().strip() if FOCUS.exists() else ""
-        field = bool(focus) and not focus.startswith("-57")   # oil-field mode: invulnerable, inspects turrets and pumpjacks, runs to a firing turret
+        silo = focus.endswith(",silo")   # delivery run: collect low density structure at a tile, carry it to the silo chests
+        field = bool(focus) and not silo   # oil-field mode: invulnerable, inspects turrets and pumpjacks, runs to a firing turret
         atk = None; lab = {}; goal = None
         if field:
             if not armored: walker.send_command(ARMOR); armored = True
@@ -74,8 +83,9 @@ while (ROOT / "runner.pid").exists():
                 if tour:
                     gx, gy, k = tour[tour_i % len(tour)]; goal = (gx, gy)
                     lab = {"label": "Inspecting a gun turret" if k == "gun-turret" else "Checking a pumpjack"}
-        elif focus:
-            ft = focus_targets(); goal = ft[ti % len(ft)]; lab = {"label": "Guarding the rocket silo"}
+        elif silo:
+            if not tour: tour, tour_i = silo_run(), 0
+            gx, gy, k = tour[tour_i % len(tour)]; goal = (gx, gy); lab = {"label": k}
         else:
             if not tgt: tgt = targets()
             goal = tgt[ti % len(tgt)]
@@ -84,9 +94,11 @@ while (ROOT / "runner.pid").exists():
             tl = P.load(); cur = tl[ti % len(tl)]["item"] if tl else ""   # engineer.json feeds the HUD line (label wins over the tile name)
             tmp2 = ROOT / "engineer.tmp"; tmp2.write_text(json.dumps({"item": cur, "t": time.time(), **lab})); os.replace(tmp2, ROOT / "engineer.json")
             if d <= 2.5:
-                if field and not atk:   # stand at each stop for 3 s, then the next one; the round restarts when it ends
+                if (field and not atk) or silo:   # stand at each stop for 3 s, then the next one; the round restarts when it ends
                     arrived = arrived or time.time()
                     if time.time() - arrived > 3:
+                        if silo and tour[tour_i % len(tour)][2].startswith("Delivering"):
+                            subprocess.Popen([str(ROOT / ".venv/bin/python"), str(ROOT / "scripts/siloline.py")], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)   # the drop-off: top the silo chests up
                         arrived = None; tour_i += 1
                         if tour_i >= len(tour): tour = []
                 else: ti += 1

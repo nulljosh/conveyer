@@ -20,6 +20,7 @@ from pathlib import Path
 
 import gym
 
+from fle.env.entities import Position
 from fle.env.gym_env.action import Action
 from fle.env.gym_env.registry import list_available_environments
 
@@ -214,18 +215,10 @@ def main() -> None:
             # repeated grid, not useful signal. Character/entities/trees/water
             # are untouched.
             R = WIDE_R if not square else 32
-            if not square:  # park the character at the picture's center for the one call that reads the map, then let livemap stroll again
-                try:
-                    import factorio_rcon as _fr2
-                    Path(__file__).with_name(".rendering").write_text("1")
-                    _fr2.RCONClient("127.0.0.1", 27000, "factorio", timeout=20).send_command("/silent-command game.surfaces[1].find_entities_filtered{type='character'}[1].teleport({%g,%g})" % view_center())
-                except Exception as e:
-                    print(f"[runner] view center failed: {e}", flush=True)
             renderer = render_tool.get_renderer_from_map(
                 include_status=False, radius=WIDE_R if not square else 18, compression_level="binary",
-                max_render_radius=R, position=None,
+                max_render_radius=R, position=(Position(x=WIDE["c"][0], y=WIDE["c"][1]) if (not square and WIDE["c"]) else None),   # centre on the view point itself; the old way teleported the engineer there for every render
             )
-            Path(__file__).with_name(".rendering").unlink(missing_ok=True)
             entity_names = sorted({e.name for e in renderer.entities})
             renderer.resources = []
             if not square:

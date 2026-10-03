@@ -298,6 +298,7 @@ struct Event: Decodable { let t: Double; let kind: String; let text: String }
 struct EventData: Decodable { let events: [Event] }
 struct EngineerData: Decodable { let item: String; let t: Double; let label: String? }
 struct CombatData: Decodable { let t: Double; let player: [Double]; let enemies: [[Double]]; let turrets: [[Double]] }  // enemies: [x,y,kind,size], turrets: [x,y,firing]
+struct SiloData: Decodable { let x: Double; let y: Double; let parts: Int; let status: String; let launched: Int; let t: Double }
 
 @MainActor
 final class MarkerModel: ObservableObject {
@@ -315,6 +316,7 @@ final class MarkerModel: ObservableObject {
     @Published var events: [Event] = []
     @Published var engineer: EngineerData?
     @Published var combat: CombatData?
+    @Published var silo: SiloData?
     private var miniStamp: Date?
     private let miniPath = NSString(string: "~/Documents/Code/conveyer/minimap.png").expandingTildeInPath
     private let miniMetaPath = NSString(string: "~/Documents/Code/conveyer/minimap.json").expandingTildeInPath
@@ -332,6 +334,8 @@ final class MarkerModel: ObservableObject {
     private let engineerPath = NSString(string: "~/Documents/Code/conveyer/engineer.json").expandingTildeInPath
     private var combatStamp: Date?
     private let combatPath = NSString(string: "~/Documents/Code/conveyer/combat.json").expandingTildeInPath
+    private var siloStamp: Date?
+    private let siloPath = NSString(string: "~/Documents/Code/conveyer/silo.json").expandingTildeInPath
 
     func start() {
         guard timer == nil else { return }
@@ -395,6 +399,15 @@ final class MarkerModel: ObservableObject {
         combatStamp = m; combat = c
     }
 
+    private func readSilo() {
+        guard let m = (try? FileManager.default.attributesOfItem(atPath: siloPath))?[.modificationDate] as? Date, m != siloStamp,
+              let d = FileManager.default.contents(atPath: siloPath),
+              let s = try? JSONDecoder().decode(SiloData.self, from: d) else { return }
+        let now = Date().timeIntervalSince1970
+        guard now - s.t < 10 else { silo = nil; return }   // stale data: ignore
+        siloStamp = m; silo = s
+    }
+
     private func read() {
         readDots()
         readMini()
@@ -402,6 +415,7 @@ final class MarkerModel: ObservableObject {
         readEvents()
         readEngineer()
         readCombat()
+        readSilo()
         if let m = (try? FileManager.default.attributesOfItem(atPath: framePath))?[.modificationDate] as? Date, m != frameStamp,
            let d = FileManager.default.contents(atPath: framePath), let f = try? JSONDecoder().decode(LiveFrame.self, from: d) {
             frameStamp = m; frame = f
@@ -413,6 +427,103 @@ final class MarkerModel: ObservableObject {
         moving = pos != nil
         step += 1
         pos = np
+    }
+}
+
+/// Rocket silo overlay: progress bar, launch state, status text.
+struct SiloLayer: View {
+    @ObservedObject var m: MarkerModel
+    var body: some View {
+        GeometryReader { g in
+            if let f = m.frame, let silo = m.silo {
+                let s = max(g.size.width / f.w, g.size.height / f.h)
+                let cx = (g.size.width - f.w * s) / 2 + (f.w / 2 + (silo.x - f.cx) * f.ppt) * s
+                let cy = (g.size.height - f.h * s) / 2 + (f.h / 2 + (silo.y - f.cy) * f.ppt) * s
+                let tileSize = f.ppt * s
+                let siloSize = 9.0 * tileSize
+                let halfSize = siloSize / 2
+                let isLaunching = silo.status == "preparing_rocket_for_launch" || silo.status == "launching_rocket"
+
+                if isLaunching {
+                    TimelineView(.animation(minimumInterval: 1.0 / 20)) { ctx in
+                        drawSilo(cx: cx, cy: cy, siloSize: siloSize, halfSize: halfSize, tileSize: tileSize, silo: silo, t: ctx.date.timeIntervalSinceReferenceDate)
+                    }
+                } else {
+                    drawSilo(cx: cx, cy: cy, siloSize: siloSize, halfSize: halfSize, tileSize: tileSize, silo: silo, t: 0)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private func drawSilo(cx: CGFloat, cy: CGFloat, siloSize: CGFloat, halfSize: CGFloat, tileSize: CGFloat, silo: SiloData, t: Double) -> some View {
+        Canvas { c, _ in
+            let isLaunching = silo.status == "preparing_rocket_for_launch" || silo.status == "launching_rocket"
+            let darkGrey = Color(red: 0.16, green: 0.17, blue: 0.19)
+            let lightGrey = Color(red: 0.25, green: 0.26, blue: 0.28)
+            let orange = Color(red: 0.95, green: 0.55, blue: 0.12)
+            let darkerGrey = Color(red: 0.08, green: 0.08, blue: 0.09)
+            let tileR = siloSize / 2
+
+            // outer rounded square with dark grey fill
+            let outer = Path(roundedRect: CGRect(x: cx - halfSize, y: cy - halfSize, width: siloSize, height: siloSize), cornerRadius: 0.6 * tileSize)
+            c.fill(outer, with: .color(darkGrey.opacity(0.92)))
+            c.stroke(outer, with: .color(lightGrey.opacity(0.8)), lineWidth: 3)
+
+            // inner inset darker square
+            let insetR = halfSize - tileSize
+            let inner = Path(roundedRect: CGRect(x: cx - insetR, y: cy - insetR, width: 2 * insetR, height: 2 * insetR), cornerRadius: 0.3 * tileSize)
+            c.fill(inner, with: .color(darkerGrey.opacity(0.7)))
+
+            // launch ring if launching
+            if isLaunching {
+                let ringOpacity = 0.6 + 0.4 * sin(t * 8.0 * .pi)
+                let ringPath = Path(ellipseIn: CGRect(x: cx - tileR, y: cy - tileR, width: 2 * tileR, height: 2 * tileR))
+                c.stroke(ringPath, with: .color(orange.opacity(ringOpacity)), lineWidth: 2)
+            } else {
+                let ringPath = Path(ellipseIn: CGRect(x: cx - tileR, y: cy - tileR, width: 2 * tileR, height: 2 * tileR))
+                c.stroke(ringPath, with: .color(orange.opacity(0.8)), lineWidth: 1.5)
+            }
+
+            // glow circle during launch
+            if isLaunching {
+                let glowMin = 4.0 * tileSize
+                let glowMax = 9.0 * tileSize
+                let phase = (t.truncatingRemainder(dividingBy: 1.0))
+                let glowR = glowMin + (glowMax - glowMin) * phase
+                let glowPath = Path(ellipseIn: CGRect(x: cx - glowR, y: cy - glowR, width: 2 * glowR, height: 2 * glowR))
+                c.fill(glowPath, with: .color(Color(red: 1.0, green: 0.95, blue: 0.7).opacity(0.35 * (1 - phase))))
+            }
+
+            // progress bar: 6 tiles wide, 0.7 tile tall
+            let barW = 6.0 * tileSize
+            let barH = 0.7 * tileSize
+            let barX = cx - barW / 2
+            let barY = cy + 0.5 * tileSize
+            let trackPath = Path(roundedRect: CGRect(x: barX, y: barY, width: barW, height: barH), cornerRadius: barH / 2)
+            c.fill(trackPath, with: .color(Color.white.opacity(0.2)))
+            let fillW = barW * CGFloat(min(max(silo.parts, 0), 100)) / 100.0
+            let fillPath = Path(roundedRect: CGRect(x: barX, y: barY, width: fillW, height: barH), cornerRadius: barH / 2)
+            c.fill(fillPath, with: .color(orange))
+
+            // exhaust streaks during launch
+            if isLaunching {
+                let numStreaks = 6
+                for i in 0..<numStreaks {
+                    let angle = Double(i) * 2.0 * .pi / Double(numStreaks)
+                    let phaseShift = Double(i) / Double(numStreaks) * 0.2
+                    let streak = sin((t - phaseShift) * 8.0 * .pi)
+                    let streakOpacity = max(0, streak)
+                    let streakStart = CGPoint(x: cx + 0.5 * tileSize * sin(angle), y: cy - 2.0 * tileSize * cos(angle))
+                    let streakEnd = CGPoint(x: cx + 0.5 * tileSize * sin(angle), y: cy - (4.0 + 2.0 * streak) * tileSize * cos(angle))
+                    var streakPath = Path()
+                    streakPath.move(to: streakStart)
+                    streakPath.addLine(to: streakEnd)
+                    c.stroke(streakPath, with: .color(Color(red: 1.0, green: 0.95, blue: 0.7).opacity(streakOpacity)), lineWidth: 1.5)
+                }
+            }
+        }
     }
 }
 
@@ -792,6 +903,7 @@ struct LiveView: View {
                         } else {
                             Text("Waiting for the first frame").foregroundStyle(.secondary)
                         }
+                        SiloLayer(m: poller.marker)
                         StatusDots(m: poller.marker)
                         PlayerMarker(m: poller.marker)
                         CombatLayer(m: poller.marker)

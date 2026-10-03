@@ -81,6 +81,7 @@ rcon.print(table.concat(moved,' '))"""
 def supply(plan, rec):
     ins, outs = [], []
     for t in plan:
+        if t["item"] not in rec: continue  # recipe not unlocked yet (solar-panel needs its tech): skip the tile, do not crash the whole supply pass
         ox, oy = OX + (t["cell"] % COLS) * CW, OY + (t["cell"] // COLS) * CH
         need = {i: a * BUF.get(t["item"], 300) for i, a in rec[t["item"]]["ing"].items()}  # 300 crafts of every ingredient on hand: at 10x speed a tile eats 100 crafts between 60 s passes
         cap = 400 if t["item"] in TARGETS else 200  # demand: a tile holding this much of its product stops being fed

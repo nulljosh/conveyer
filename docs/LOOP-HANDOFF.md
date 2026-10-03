@@ -140,21 +140,22 @@ Goal: agent keeps building the base, mines iron and steel, fights biters with gu
 
 ## What the loop is
 
-Agent.py runs FLE's Factorio environment headless, controlled by local Ollama (qwen3:8b by default). Skills layer dispatches LLM picks (skill name plus JSON params) instead of raw code. Bootstrap chains ore-harvest to furnace to gear-wheel end to end.
+A Claude `/loop` that wakes every 10 to 20 minutes, runs `scripts/tick.sh`, does one chunk of work toward v2.0.0 (a legit launch, no console help), bumps VERSION, tags, pushes and releases. Between ticks the game keeps running on its own: `keepbusy.sh` builds and feeds tiles every 20 seconds, so the factory does not need Claude to move. Five background tasks must stay alive as Claude background tasks (children started with nohup die when the tool call ends): `keepbusy.sh`, `livemap.py`, `livefeed.py`, `snap.py`, one `research_status.py`. Refresh any older than about 20 minutes.
 
 ## Where things stand
 
-Stack crashed overnight (colima down, agent.py hung). Last episode tried to craft 16 iron gears with 0 plates, tripped repeat guard. Restarted everything. Bootstrap now passes via fallback (hand-feed coal into the furnace, not the smelt skill). Smelt skill's coal-insert failed in the retry path. Furnace ended up at x=2, y=2 after placement. Colima plus FLE server plus runner.py plus status_writer.py all running as of 20:00. ConveyerMonitor.app running. Normalize names (kebab to PascalCase) and reuse-inserter logic merged into b518162.
+v1.1.0 (2026-10-02, evening). v1.0.0 launched a rocket with a satellite with help (`scripts/assist.py`, `scripts/silo.py`). Red to purple science is automated, 42 tiles. Legit pieces built: low density structure, solar panel and radar tiles, a sulfuric acid plant, four processing unit assemblers (`scripts/acid.py`), a battery plant. The wall is oil: one pumpjack at 44 percent yield feeds the refinery through a 320 tile pipe, and joining more pumpjacks to that pipe kills all flow (tested eight ways). New approach, built and being verified: the four rich wells fill barrels at the field and the loop shuttles them to an emptier beside the refinery (`scripts/barrels.py`, `barrels.py move` runs every pass).
 
 ## Next, in order
 
-1. Check why smelt skill coal insert failed. Make retry idempotent so placing-furnace-twice doesn't cascade. Hand-feed works; smelt needs its coal path fixed.
-2. Load Joshua's existing world save at ~/Library/Application Support/factorio/saves/a.zip (Aug 23, Factorio 2.0.77). Swap FLE's open_world control.lua into it. Start with --start-server instead of --start-server-load-scenario to skip FLE's forced inventory and run on real terrain.
-3. Craft error messages should name the next skill needed (e.g. "need plates, try: smelt" when gears fail). Call it "missing-ingredient naming".
-4. Run agent.py episode headless on Joshua's world. Goal: build the base out progressively. Start with ore-to-gear, then expand.
+1. Confirm barrels deliver crude (refinery duty cycle up from 34 percent), then cut the old long pipe near the refinery.
+2. Advanced oil processing with water at the refinery, heavy and light cracking, solid fuel, rocket fuel, lubricant and electric engines.
+3. Concrete, accumulators, then a real silo assembly, 100 rocket parts and a satellite from tiles, with `.assist` off.
+4. Tests for the planner's pure functions, crash replay for every new build (`health.sh --fix` already calls acid.py and barrels.py).
+5. When the legit launch happens, record the final stretch at 1x to 2x as a video for the landing.
 
 ## Restart prompt
 
 ```
-/loop Conveyer: finish smelt coal fix, then load Joshua's world save and run agent ep 1. Check bootstrap log for coal error root cause, fix smelt retry idempotent. Swap control.lua, start --start-server. Run agent.py headless on a.zip. Grade via menu bar status.
+/loop Conveyer until A+ (QA grade) and v2.0.0, a legit launch. Read docs/LOOP-HANDOFF.md and roadmap.md "Gaps to v2.0". Each tick: cd ~/Documents/Code/conveyer, scripts/tick.sh, one chunk, bump VERSION, tag, push, gh release, one-line TLDR. Keep keepbusy.sh, livemap.py, livefeed.py, snap.py and one research_status.py running as Claude background tasks (run_in_background), refresh any older than about 20 minutes. Lessons: an inserter's direction is the side it picks from, read pickup and drop after placing; assemblers need direction set after create; no Lua comments in joined RCON strings. Weekly usage 75 percent: at 85 percent run /checkpoint and taper. Never end a turn without re-arming ScheduleWakeup.
 ```

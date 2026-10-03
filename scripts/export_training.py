@@ -10,7 +10,7 @@ SYS = "You play Factorio. Pick one skill and its parameters as JSON. Never write
 ap = argparse.ArgumentParser(); ap.add_argument("--valid", type=float, default=0.1); a = ap.parse_args()
 by_run = {}
 for f in sorted(glob.glob(str(ROOT / "runs" / "*.jsonl"))):
-    last = "Start of run."; prev = ""  # prompt = the skill just called plus its result, so the model sees what it just did
+    last = "Start of run."; prev = ""; hist = []  # prompt = the skill just called plus its result, so the model sees what it just did
     rows = by_run.setdefault(f, [])
     for line in open(f):
         if not line.strip(): continue
@@ -18,9 +18,10 @@ for f in sorted(glob.glob(str(ROOT / "runs" / "*.jsonl"))):
         if "SKILL_OK" in str(r.get("observation", "")) and r.get("skill"):
             try: params = json.loads(json.dumps(eval(str(r["params"])))) if isinstance(r["params"], str) else r["params"]
             except Exception: params = {}
-            rows.append({"messages": [{"role": "system", "content": SYS}, {"role": "user", "content": (prev + last)[:1500]},
+            rows.append({"messages": [{"role": "system", "content": SYS}, {"role": "user", "content": ("Recent skills: " + ", ".join(hist[-3:]) + "\n" + prev + last[:700])[:1500]},
                                       {"role": "assistant", "content": json.dumps({"skill": r["skill"], "params": params})}]})
         last = str(r.get("observation", ""))
+        hist.append(str(r.get("skill")))
         prev = f"Last skill: {r.get('skill')} {json.dumps(r.get('params'))}\n"
 CAP = 100  # place_inserter was 35 percent of the data and won every tie
 for k in by_run:

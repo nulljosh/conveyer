@@ -74,6 +74,7 @@ The agent plays Joshua's real save through a planner and a set of replay scripts
 | `terrain.py` | Paints real ground under the FLE render, writes `preview_map.png`. |
 | `oil.py`, `sulfur.py`, `advcircuit.py`, `power.py` | The oil block (refinery, plastic plant with an output chest and a coal chest refilled every pass), the sulfur plant with 90 tiles of underground water, one advanced circuit assembler, and steam power columns. All idempotent. |
 | `acid.py` | Sulfuric acid plant beside the sulfur plant, an underground acid line to a free field, and four processing unit assemblers on it. `acid.py feed` moves iron, circuits and advanced circuits into their chests every pass. Idempotent replay. |
+| `blocks.py`, `refineries.py`, `barrels.py`, `coalfarm.py`, `pumpjacks.py` | The generic builder (place, read fluid ports, power chain, pipe router, free-spot search), more refineries each with a barrel emptier, crude by barrel from the four rich wells, ten coal drills dropping into chests (coal fell from 50,000 to 6,000 in two hours of steam power), and the pumpjack experiment kept for reference. |
 | `ironfarm.py` | Drill, furnace, inserter, chest slots on the iron, copper or stone patch, plus a pole bridge back to the grid. Slot lists freeze in `.world/*farm.json`. |
 | `labs.py`, `feedlabs.py`, `withdraw.py`, `fuel.py` | Lab grid, moving packs into labs, pulling items from chests and furnaces into the bag, filling boilers and furnaces. |
 | `journal.py` | Snapshot, check and restore of the build list, because FLE's Lua state cannot be saved. |

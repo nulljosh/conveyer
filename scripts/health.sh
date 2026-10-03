@@ -38,7 +38,7 @@ if rcon_ok; then
   elif [ $FIX = 1 ]; then
     say world "REVERTED, replaying"
     $W scripts/journal.py restore; $W scripts/withdraw.py coal 300 | tail -1; $W scripts/fuel.py >/dev/null 2>&1
-    $W scripts/oil.py | cut -c1-90; $W scripts/sulfur.py | tail -1 | cut -c1-90; $W scripts/acid.py | tail -1 | cut -c1-90; $W scripts/barrels.py | tail -1 | cut -c1-90; $W scripts/labs.py | tail -1; $W scripts/power.py | tail -1; $W scripts/planner.py replay 2>&1 | tail -3 | cut -c1-90; $W scripts/ironfarm.py 2>&1 | tail -1; $W scripts/ironfarm.py 24 copper 2>&1 | tail -1; $W scripts/ironfarm.py 10 stone 2>&1 | tail -1
+    $W scripts/oil.py | cut -c1-90; $W scripts/sulfur.py | tail -1 | cut -c1-90; $W scripts/acid.py | tail -1 | cut -c1-90; $W scripts/barrels.py | tail -1 | cut -c1-90; (cd scripts && $W coalfarm.py | tail -1 | cut -c1-90); $W scripts/labs.py | tail -1; $W scripts/power.py | tail -1; $W scripts/planner.py replay 2>&1 | tail -3 | cut -c1-90; $W scripts/ironfarm.py 2>&1 | tail -1; $W scripts/ironfarm.py 24 copper 2>&1 | tail -1; $W scripts/ironfarm.py 10 stone 2>&1 | tail -1
   else fail world "REVERTED: run health.sh --fix"; fi
 fi
 

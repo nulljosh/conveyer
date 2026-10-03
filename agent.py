@@ -152,7 +152,7 @@ def main() -> None:
         ]
 
         last_code = None
-        last_obs = "Start of run."; last_call_line = ""  # --picker feeds exactly this, as in training
+        last_obs = "Start of run."; last_call_line = ""; hist = []  # --picker feeds exactly this, as in training
         repeat_count = 0
         base_memory: dict[str, str] = {}
         triggered_stages: set[int] = set()
@@ -162,7 +162,7 @@ def main() -> None:
                 if args.picker_url:  # mlx_lm.server from Turing's venv: OpenAI-style, same weights as the eval
                     r = httpx.post(args.picker_url.rstrip("/") + "/v1/chat/completions", timeout=300, json={
                         "model": args.model, "max_tokens": 120, "temperature": 0.8 if repeat_count else 0,
-                        "messages": [{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": (last_call_line + last_obs)[:1500]}]}).json()
+                        "messages": [{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": ("Recent skills: " + ", ".join(hist[-3:]) + "\n" + last_call_line + last_obs[:700])[:1500]}]}).json()
                     response = {"message": r["choices"][0]["message"]}
                 else: response = httpx.post(
                     ollama_url,
@@ -172,7 +172,7 @@ def main() -> None:
                         # reasoning otherwise, leaving nothing in the response
                         "stream": False,
                         "options": {"num_predict": args.max_tokens, "temperature": 0.8 if repeat_count else 0},  # ponytail: greedy picker loops on one skill; a repeat gets one warm retry before the stop rule
-                        "messages": ([{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": (last_call_line + last_obs)[:1500]}]
+                        "messages": ([{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": ("Recent skills: " + ", ".join(hist[-3:]) + "\n" + last_call_line + last_obs[:700])[:1500]}]
                                      if args.picker or args.picker_url else [{"role": "system", "content": SYSTEM_PROMPT}, *messages]),
                     },
                     timeout=300,
@@ -221,6 +221,7 @@ def main() -> None:
             obs, reward, terminated, truncated, info = env.step(action)
             observation_text = obs.get("raw_text", "")
             last_obs = observation_text
+            hist.append(str(call["skill"]))
             last_call_line = f"Last skill: {call['skill']} {json.dumps(call.get('params', {}))}\n"
 
             print(f"[reward={reward} terminated={terminated} truncated={truncated}]")

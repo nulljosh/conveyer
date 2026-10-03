@@ -114,6 +114,7 @@ def main() -> None:
     parser.add_argument("--env-id", help="FLE gym environment id (default: an iron-themed task, or the first registered one)")
     parser.add_argument("--model", default="qwen3:8b", help="Ollama model tag (ollama list to see available)")
     parser.add_argument("--picker", action="store_true", help="Turing's trained picker (e.g. --model conveyer-picker): short system prompt, last observation only, raw JSON back")
+    parser.add_argument("--picker-url", help="with --picker: an mlx_lm.server URL (e.g. http://127.0.0.1:8081) instead of Ollama")
     parser.add_argument("--ollama-host", default="http://localhost:11434/v1", help="Ollama's OpenAI-compatible endpoint")
     parser.add_argument("--max-steps", type=int, default=50)
     parser.add_argument("--max-tokens", type=int, default=1024)
@@ -158,7 +159,12 @@ def main() -> None:
         curriculum_hint = ""
         for step in range(1, args.max_steps + 1):
             try:
-                response = httpx.post(
+                if args.picker_url:  # mlx_lm.server from Turing's venv: OpenAI-style, same weights as the eval
+                    r = httpx.post(args.picker_url.rstrip("/") + "/v1/chat/completions", timeout=300, json={
+                        "model": args.model, "max_tokens": 120, "temperature": 0,
+                        "messages": [{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": last_obs[:1500]}]}).json()
+                    response = {"message": r["choices"][0]["message"]}
+                else: response = httpx.post(
                     ollama_url,
                     json={
                         "model": args.model,
@@ -167,7 +173,7 @@ def main() -> None:
                         "stream": False,
                         "options": {"num_predict": args.max_tokens},
                         "messages": ([{"role": "system", "content": PICKER_SYSTEM}, {"role": "user", "content": last_obs[:1500]}]
-                                     if args.picker else [{"role": "system", "content": SYSTEM_PROMPT}, *messages]),
+                                     if args.picker or args.picker_url else [{"role": "system", "content": SYSTEM_PROMPT}, *messages]),
                     },
                     timeout=300,
                 ).json()

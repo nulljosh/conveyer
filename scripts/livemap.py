@@ -70,8 +70,9 @@ while (ROOT / "runner.pid").exists():
     try:
         walker = walker or f.RCONClient("127.0.0.1", 27000, "factorio", timeout=8)  # the player strolls tile to tile, 2.5 tiles per 0.25 s, like a brisk walk
         focus = FOCUS.read_text().strip() if FOCUS.exists() else ""
+        hold = focus.endswith(",hold")   # film mode: he stands beside the silo and the map centres on it
         silo = focus.endswith(",silo")   # delivery run: collect low density structure at a tile, carry it to the silo chests
-        field = bool(focus) and not silo   # oil-field mode: invulnerable, inspects turrets and pumpjacks, runs to a firing turret
+        field = bool(focus) and not silo and not hold   # oil-field mode: invulnerable, inspects turrets and pumpjacks, runs to a firing turret
         atk = None; lab = {}; goal = None
         if field:
             if not armored: walker.send_command(ARMOR); armored = True
@@ -83,6 +84,8 @@ while (ROOT / "runner.pid").exists():
                 if tour:
                     gx, gy, k = tour[tour_i % len(tour)]; goal = (gx, gy)
                     lab = {"label": "Inspecting a gun turret" if k == "gun-turret" else "Checking a pumpjack"}
+        elif hold:
+            goal = (-67.5, 25.5); lab = {"label": "Watching the rocket silo"}   # in open ground, clear of the silo sprite
         elif silo:
             if not tour: tour, tour_i = silo_run(), 0
             gx, gy, k = tour[tour_i % len(tour)]; goal = (gx, gy); lab = {"label": k}

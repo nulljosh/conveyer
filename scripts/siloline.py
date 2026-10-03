@@ -29,9 +29,9 @@ local moved={} for it,ch in pairs(chests) do local ci=ch.get_inventory(defines.i
     if not mine[e.unit_number] then local inv=e.get_inventory(defines.inventory.chest) local h=inv.get_item_count(it)
       if h>0 then local t=math.min(h,need) local k=ci.insert{name=it,count=t} if k>0 then inv.remove{name=it,count=k} need=need-k end end end end end
   moved[#moved+1]=it..' in chest='..ci.get_item_count(it) end
-if %d==1 and silo.rocket_parts>=100 then local ok,err=pcall(function() silo.launch_rocket() end) out[#out+1]='LAUNCH ok='..tostring(ok)..' '..tostring(err)..' launched='..F.rockets_launched end
+if %d==1 and #s.find_entities_filtered{name='rocket-silo-rocket'}>0 and silo.rocket_silo_status==defines.rocket_silo_status.rocket_ready then local ok,err=pcall(function() silo.launch_rocket() end) out[#out+1]='LAUNCH ok='..tostring(ok)..' '..tostring(err)..' launched='..F.rockets_launched end
 local ins=0 for _,e in pairs(s.find_entities_filtered{type='inserter',position={sx-5,sy},radius=3}) do if e.status~=defines.entity_status.no_power then ins=ins+1 end end
 out[#out+1]='silo parts='..silo.rocket_parts..' status='..tostring(silo.status)..' powered inserters='..ins..' net silo/pole='..tostring(silo.electric_network_id)..'/'..tostring(pole and pole.electric_network_id)..' '..table.concat(moved,', ')
 rcon.print(table.concat(out,' | '))"""
-LAUNCH = 0 if (Path(__file__).resolve().parent.parent / ".assist").exists() else 1   # a legit launch means no .assist; with it the script only feeds
+LAUNCH = 0 if any((Path(__file__).resolve().parent.parent / n).exists() for n in (".assist", ".hold")) else 1   # a legit launch means no .assist; .hold (a file) also pauses the launch so a camera can be rolling first; either way the script only feeds
 print(c.send_command(" ".join((LUA % (",".join("'%s'" % i for i in ITEMS), KEEP, LAUNCH)).split("\n"))))

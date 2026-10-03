@@ -89,6 +89,7 @@ PAGE = """<!doctype html>
   .hero { position: sticky; top: 0; z-index: 0; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 72px 20px 56px; color: #fff;
           background: radial-gradient(ellipse 70% 55% at 50% 40%, rgba(16,12,8,.68), rgba(16,12,8,.28) 70%, rgba(16,12,8,.1)), linear-gradient(180deg, rgba(16,12,8,.35), rgba(16,12,8,.15) 60%, rgba(16,12,8,.55)), url(base.png) 40% 22% / cover no-repeat #3a2f23; }
   .hero > * { position: relative; }
+  .wallcap { position: absolute !important; left: 0; right: 0; bottom: 14px; z-index: 1; margin: 0; text-align: center; font-size: 12px; color: rgba(255,255,255,.68); text-shadow: 0 1px 8px rgba(0,0,0,.6); pointer-events: none; }
   .mark { width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
   .hero h1 { font-size: clamp(2.6rem, 8vw, 5rem); line-height: 1.02; letter-spacing: -.035em; font-weight: 700; margin-top: 18px; text-shadow: 0 2px 24px rgba(0,0,0,.45); }
   .eyebrow { margin-top: 14px; font-size: 14px; font-variant: var(--caption, small-caps); letter-spacing: .08em; font-weight: 600; opacity: .92; }
@@ -136,7 +137,7 @@ PAGE = """<!doctype html>
 <body id="top">
 <div class="sheet-rule" aria-hidden="true"><span>Conveyer</span><span><a href="https://github.com/nulljosh/conveyer" tabindex="-1">GitHub</a></span></div>
 <header class="hero">
-  <video class="bgvid" autoplay muted loop playsinline preload="metadata" poster="live-poster.jpg" aria-hidden="true"><source src="live.mp4" type="video/mp4"></video><div class="shade"></div>
+  <video class="bgvid" autoplay muted loop playsinline preload="metadata" poster="live-poster.jpg" aria-hidden="true"><source src="live.mp4" type="video/mp4"></video><div class="shade"></div><p class="wallcap">Wallpaper: an assisted relaunch recorded after a server crash. The legit launch was at 20:45 on 2 October 2026.</p>
   <img class="mark" src="icon.svg" alt="">
   <h1>Introducing<br>Conveyer.</h1>
   <p class="eyebrow">An LLM plays Factorio.</p>

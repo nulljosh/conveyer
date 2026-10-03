@@ -70,16 +70,10 @@ Conveyer now runs on a copy of Joshua's own Factorio save (`scripts/world.sh`), 
 Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 41 steel furnaces,
 10 steam engines, a train and two cars. Goal: oil, then a rocket launch.
 - [ ] (processing units done, v1.1.0) Yellow (utility) science on tiles: sulfuric acid, processing units, flying robot frames, low density structures
-- [ ] A legit launch with no console help (v2.0): real silo, 100 rocket parts and a satellite from automated tiles
 - [ ] Crash proofing for every new build: a replay script the same hour
-- [x] Automated green science so research stops being hand-fed. ETA 1 to 2 days of agent time
 - [ ] route_belt skill: A* belt routing with undergrounds, so belts stop being hand-placed (idea from factorioctl). ETA 1 day
 - [ ] Drive a car over RCON (riding_state) to haul science and fight; 2 cars exist. ETA hours
-- [x] Oil chain running (refineries, plastic, sulfur, advanced circuits, chemical packs). ETA 1 to 2 days
-- [x] Advanced oil processing researched (500 red, 500 green, 75 chemical). ETA 1 to 2 days
 - [ ] Join the west outpost grid (net 181, 2 engines, 32 consumers) to the main grid with big poles. ETA hours
-- [x] Rocket silo researched: 25 techs, about 4.8k red, 4.8k green, 3.4k chemical, 1.6k production, 1k utility. ETA weeks
-- [x] Rocket launched, assisted (v1.0.0, 2026-10-02, console-fed packs and a scripted silo)
 - [ ] Log every runner step as (state, skill, result) and fine-tune the local model on the successful picks (no public Factorio fine-tune exists)
 
 ## Tooling shipped

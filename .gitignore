@@ -60,3 +60,6 @@ recordings/
 sweep.json
 sweep.log
 combat.log
+.rendering
+assets/
+recordings/

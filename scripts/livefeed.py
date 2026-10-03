@@ -31,7 +31,7 @@ rcon, last = None, None
 SILO = ROOT / "silo.json"
 SILO_LUA = ("/silent-command local s=game.surfaces[1] local si=s.find_entities_filtered{name='rocket-silo'}[1] if not si then rcon.print('') return end "
             "local rev={} for k,v in pairs(defines.entity_status) do rev[v]=k end "
-            "rcon.print(si.position.x..':'..si.position.y..':'..si.rocket_parts..':'..rev[si.status]..':'..game.forces.player.rockets_launched)")
+            "rcon.print(si.position.x..':'..si.position.y..':'..si.rocket_parts..':'..rev[si.status]..':'..game.forces.player.rockets_launched..':'..(#s.find_entities_filtered{name='rocket-silo-rocket'}>0 and 1 or 0)..':'..tostring(si.rocket_silo_status))")
 hotbar_tick = 0
 while runner_alive():
     if not watching():
@@ -57,8 +57,8 @@ while runner_alive():
             os.replace(tmp, HOTBAR)
             sr = rcon.send_command(SILO_LUA).strip()   # the silo, for the window's overlay: the map renderer cannot draw it
             if sr:
-                sx, sy, sp, ss, sl = sr.split(":")
-                tmp = SILO.with_suffix(".tmp"); tmp.write_text(json.dumps({"x": float(sx), "y": float(sy), "parts": int(sp), "status": ss, "launched": int(sl), "t": time.time()})); os.replace(tmp, SILO)
+                sx, sy, sp, ss, sl, sk, sr2 = sr.split(":")
+                tmp = SILO.with_suffix(".tmp"); tmp.write_text(json.dumps({"x": float(sx), "y": float(sy), "parts": int(sp), "status": ss, "launched": int(sl), "rocket": int(sk), "rocket_status": sr2, "t": time.time()})); os.replace(tmp, SILO)
     except Exception:
         rcon = None; time.sleep(1.0); continue
     time.sleep(0.2)

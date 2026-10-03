@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """fuelsupply.py: the remote item moves for the fuel chain, every keepbusy pass. Solid fuel from every plant chest goes to the rocket fuel
 assemblers' input chests (300 each), steel plates and the like are left to the planner. Mirrors the planner's supply: a chest is filled from any
-other container that holds the item, never from the chests it is meant to fill. Reads the complex site from .world/advoil.json."""
+other container that holds the item, never from the chests it is meant to fill. Reads the complex site from .world/advoil.json.
+Solid fuel plants only run while stock is under 1500 AND rocket fuel on hand is under 300 (the silo needs 10 per part; with enough rocket fuel waiting, the
+petroleum gas goes to plastic instead, which low density structure was starving on). No Lua comments in here: the script is joined onto one line."""
 import json
 from pathlib import Path
 from blocks import Site
@@ -27,5 +29,6 @@ local cc=ch(36.5,-11.5) if cc then local inv=cc.get_inventory(defines.inventory.
   local mb=600-inv.get_item_count('stone-brick') if mb>0 then for _,e in pairs(s.find_entities_filtered{type={'container','furnace'},force=F}) do if mb<=0 then break end if e~=cc then local ei=(e.type=='furnace') and e.get_output_inventory() or e.get_inventory(defines.inventory.chest) local h=ei.get_item_count('stone-brick') if h>0 then local n=cc.insert{name='stone-brick',count=math.min(h,mb)} if n>0 then ei.remove{name='stone-brick',count=n} mb=mb-n moved=moved+n end end end end end
   local mo=120-inv.get_item_count('iron-ore') if mo>0 then for _,e in pairs(s.find_entities_filtered{type='furnace',force=F}) do if mo<=0 then break end local src=e.get_inventory(defines.inventory.furnace_source) local h=src and src.get_item_count('iron-ore') or 0 if h>10 then local n=cc.insert{name='iron-ore',count=math.min(h-5,mo)} if n>0 then src.remove{name='iron-ore',count=n} mo=mo-n moved=moved+n end end end end end
 local sfn=0 for _,e in pairs(s.find_entities_filtered{type='container',force=F}) do sfn=sfn+e.get_inventory(defines.inventory.chest).get_item_count('solid-fuel') end
-local on=sfn<1500 local flipped=0 for _,p in pairs(s.find_entities_filtered{name='chemical-plant',force=F}) do local r=p.get_recipe() if r and r.name=='solid-fuel-from-petroleum-gas' and p.active~=on then p.active=on flipped=flipped+1 end end
+local rf=0 for _,e in pairs(s.find_entities_filtered{type='container',force=F}) do rf=rf+e.get_inventory(defines.inventory.chest).get_item_count('rocket-fuel') end
+local on=sfn<1500 and rf<300 local flipped=0 for _,p in pairs(s.find_entities_filtered{name='chemical-plant',force=F}) do local r=p.get_recipe() if r and r.name=='solid-fuel-from-petroleum-gas' and p.active~=on then p.active=on flipped=flipped+1 end end
 rcon.print('fuel chain items moved '..moved..' solid fuel '..sfn..(on and ' plants on' or ' plants OFF')..' flipped '..flipped)""" % (rx, ry)))

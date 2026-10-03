@@ -45,10 +45,11 @@ DONE = ["Plays on a real 2,300 entity save", "Hand-fed science to chemical scien
 done_li = "\n".join(f"<li>{esc(d)}</li>" for d in DONE)
 next_li = "\n".join(f"<li>{esc(t)}{f' <span>{esc(e)}</span>' if e else ''}</li>" for t, e in nxt)
 
-cur = nice(r["current"]).capitalize() if r.get("current") else "Between research"
-pct = r.get("percent", 0)
+done_all = not r.get("current") and r.get("silo_done") == r.get("silo_total")
+cur = nice(r["current"]).capitalize() if r.get("current") else ("All research done" if done_all else "Between research")
+pct = 100 if done_all else r.get("percent", 0)
 queue = [nice(q) for q in (r.get("queue") if isinstance(r.get("queue"), list) else [])[1:2]]
-labs = "Labs idle, waiting for science packs" if not r.get("labs_working") else f"{r['labs_working']} of {r['labs']} labs working"
+labs = "Nothing left to research. Next: a launch with no help" if done_all else "Labs idle, waiting for science packs" if not r.get("labs_working") else f"{r['labs_working']} of {r['labs']} labs working"
 today = time.strftime("%-d %b %Y")
 
 PAGE = """<!doctype html>
@@ -139,7 +140,7 @@ PAGE = """<!doctype html>
   <img class="mark" src="icon.svg" alt="">
   <h1>Introducing<br>Conveyer.</h1>
   <p class="eyebrow">An LLM plays Factorio.</p>
-  <p class="lede">On a real save. It reads the game, picks one move, and repeats.</p>
+  <p class="lede">On a real save. It reads the game, picks one move, and repeats. Launched its first rocket on 2 Oct 2026, with some help. Doing it with none is next.</p>
   <div class="cta"><a class="btn solid" href="https://github.com/nulljosh/conveyer">View on GitHub</a><a class="btn" href="#run">Run it</a></div>
   <div class="glass">
     <small>Researching now</small>

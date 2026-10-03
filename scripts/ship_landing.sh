@@ -3,8 +3,7 @@
 # Order: fresh textured map -> landing_sync (page, base.png, og.png, README progress) -> commit -> wrangler deploy -> check live.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-rm -f preview_map.png                       # force terrain.py to repaint from the newest preview.png
-.venv/bin/python scripts/terrain.py >/dev/null
+[ preview_map.png -nt preview.png ] || .venv/bin/python scripts/terrain.py >/dev/null   # research_status.py repaints it while anyone watches; two painters at once collided on the temp file
 .venv/bin/python scripts/landing_sync.py
 git add web README.md
 git commit -qm "Landing: refresh base map and progress at milestone ${1:-update}

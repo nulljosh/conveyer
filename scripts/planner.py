@@ -13,7 +13,7 @@ import steelfeed
 
 ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / ".world" / "tiles.json"
-TARGETS = {"low-density-structure": 1000, "rocket-silo": 1}   # the launch needs nothing else from tiles: all 44 silo techs are done, so science packs stop; an empty rocket wins, so no solar, radar, accumulator or satellite
+TARGETS = {"low-density-structure": 1000}   # the silo already stands (siloline.py feeds it); the launch needs nothing else from tiles: all 44 silo techs are done, so science packs stop; an empty rocket wins, so no solar, radar, accumulator or satellite
 # tiles per item (default 1). 12 labs eat about 0.6 packs/s of each color; one tile makes 0.08 to 0.15/s, so the blue chain is the wall
 MULT = {"accumulator": 2, "low-density-structure": 6, "automation-science-pack": 2, "logistic-science-pack": 3, "chemical-science-pack": 4, "production-science-pack": 3, "electric-furnace": 2, "productivity-module": 2, "rail": 2, "advanced-circuit": 6, "engine-unit": 4, "copper-cable": 4, "electronic-circuit": 6}
 # crafts of every ingredient kept on hand per tile; fast recipes burn a 300-craft buffer inside one 20 s pass at 10x, a chest holds 16 stacks

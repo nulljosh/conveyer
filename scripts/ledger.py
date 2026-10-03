@@ -6,8 +6,7 @@ fuel, 100 solar panels, 100 accumulators, 5 radars)."""
 import sys
 from blocks import Site
 
-NEED = {"processing-unit": 1200, "low-density-structure": 1000, "rocket-fuel": 1000, "electric-engine-unit": 200, "concrete": 1000, "steel-plate": 1000,
-        "pipe": 100}   # no satellite: an empty rocket wins, so no solar, accumulator, radar or battery
+NEED = {"processing-unit": 1000, "low-density-structure": 1000, "rocket-fuel": 1000}   # the silo already stands: 100 parts x 10 of each is all that is left (read from the game: rocket-part recipe, parts required 100)
 s = Site()
 items = ",".join("'%s'" % k for k in NEED)
 raw = s.run("""local o={} for _,n in ipairs{%s} do local k=0 for _,e in pairs(s.find_entities_filtered{type={'container','furnace','assembling-machine'},force=F}) do local c=0

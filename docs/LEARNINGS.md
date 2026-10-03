@@ -50,3 +50,9 @@ Newest at the bottom. One line each.
 - Pipe routers contaminate. A breadth-first pipe route laid through tank port tiles and next to another fluid's pipes sent 24,000 water into the heavy oil tank. Rules that worked: build every machine and its own pipes first, route the long water pipe last, keep the planned tiles of other fluids reserved, and join machines with a single pipe on the shared port tile instead of routing. Check the fluid in every tank and port pipe after a route.
 
 - A negative number after a minus sign is a Lua comment: x-%g with %g = -12.5 became x--12.5 and silently ate the rest of the joined line. Wrap substituted numbers in parentheses.
+
+## Never join the server with the real Factorio client (2026-10-02)
+A client join makes the server save the map for the transfer. The game state cannot be saved (the scenario's `on_save` errors), so the server quits
+("Cannot save map ... scenario level caused a non-recoverable error") and the world reverts to the last copy. It happened once, at 21:11: the live
+view had just reached its third rocket. The map preview exists for exactly this reason: it reads the game over RCON and never joins. `scripts/realshot.sh`
+now refuses to run. A true-graphics view needs the save problem fixed first (find what the FLE Lua helpers put in `storage` that cannot be serialized).

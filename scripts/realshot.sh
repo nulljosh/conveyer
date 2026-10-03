@@ -1,4 +1,7 @@
 #!/bin/bash
+# DISABLED (2026-10-02): joining the server with the real client forces a map save, the scenario's on_save fails ("Cannot save map: The scenario level
+# caused a non-recoverable error"), the server quits and the world falls back to the old copy. It cost a launch, a silo build and an oil field. Do not run it.
+echo "realshot.sh is disabled: a client join kills the server (map save fails). See docs/LEARNINGS.md." >&2; exit 1
 # One true-graphics screenshot: join the server with the real Factorio client, have the game render the base, close the client.
 # Guards: aborts under 40% free RAM; the client lives at most 150 s and is always killed; game speed is set back after.
 # Usage: scripts/realshot.sh OUT.png [x y [zoom]]   (default: the tile area)

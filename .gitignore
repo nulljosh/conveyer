@@ -53,3 +53,10 @@ defend.log
 events.log
 engineer.json
 events.json
+combat.json
+recordings/
+.focus
+.sweep
+sweep.json
+sweep.log
+combat.log

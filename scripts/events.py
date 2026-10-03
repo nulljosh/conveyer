@@ -19,6 +19,7 @@ local mags=0 for _,t in pairs(s.find_entities_filtered{name='gun-turret',force='
 local done=0 for _,t in pairs(F.technologies) do if t.researched then done=done+1 end end
 local eng=0 for _,e in pairs(s.find_entities_filtered{name='steam-engine',force='player'}) do if e.status==defines.entity_status.working then eng=eng+1 end end
 o[#o+1]='mags='..mags o[#o+1]='pumpjacks='..s.count_entities_filtered{name='pumpjack',force='player'} o[#o+1]='techs='..done o[#o+1]='engines='..eng
+local si=s.find_entities_filtered{name='rocket-silo'}[1] o[#o+1]='nests='..s.count_entities_filtered{type='unit-spawner',force='enemy'} o[#o+1]='parts='..(si and si.rocket_parts or 0) o[#o+1]='rockets='..F.rockets_launched
 o[#o+1]='research='..(F.current_research and F.current_research.name or '')
 rcon.print(table.concat(o,';'))""" % (",".join("'%s'" % i for i in ITEMS), ",".join("'%s'" % i for i in ITEMS))
 
@@ -37,6 +38,9 @@ def rules(a, b):
         n = b[i] - a[i]
         if i in ("rocket-fuel", "low-density-structure", "processing-unit", "electric-engine-unit") and n >= 5:
             out.append(("ok", "%s +%d (now %d)" % (NICE[i], n, b[i])))
+    if a["nests"] - b["nests"] >= 3: out.append(("ok", "Assisted sweep: %d nests left" % b["nests"]))
+    if b["rockets"] > a["rockets"]: out.append(("ok", "ROCKET LAUNCHED (%d total)" % b["rockets"]))
+    if b["parts"] // 10 > a["parts"] // 10 and b["parts"] > 0: out.append(("ok", "Rocket parts: %d of 100" % b["parts"]))
     if b["techs"] > a["techs"]: out.append(("ok", "Research finished: %d techs done" % b["techs"]))
     if b["research"] and b["research"] != a["research"]: out.append(("ok", "Researching %s" % b["research"].replace("-", " ")))
     if b["pumpjacks"] < a["pumpjacks"]: out.append(("bad", "Pumpjack lost, %d left" % b["pumpjacks"]))

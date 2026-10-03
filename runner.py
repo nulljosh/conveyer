@@ -27,6 +27,10 @@ import skills
 
 WIDE_R = 60  # half-width of the screenshot in tiles; the view is 2*WIDE_R x 68 tiles
 WIDE = {"sig": None, "c": None, "t": 0.0}
+def view_center():
+    """The picture centers on .focus ("x,y", written for the silo or the oil field) when it exists, else on the tile area."""
+    try: x, y = [float(v) for v in Path(__file__).with_name(".focus").read_text().split(",")[:2]]; return (x, y)
+    except Exception: return VIEW_C
 VIEW_C = (-24.5, 44.0)  # the wide picture is always centered here (the tile area), so a roaming player never shifts it; the player walks inside it  # last wide render: base signature, player position, time
 VIEW_SIG = ("/silent-command local s=game.surfaces[1] local ch=s.find_entities_filtered{type='character'}[1] local n,h=0,0 "
             "for _,e in pairs(s.find_entities_filtered{position=ch.position,radius=70,force='player'}) do if e.type~='character' then "
@@ -199,7 +203,7 @@ def main() -> None:
                         return
                     if WIDE["sig"] is not None and os.getloadavg()[0] / (os.cpu_count() or 1) > 0.85:
                         return  # CPU aware: a 28 s render on a hot machine makes everything slower, the old frame is fine
-                    WIDE.update(sig=sig, c=VIEW_C, t=now)
+                    WIDE.update(sig=sig, c=view_center(), t=now)
                 except Exception as e:  # signature failed: fall through and render, never skip a frame silently
                     print(f"[runner] view signature failed: {e}", flush=True)
             inst = env.unwrapped.instance
@@ -214,7 +218,7 @@ def main() -> None:
                 try:
                     import factorio_rcon as _fr2
                     Path(__file__).with_name(".rendering").write_text("1")
-                    _fr2.RCONClient("127.0.0.1", 27000, "factorio", timeout=20).send_command("/silent-command game.surfaces[1].find_entities_filtered{type='character'}[1].teleport({%g,%g})" % VIEW_C)
+                    _fr2.RCONClient("127.0.0.1", 27000, "factorio", timeout=20).send_command("/silent-command game.surfaces[1].find_entities_filtered{type='character'}[1].teleport({%g,%g})" % view_center())
                 except Exception as e:
                     print(f"[runner] view center failed: {e}", flush=True)
             renderer = render_tool.get_renderer_from_map(

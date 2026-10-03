@@ -6,7 +6,7 @@ ponytail: gun turrets and a fixed ring; add laser turrets (laser-turret tech not
 import sys
 import factorio_rcon as f
 
-CX, CY, R, N, AMMO = -213.0, -405.0, 26.0, 12, 30   # ring centre, radius, turret count, magazines per turret
+CX, CY, R, N, AMMO = -213.0, -408.0, 28.0, 22, 40   # ring centre, radius, turret count, magazines per turret
 c = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=120)
 LUA = """/silent-command local s=game.surfaces[1] local F=game.forces.player local out={}
 local function take(item,n) local got=0 for _,e in pairs(s.find_entities_filtered{type='container',force='player'}) do if got>=n then break end

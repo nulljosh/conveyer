@@ -296,7 +296,8 @@ struct HotbarSlot: Decodable { let name: String; let count: Int }
 struct HotbarData: Decodable { let slots: [HotbarSlot] }
 struct Event: Decodable { let t: Double; let kind: String; let text: String }
 struct EventData: Decodable { let events: [Event] }
-struct EngineerData: Decodable { let item: String; let t: Double }
+struct EngineerData: Decodable { let item: String; let t: Double; let label: String? }
+struct CombatData: Decodable { let t: Double; let player: [Double]; let enemies: [[Double]]; let turrets: [[Double]] }  // enemies: [x,y,kind,size], turrets: [x,y,firing]
 
 @MainActor
 final class MarkerModel: ObservableObject {
@@ -313,6 +314,7 @@ final class MarkerModel: ObservableObject {
     @Published var hotbar: [HotbarSlot] = []
     @Published var events: [Event] = []
     @Published var engineer: EngineerData?
+    @Published var combat: CombatData?
     private var miniStamp: Date?
     private let miniPath = NSString(string: "~/Documents/Code/conveyer/minimap.png").expandingTildeInPath
     private let miniMetaPath = NSString(string: "~/Documents/Code/conveyer/minimap.json").expandingTildeInPath
@@ -328,6 +330,8 @@ final class MarkerModel: ObservableObject {
     private let eventsPath = NSString(string: "~/Documents/Code/conveyer/events.json").expandingTildeInPath
     private var engineerStamp: Date?
     private let engineerPath = NSString(string: "~/Documents/Code/conveyer/engineer.json").expandingTildeInPath
+    private var combatStamp: Date?
+    private let combatPath = NSString(string: "~/Documents/Code/conveyer/combat.json").expandingTildeInPath
 
     func start() {
         guard timer == nil else { return }
@@ -382,12 +386,22 @@ final class MarkerModel: ObservableObject {
         engineerStamp = m; engineer = eng
     }
 
+    private func readCombat() {
+        guard let m = (try? FileManager.default.attributesOfItem(atPath: combatPath))?[.modificationDate] as? Date, m != combatStamp,
+              let d = FileManager.default.contents(atPath: combatPath),
+              let c = try? JSONDecoder().decode(CombatData.self, from: d) else { return }
+        let now = Date().timeIntervalSince1970
+        guard now - c.t < 4 else { combat = nil; return }   // stale data: ignore
+        combatStamp = m; combat = c
+    }
+
     private func read() {
         readDots()
         readMini()
         readHotbar()
         readEvents()
         readEngineer()
+        readCombat()
         if let m = (try? FileManager.default.attributesOfItem(atPath: framePath))?[.modificationDate] as? Date, m != frameStamp,
            let d = FileManager.default.contents(atPath: framePath), let f = try? JSONDecoder().decode(LiveFrame.self, from: d) {
             frameStamp = m; frame = f
@@ -463,6 +477,83 @@ struct PlayerMarker: View {
                     }
                 }
                 .position(x: x, y: y)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// Combat overlay: enemies, turrets, and firing arcs on the live map
+struct CombatLayer: View {
+    @ObservedObject var m: MarkerModel
+    var body: some View {
+        GeometryReader { g in
+            if let f = m.frame, let c = m.combat, !c.enemies.isEmpty || !c.turrets.isEmpty {
+                let s = max(g.size.width / f.w, g.size.height / f.h)
+                TimelineView(.animation(minimumInterval: 1.0 / 15)) { ctx in
+                    let t = ctx.date.timeIntervalSinceReferenceDate
+                    Canvas { canvas, _ in
+                        // Draw enemies: [x,y,kind,size]
+                        for (i, enemy) in c.enemies.enumerated() where enemy.count >= 4 {
+                            let ex = (g.size.width - f.w * s) / 2 + (f.w / 2 + (enemy[0] - f.cx) * f.ppt) * s
+                            let ey = (g.size.height - f.h * s) / 2 + (f.h / 2 + (enemy[1] - f.cy) * f.ppt) * s
+                            let dx = ex - (g.size.width / 2)
+                            let dy = ey - (g.size.height / 2)
+                            guard abs(dx) < g.size.width && abs(dy) < g.size.height else { continue }
+                            let kind = Int(enemy[2])
+                            let size = Int(enemy[3])
+                            let sizeRadius: CGFloat = [0.8, 1.1, 1.5, 2.0][min(size, 3)] * f.ppt * s
+                            if kind == 2 { // worm: triangle
+                                var tri = Path()
+                                tri.move(to: CGPoint(x: ex, y: ey - sizeRadius))
+                                tri.addLine(to: CGPoint(x: ex + sizeRadius, y: ey + sizeRadius))
+                                tri.addLine(to: CGPoint(x: ex - sizeRadius, y: ey + sizeRadius))
+                                tri.closeSubpath()
+                                canvas.fill(tri, with: .color(Color(red: 0.6, green: 0, blue: 0)))
+                                canvas.stroke(tri, with: .color(.black.opacity(0.6)), lineWidth: 1)
+                            } else if kind == 3 { // nest: rounded square
+                                let rectSize = 3.0 * f.ppt * s
+                                let rect = CGRect(x: ex - rectSize / 2, y: ey - rectSize / 2, width: rectSize, height: rectSize)
+                                canvas.fill(Path(roundedRect: rect, cornerRadius: rectSize * 0.2), with: .color(Color(red: 0.6, green: 0, blue: 0)))
+                                canvas.stroke(Path(roundedRect: rect, cornerRadius: rectSize * 0.2), with: .color(Color(red: 0.8, green: 0.2, blue: 0.2).opacity(0.7)), lineWidth: 1)
+                            } else {
+                                // biter or spitter: circle
+                                let col = kind == 0 ? Color.red : Color(red: 1, green: 0.6, blue: 0)
+                                let jiggle = sin(t * 5 + Double(i) * 0.5) * 1.5 * s
+                                let jiggledX = ex + jiggle
+                                let jiggledY = ey + jiggle * 0.5
+                                canvas.fill(Path(ellipseIn: CGRect(x: jiggledX - sizeRadius, y: jiggledY - sizeRadius, width: 2 * sizeRadius, height: 2 * sizeRadius)), with: .color(col))
+                                canvas.stroke(Path(ellipseIn: CGRect(x: jiggledX - sizeRadius, y: jiggledY - sizeRadius, width: 2 * sizeRadius, height: 2 * sizeRadius)), with: .color(.black.opacity(0.6)), lineWidth: 1)
+                            }
+                        }
+                        // Draw firing turrets: [x,y,firing]
+                        for turret in c.turrets where turret.count >= 3 && Int(turret[2]) != 0 {
+                            let tx = (g.size.width - f.w * s) / 2 + (f.w / 2 + (turret[0] - f.cx) * f.ppt) * s
+                            let ty = (g.size.height - f.h * s) / 2 + (f.h / 2 + (turret[1] - f.cy) * f.ppt) * s
+                            let tdx = tx - (g.size.width / 2)
+                            let tdy = ty - (g.size.height / 2)
+                            guard abs(tdx) < g.size.width && abs(tdy) < g.size.height else { continue }
+                            let pulseRadius = (1.2 + sin(t * 4) * 0.5) * f.ppt * s
+                            canvas.fill(Path(ellipseIn: CGRect(x: tx - pulseRadius, y: ty - pulseRadius, width: 2 * pulseRadius, height: 2 * pulseRadius)), with: .color(Color(red: 1, green: 1, blue: 0.7)))
+                            let nearestEnemy = c.enemies.filter { $0.count >= 2 }.min { e1, e2 in
+                                let d1 = (e1[0] - turret[0]) * (e1[0] - turret[0]) + (e1[1] - turret[1]) * (e1[1] - turret[1])
+                                let d2 = (e2[0] - turret[0]) * (e2[0] - turret[0]) + (e2[1] - turret[1]) * (e2[1] - turret[1])
+                                return d1 < d2
+                            }
+                            if let nearest = nearestEnemy, nearest.count >= 2 {
+                                let distSq = (nearest[0] - turret[0]) * (nearest[0] - turret[0]) + (nearest[1] - turret[1]) * (nearest[1] - turret[1])
+                                if distSq < 484 { // 22 tiles
+                                    let ex = (g.size.width - f.w * s) / 2 + (f.w / 2 + (nearest[0] - f.cx) * f.ppt) * s
+                                    let ey = (g.size.height - f.h * s) / 2 + (f.h / 2 + (nearest[1] - f.cy) * f.ppt) * s
+                                    var line = Path()
+                                    line.move(to: CGPoint(x: tx, y: ty))
+                                    line.addLine(to: CGPoint(x: ex, y: ey))
+                                    canvas.stroke(line, with: .color(Color(red: 1, green: 1, blue: 0).opacity(0.9)), lineWidth: 1.5)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         .allowsHitTesting(false)
@@ -703,6 +794,7 @@ struct LiveView: View {
                         }
                         StatusDots(m: poller.marker)
                         PlayerMarker(m: poller.marker)
+                        CombatLayer(m: poller.marker)
                     }
                 }
             }
@@ -747,8 +839,24 @@ struct LiveView: View {
             }
             TimelineView(.periodic(from: .now, by: 1)) { _ in   // the marker model is a separate object the HUD does not observe, so re-read it every second
                 if let eng = poller.marker.engineer, !eng.item.isEmpty, Date().timeIntervalSince1970 - eng.t < 20 {
-                    let niceName = eng.item.replacingOccurrences(of: "-", with: " ")
-                    Text("Checking the \(niceName) tile").font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
+                    let label = eng.label.flatMap { s in s.isEmpty ? nil : s }
+                    if let label = label {
+                        Text(label).font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
+                    } else {
+                        let niceName = eng.item.replacingOccurrences(of: "-", with: " ")
+                        Text("Checking the \(niceName) tile").font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+                if let c = poller.marker.combat, Date().timeIntervalSince1970 - c.t < 4, c.player.count >= 2 {
+                    let px = c.player[0], py = c.player[1]
+                    let near = c.enemies.filter { $0.count >= 2 && (($0[0] - px) * ($0[0] - px) + ($0[1] - py) * ($0[1] - py)) < 1600 }  // 40 tiles
+                    if !near.isEmpty {
+                        let firing = c.turrets.filter { $0.count >= 3 && Int($0[2]) != 0 }.count
+                        HStack(spacing: 5) {
+                            Circle().fill(Color.red).frame(width: 6, height: 6)
+                            Text("\(near.count) enemies near\(firing > 0 ? ", \(firing) turrets firing" : "")").font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
+                        }
+                    }
                 }
             }
         }

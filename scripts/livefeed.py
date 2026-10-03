@@ -11,12 +11,11 @@ ROOT = Path(__file__).resolve().parent.parent
 LIVE, WATCH, HOTBAR = ROOT / "live.json", ROOT / ".watching", ROOT / "hotbar.json"
 LUA = ("/silent-command local c=storage.cv_char if not (c and c.valid) then c=game.surfaces[1].find_entities_filtered{type='character'}[1] storage.cv_char=c end "
        "rcon.print(c.position.x..','..c.position.y..','..game.tick)")
-HOTBAR_LUA = ("/silent-command local c=storage.cv_char if not (c and c.valid) then c=game.surfaces[1].find_entities_filtered{type='character'}[1] storage.cv_char=c end "
-              "local inv=c.get_main_inventory() if not inv then rcon.print('') return end "
-              "local items={} for _,v in pairs(inv.get_contents()) do table.insert(items,{name=v.name,count=v.count}) end "
-              "table.sort(items,function(a,b) return a.count>b.count end) "
-              "local out='' for i=1,math.min(10,#items) do out=out..items[i].name..','..items[i].count..';' end "
-              "rcon.print(out)")
+HOTBAR_KEYS = ["rocket-fuel", "low-density-structure", "processing-unit", "plastic-bar", "steel-plate", "iron-plate", "copper-plate", "coal", "crude-oil-barrel", "barrel"]
+HOTBAR_LUA = ("/silent-command local keys={" + ",".join("'%s'" % k for k in HOTBAR_KEYS) + "} local tot={} "
+              "for _,ch in pairs(game.surfaces[1].find_entities_filtered{type='container',force='player'}) do local inv=ch.get_inventory(defines.inventory.chest) "
+              "for _,n in ipairs(keys) do tot[n]=(tot[n] or 0)+inv.get_item_count(n) end end "
+              "local out='' for _,n in ipairs(keys) do out=out..n..','..(tot[n] or 0)..';' end rcon.print(out)")   # the base's key stock, live: the engineer's own bag never changes
 
 def watching() -> bool:
     try: return time.time() - WATCH.stat().st_mtime < 8
@@ -40,7 +39,7 @@ while runner_alive():
             tmp = LIVE.with_suffix(".tmp"); tmp.write_text(json.dumps({"x": float(x), "y": float(y), "tick": int(tick)}))
             os.replace(tmp, LIVE); last = (x, y)  # atomic, the app never reads half a file
         hotbar_tick += 1
-        if hotbar_tick >= 5:  # about once per second
+        if hotbar_tick >= 10:  # about every 2 seconds
             hotbar_tick = 0
             raw = rcon.send_command(HOTBAR_LUA).strip()
             slots = []

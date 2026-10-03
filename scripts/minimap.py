@@ -30,7 +30,20 @@ def cells(raw):
     return out
 
 
-def paint(c):
+TERRAIN_LUA = """/silent-command local s=game.surfaces[1] local rows={} for y=%d,%d do local row='' for x=%d,%d do local t=s.get_tile(x*16+8,y*16+8).name local c='o'
+if t:find('deepwater') then c='W' elseif t:find('water') then c='w' elseif t:find('grass') then c='g' elseif t:find('sand') then c='s' elseif t:find('dirt') then c='d' elseif t:find('desert') then c='r' end row=row..c end rows[#rows+1]=row end rcon.print(table.concat(rows,'/'))"""
+TERRAIN_RGB = {"g": (58, 76, 48), "d": (92, 68, 44), "s": (128, 106, 70), "r": (122, 86, 56), "w": (28, 52, 84), "W": (22, 42, 70), "o": (70, 64, 56)}
+_terrain = {}   # bounds -> rows: the ground does not change, ask once per bounds
+
+def terrain(r, x0, x1, y0, y1):
+    key = (x0, x1, y0, y1)
+    if key not in _terrain:
+        raw = r.send_command(" ".join((TERRAIN_LUA % (y0, y1, x0, x1)).split("\n"))).strip()
+        _terrain[key] = raw.split("/")
+    return _terrain[key]
+
+
+def paint(c, r=None):
     base = list(c["p"]) + list(c["o"])
     if not base:
         return
@@ -41,6 +54,12 @@ def paint(c):
     s = max(2, min(8, 320 // max(w, h)))   # pixels per chunk
     im = Image.new("RGB", (w * s, h * s), (24, 26, 30))
     px = im.load()
+    rows = terrain(r, x0, x1, y0, y1) if r else []
+    for ry, row in enumerate(rows[:h]):   # ground first, so the base, oil and nests sit on real terrain, not black
+        for rx, ch in enumerate(row[:w]):
+            col = TERRAIN_RGB.get(ch, (70, 64, 56))
+            for dx in range(s):
+                for dy in range(s): px[rx * s + dx, ry * s + dy] = col
 
     def fill(cx, cy, col):
         if x0 <= cx <= x1 and y0 <= cy <= y1:
@@ -61,7 +80,7 @@ def paint(c):
 
 def once():
     r = f.RCONClient("127.0.0.1", 27000, "factorio", timeout=30)
-    paint(cells(r.send_command(" ".join(LUA.split("\n")))))
+    paint(cells(r.send_command(" ".join(LUA.split("\n")))), r)
 
 
 if __name__ == "__main__":

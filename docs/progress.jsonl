@@ -7,10 +7,5 @@
 {"t": 1790983160.0, "techs": 67, "entities": 2808}
 {"t": 1790984370.0, "techs": 71, "entities": 2808}
 {"t": 1790985822.0, "techs": 73, "entities": 2814}
-{"t": 1790986274, "version": "1.0.2", "techs": 73, "entities": 2844, "tiles": 39}
-{"t": 1790986788, "version": "1.0.2", "techs": 73, "entities": 2878, "tiles": 39}
-{"t": 1790987003, "version": "1.0.3", "techs": 73, "entities": 2878, "tiles": 39}
-{"t": 1790987281, "version": "1.1.0", "techs": 73, "entities": 2878, "tiles": 39}
-{"t": 1790987509, "version": "1.1.0", "techs": 73, "entities": 2938, "tiles": 42}
-{"t": 1790987697, "version": "1.1.0", "techs": 73, "entities": 2950, "tiles": 42}
-{"t": 1790988766, "version": "1.1.0", "techs": 73, "entities": 3019, "tiles": 42}
+{"t": 1790987624.0, "techs": 73, "entities": 2950}
+{"t": 1790988787, "version": "1.1.0", "techs": 73, "entities": 3019, "tiles": 42}

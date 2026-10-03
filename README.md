@@ -2,7 +2,7 @@
 
 # Conveyer
 
-![version](https://img.shields.io/badge/version-v1.6.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) [![GitHub](https://img.shields.io/badge/GitHub-nulljosh%2Fconveyer-black?logo=github)](https://github.com/nulljosh/conveyer)
+![version](https://img.shields.io/badge/version-v2.0.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) [![GitHub](https://img.shields.io/badge/GitHub-nulljosh%2Fconveyer-black?logo=github)](https://github.com/nulljosh/conveyer)
 
 An LLM plays Factorio. On a real save.
 
@@ -13,7 +13,7 @@ Built on [FLE](https://github.com/JackHopkins/factorio-learning-environment), th
 ## Where it is
 
 <!-- progress:start -->
-**Road to the rocket: 100%** `####################` 44 of 44 techs the silo needs. Rockets launched: 1 (v1.0, assisted: purple and yellow science were console-fed).
+**Road to the rocket: 100%** `####################` 44 of 44 techs the silo needs. Rockets launched: 2 (v1.0 assisted: purple and yellow science were console-fed; v2.0 with no console-fed parts).
 <!-- progress:end -->
 
 It plays a copy of a real 2,300 entity base. Red, green, blue and purple science run on their own. A rocket has launched once, with help: the last packs were fed to the labs by script and the silo was placed by script. Next is a launch with no help. The list is in [roadmap.md](roadmap.md), the numbers in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).

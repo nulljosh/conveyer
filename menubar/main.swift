@@ -475,7 +475,11 @@ struct CameraRig<Content: View>: View {
     @ObservedObject var m: MarkerModel
     let size: CGSize
     let content: Content
-    private let zoom: CGFloat = 1.7
+    private let zoom: CGFloat = {   // --zoom N on the command line, 1.7 by default; 1.0 is pixel-for-pixel on a 1080p screen, which is what the landing video uses
+        let a = CommandLine.arguments
+        if let i = a.firstIndex(of: "--zoom"), i + 1 < a.count, let z = Double(a[i + 1]) { return CGFloat(z) }
+        return 1.7
+    }()
     init(m: MarkerModel, size: CGSize, @ViewBuilder content: () -> Content) { self.m = m; self.size = size; self.content = content() }
     var body: some View {
         let o = offset()
@@ -485,8 +489,13 @@ struct CameraRig<Content: View>: View {
         guard let f = m.frame, let p = m.shown else { return .zero }
         let s0 = max(size.width / f.w, size.height / f.h)
         let qx = (p.x - f.cx) * f.ppt * s0, qy = (p.y - f.cy) * f.ppt * s0
+        // Center on the player, but never slide the picture past its own edge (that shows dark margins). Where those two disagree the player wins:
+        // he is held inside 85% of the window, so he can never walk off screen even when he is outside the picture.
         let mx = max(0, zoom * f.w * s0 / 2 - size.width / 2), my = max(0, zoom * f.h * s0 / 2 - size.height / 2)
-        return CGSize(width: min(max(-zoom * qx, -mx), mx), height: min(max(-zoom * qy, -my), my))
+        let ox = min(max(-zoom * qx, -mx), mx), oy = min(max(-zoom * qy, -my), my)
+        let hx = size.width / 2 * 0.85, hy = size.height / 2 * 0.85
+        let px = min(max(zoom * qx + ox, -hx), hx), py = min(max(zoom * qy + oy, -hy), hy)
+        return CGSize(width: px - zoom * qx, height: py - zoom * qy)
     }
 }
 

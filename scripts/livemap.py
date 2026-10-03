@@ -32,7 +32,7 @@ while (ROOT / "runner.pid").exists():
     try:
         walker = walker or f.RCONClient("127.0.0.1", 27000, "factorio", timeout=8)  # the player strolls tile to tile, 2.5 tiles per 0.25 s, like a brisk walk
         if not tgt: tgt = targets()
-        if tgt:
+        if tgt and not (ROOT / ".rendering").exists():   # runner parks the player at the picture center while it reads the map
             d = float(walker.send_command(WALK % (*tgt[ti % len(tgt)], 2.5, 2.5, 2.5)).strip() or 0)
             if d <= 2.5: ti += 1; tgt = targets() if ti % len(tgt) == 0 else tgt
         if time.time() - lastmap < 0.8: time.sleep(0.25); continue

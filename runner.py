@@ -26,7 +26,8 @@ from fle.env.gym_env.registry import list_available_environments
 import skills
 
 WIDE_R = 60  # half-width of the screenshot in tiles; the view is 2*WIDE_R x 68 tiles
-WIDE = {"sig": None, "c": None, "t": 0.0}  # last wide render: base signature, player position, time
+WIDE = {"sig": None, "c": None, "t": 0.0}
+VIEW_C = (-24.5, 39.0)  # the wide picture is always centered here (the tile area), so a roaming player never shifts it; the player walks inside it  # last wide render: base signature, player position, time
 VIEW_SIG = ("/silent-command local s=game.surfaces[1] local ch=s.find_entities_filtered{type='character'}[1] local n,h=0,0 "
             "for _,e in pairs(s.find_entities_filtered{position=ch.position,radius=70,force='player'}) do if e.type~='character' then "
             "n=n+1 h=(h*31+math.floor(e.position.x*2)*7+math.floor(e.position.y*2)*13+#e.name)%1000000007 end end "
@@ -187,7 +188,7 @@ def main() -> None:
                     import factorio_rcon as _fr
                     sig, px, py = _fr.RCONClient("127.0.0.1", 27000, "factorio", timeout=20).send_command(VIEW_SIG).split(",")
                     px, py, now = float(px), float(py), time.time()
-                    moved = WIDE["c"] is not None and ((px - WIDE["c"][0]) ** 2 + (py - WIDE["c"][1]) ** 2) ** 0.5 > 25
+                    moved = False
                     if WIDE["sig"] is not None and not moved and now - WIDE["t"] < 600 and (sig == WIDE["sig"] or now - WIDE["t"] < 60):
                         return
                     import os
@@ -198,7 +199,7 @@ def main() -> None:
                         return
                     if WIDE["sig"] is not None and os.getloadavg()[0] / (os.cpu_count() or 1) > 0.85:
                         return  # CPU aware: a 28 s render on a hot machine makes everything slower, the old frame is fine
-                    WIDE.update(sig=sig, c=(px, py), t=now)
+                    WIDE.update(sig=sig, c=VIEW_C, t=now)
                 except Exception as e:  # signature failed: fall through and render, never skip a frame silently
                     print(f"[runner] view signature failed: {e}", flush=True)
             inst = env.unwrapped.instance
@@ -209,10 +210,18 @@ def main() -> None:
             # repeated grid, not useful signal. Character/entities/trees/water
             # are untouched.
             R = WIDE_R if not square else 32
+            if not square:  # park the character at the picture's center for the one call that reads the map, then let livemap stroll again
+                try:
+                    import factorio_rcon as _fr2
+                    Path(__file__).with_name(".rendering").write_text("1")
+                    _fr2.RCONClient("127.0.0.1", 27000, "factorio", timeout=20).send_command("/silent-command game.surfaces[1].find_entities_filtered{type='character'}[1].teleport({%g,%g})" % VIEW_C)
+                except Exception as e:
+                    print(f"[runner] view center failed: {e}", flush=True)
             renderer = render_tool.get_renderer_from_map(
                 include_status=False, radius=WIDE_R if not square else 18, compression_level="binary",
                 max_render_radius=R, position=None,
             )
+            Path(__file__).with_name(".rendering").unlink(missing_ok=True)
             entity_names = sorted({e.name for e in renderer.entities})
             renderer.resources = []
             if not square:

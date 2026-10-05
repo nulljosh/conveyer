@@ -16,6 +16,15 @@ end = time.time() + a.hours * 3600
 while time.time() < end and (ROOT / "runner.pid").exists():
     t = time.strftime("%Y%m%d-%H%M%S")
     shutil.copy(ROOT / ("preview_map.png" if (ROOT / "preview_map.png").exists() else "preview.png"), ROOT / "shots" / f"{t}.png")
+    n_snap = locals().get("n_snap", 0) + 1
+    if n_snap % 2 == 1:   # timelapse: one small JPEG every 10 minutes (about 150 KB, a night is about 20 MB); `ffmpeg -framerate 12 -pattern_type glob -i 'shots/timelapse/*.jpg' -pix_fmt yuv420p timelapse.mp4`
+        try:
+            from PIL import Image
+            tl = ROOT / "shots" / "timelapse"; tl.mkdir(exist_ok=True)
+            im = Image.open(ROOT / "shots" / f"{t}.png").convert("RGB"); im.thumbnail((1280, 1280)); im.save(tl / f"{t}.jpg", quality=72)
+            for old_j in sorted(tl.glob("*.jpg"))[:-400]: old_j.unlink()
+        except Exception as e:
+            print("timelapse skipped:", e, flush=True)
     for old_f in sorted((ROOT / "shots").glob("2*.png"))[:-48]:  # keep 4 hours of 5-minute frames: the wide frames are 3 to 5 MB each and a day of them was 500 MB on a disk that runs tight
         old_f.unlink()
     techs = -1

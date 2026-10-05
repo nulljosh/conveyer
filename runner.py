@@ -224,6 +224,20 @@ def main() -> None:
             )
             entity_names = sorted({e.name for e in renderer.entities})
             renderer.resources = []
+            if not square and WIDE["c"]:
+                # The renderer centres the picture on the engineer. Shift everything so it is centred on the view point instead, otherwise the top tile rows fall off whenever he stands low.
+                from fle.env.tools.admin.render.utils import entities_to_grid
+                dx, dy = renderer.offset_x - WIDE["c"][0], renderer.offset_y - WIDE["c"][1]
+                def shift(items):
+                    out = []
+                    for it in items:
+                        p0 = renderer._get_position(it)
+                        out.append(renderer._set_position(it, p0["x"] + dx, p0["y"] + dy) if p0 else it)
+                    return out
+                renderer.entities = shift(renderer.entities)
+                renderer.water_tiles = shift(renderer.water_tiles)
+                renderer.offset_x, renderer.offset_y = WIDE["c"]
+                renderer.entity_grid = entities_to_grid(renderer.entities)
             if not square:
                 renderer.entities = [e for e in renderer.entities if e.name != "character"]  # the live marker is the only character
                 renderer.get_size = lambda: {"minX": -R, "minY": -46, "maxX": R, "maxY": 46, "width": 2 * R, "height": 92}  # 92 tiles tall: the tile column runs from y 11 to 81, the old 68 left the player walking off the bottom into black

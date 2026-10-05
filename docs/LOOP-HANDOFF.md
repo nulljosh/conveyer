@@ -52,7 +52,7 @@ Done when: the window is open at 5 Hz or better and every feeder plus the app to
 | When | QA | Efficiency | Notes |
 |---|---|---|---|
 | 2026-10-02 14:55 | A- | B+ | Window open: runner 0.1%, app 0 to 0.7%, livefeed 0.1%. Closed: near 0 |
-| 2026-10-04 21:00 | B+ | A | Full screen, window open, measured with `top -l 2` deltas: stream.py 0.5%, app 0%, runner 0% between renders. Fixed: map change check watches the picture (was re-rendering constantly), dots line up (frame.json uses the real centre). Open: the picture centres on the engineer, so the top tile rows can fall off; centre it on the view point |
+| 2026-10-04 21:00 | B+ | A | Full screen, window open, measured with `top -l 2` deltas: stream.py 0.5%, app 0%, runner 0% between renders. Fixed: map change check watches the picture (was re-rendering constantly), dots line up (frame.json uses the real centre). Fixed later the same night: the picture is now centred on the view point (all tile rows visible). snap.py also saves a small JPEG every 10 minutes to shots/timelapse/ for a morning timelapse (ffmpeg line in snap.py) |
 
 ## Cloud-safe work (no game, no Mac)
 

@@ -44,6 +44,7 @@ Generated from real data at every commit by `scripts/benchmarks.py`. Nothing her
 | v2.1.2 | Oct 5 00:36 | 61.5 |
 | v2.1.3 | Oct 5 01:14 | 62.1 |
 | v2.1.4 | Oct 5 01:43 | 62.6 |
+| v2.1.5 | Oct 5 02:12 | 63.1 |
 
 ## Research and building, per commit
 

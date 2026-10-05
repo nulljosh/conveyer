@@ -1,182 +1,77 @@
-# Conveyer loop handoff (2026-10-03, v2.1.0 released, loop paused)
+# Conveyer loop handoff
 
-**Loop status: paused as of 2026-10-03 after v2.1.0 release.** Restart prompt below when ready. Finishing is out of reach on this budget (huge majors, new games, rented server all blocked).
+Updated 2026-10-05. v2.1.0. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
 
-## Where things stand
+## TLDR
 
-v2.0.0 shipped (2026-10-02): second rocket launched legit with zero console-fed help. Silo reached 100 parts, all automated. Legit chain: red to purple science automated, acid plant and processing units done, advanced oil refining live, oil remaining blocker for yellow. World runs on Joshua's real save copy at fle/env/tools/admin/render (2316 entities baseline). Loop roadmap: three items checked off (step logging plus first LoRA, planner decision logs, 100 parts by silo recipe). Both Turing and Conveyer now at 30 open issues, 0 open PRs. New loop strategy: work until no roadmap tasks, no open issues, all PRs merged, then checkpoint; each tick checks off verified-done items and does cheapest open item; hard stop at 90% usage.
+- **The game is beaten.** v2.0.0 (2 Oct, 20:45) launched a rocket with nothing fed in by console. A crash rolled that world back, so the rocket in the video is labelled assisted.
+- **Next goal: the live window.** Stream the game into `ConveyerMonitor` at 5 Hz or better while staying under 5% of one core. Watching costs nothing while the window is closed.
+- **Hard rule: never join with a real Factorio client.** A join forces a map save, FLE's Lua state cannot be saved, the server dies and the world rolls back. The custom window is the only way to watch.
 
-Restart after any crash: `scripts/health.sh --fix`, then relaunch as Claude background tasks. Seven tasks, refresh every 15 minutes. Kill runner by `cat runner.pid`. Open window with `ConveyerMonitor.app --open-live`. Flags: `.focus`, `.speed`, `.hold`. Never join with real client.
+## Pick up in 60 seconds
 
-Read this first. Everything a session needs is here and in git. Nothing lives only in conversation.
+| You are | Do |
+|---|---|
+| On the Mac, game down | `scripts/health.sh --fix`, then the background tasks below, then `open -n menubar/ConveyerMonitor.app --args --open-live` |
+| On the Mac, game up | `scripts/tick.sh` and read what it prints |
+| In a cloud session (no game, no Mac) | Python feeders, unit tests, Lua strings, docs. See "Cloud-safe work" |
+| Back after a Claude crash | The server survives a Claude crash but the workers die with the session. Start with `scripts/tick.sh`, then relaunch the tasks below |
 
-## State (2026-10-02, 17:00)
+Background tasks: run each one as a Claude background task, never with nohup, and refresh any that are older than 15 minutes:
+`scripts/keepbusy.sh`, `.venv/bin/python scripts/livemap.py`, `scripts/livefeed.py`, `scripts/combat.py`, `scripts/snap.py`, `scripts/research_status.py`, `scripts/shuttle.sh`.
 
-v1.0.0 shipped: a rocket and a satellite launched, assisted. Research is done (73 techs). Red, green, blue and purple science run on automated tiles (34 tiles). The labs were console-fed purple and yellow packs for the last techs (`.assist`, `scripts/assist.py`), and the silo, rocket parts and satellite came from `scripts/silo.py`. Say assisted whenever you say v1.0.
+## Live window: where it stands
 
-Goal now: v2.0.0, a legit launch with no console help. The gap list is in roadmap.md under "Gaps to v2.0". The hard parts, with the exact recipes: processing unit (20 circuits, 2 advanced circuits, 5 sulfuric acid), low density structure (20 copper, 2 steel, 5 plastic), rocket fuel (10 solid fuel, 10 light oil), electric engine (lubricant), battery (sulfuric acid). A launch needs about 1,300 processing units, 1,100 low density structures, 1,050 rocket fuel, 200 electric engines, 100 solar panels, 100 accumulators and 5 radars. That means advanced oil processing with cracking, a sulfuric acid plant, a lubricant plant and fluid inputs in the planner.
+What feeds the window today (Mac app `menubar/main.swift`, Python feeders in `scripts/`):
 
-Running (all as Claude background tasks, refresh any older than about 20 minutes): `keepbusy.sh`, `livemap.py`, `livefeed.py`, `research_status.py`, `snap.py`. The monitor app is `menubar/ConveyerMonitor.app`, signed with the Developer ID, Documents permission granted once.
+| Piece | What it does | Cost / problem |
+|---|---|---|
+| `runner.py` basemap | FLE renders the base to a PNG at 16 px per tile. It re-renders only when the base signature changes | 21 to 28 s per render, and the render blocks the runner |
+| `livefeed.py` | Character x/y at 5 Hz; hotbar and silo every 2 s | Opens its own RCON connection |
+| `livemap.py` | Machine status dots at 1 Hz | Opens its own RCON connection |
+| `combat.py` | Enemies and firing turrets at 2 Hz | Opens its own RCON connection |
+| App `MarkerModel` | `stat`s 8 JSON files every 0.2 s and runs a 60 Hz ease timer | The timer keeps firing even when nothing moves |
+| Factorio VM | 10x game speed | About 64% CPU. The biggest single cost. Game speed does not follow load yet |
 
-## The one rule that explains most of this repo
+Every feeder already sleeps unless `.watching` is fresh (touched less than 8 s ago), so the cost with the window closed is near zero. Last measured grade: QA A-, efficiency B+.
 
-FLE's Lua state cannot be saved. An autosave kills the server. So any crash or restart reverts the world to the 10:55 copy, and everything built or researched since is gone. Defense is replay, not saves:
-- research: scripts/journal.py (snapshot is automatic, restore re-marks techs researched)
-- oil block: scripts/oil.py
-- science tiles: scripts/planner.py replay (plan in .world/tiles.json)
-- circuit assembler: scripts/advcircuit.py place
-- copper farm (north patch ~470 tiles up, 6 slots, 65-pole bridge, only other copper is 450+ tiles away): scripts/ironfarm.py 24 copper
-- 12 labs (was 3; research was the wall): scripts/labs.py
-- sulfur plant + 90-tile water line from the east shore: scripts/sulfur.py (run after oil.py)
-- iron farm (west patch, 10 drill-furnace-chest slots + pole bridge to the main grid): scripts/ironfarm.py (slots frozen in .world/ironfarm.json; delete it to rescan)
-Every new build gets a replay script the same hour it is built.
+## Live window: plan (one step per tick, commit each)
 
-- Live view: the menu bar popover has 2/5/10/30 s buttons and a Detach button that opens a resizable "Conveyer live" window. The choice is written to `.live`; runner.py captures and research_status.py repaints at that pace (floor 2 s, default 8 to 10 s). A 2 s setting costs about a second of CPU per frame, so leave it at 10 when nobody is watching. QA without clicking: `ConveyerMonitor --snapshot out.png [--live]`.
+1. **One feeder.** Write `scripts/stream.py` to replace livefeed, livemap and combat. It uses one RCON connection and one Lua call per frame, with tiered rates: position at 10 Hz, dots at 1 Hz, combat at 2 Hz, hotbar and silo at 0.5 Hz. It writes a single `stream.json` atomically. Keep the old files written until the app reads only the new one. *Cloud-safe: write it with a fake RCON client and tests.*
+2. **Deltas.** The Lua keeps the last machine statuses in `storage` and returns only the ones that changed, plus a full snapshot every 30 s. *Cloud-safe except the final check.*
+3. **App reads one file, and only when it changes.** Swap the 0.2 s poll of 8 files for a `DispatchSource` file watch on `stream.json`. Run the 60 Hz ease timer only while the marker is moving. *Mac only (Swift build).*
+4. **Tiled basemap.** Render 32x32 chunks, cache each chunk's PNG under the hash of its entities, and re-render only the chunks that changed, off the runner thread. This fixes the 28 s block. *Mac plus game.*
+5. **Game speed follows load.** Run at 10x when the machine is idle and drop to 3x when it is hot (`scripts/speed.py`, `scripts/cpu_guard.sh`). *Mac plus game.*
+6. **QA.** Take screenshots with `ConveyerMonitor --snapshot out.png --live` and measure CPU with `ps` with the window open and closed. Put the before and after numbers in the grades table below.
 
-## Live preview plan (in progress, started 2026-10-02 14:40)
-
-Goal: a truly live preview instead of refresh-every-x, super efficient. Done when it runs at 5 Hz or better under 5% of one core with the window open, and idle cost is near zero with it closed.
-Design: a static basemap (terrain + entities) re-rendered only when the entity set changes, plus a tiny live overlay (character position, machine status dots, research %) from one cheap RCON call at 5 to 10 Hz, drawn by the menu bar app on top of the basemap. The basemap is centered on the character at capture time at 16 px per tile; frame.json records that center so overlay positions map to pixels.
-Steps, one per tick, commit each:
-1. Viewer heartbeat. The app touches `.watching` while the popover is open or the live window is visible. runner.py and research_status.py render only when it is fresh (under 8 s), otherwise once a minute. DONE when measured idle cost drops.
-2. Change detection: hash the entity list from one RCON call; re-render the basemap only on change or every 60 s.
-3. Overlay feed: scripts/livefeed.py writes live.json at 5 to 10 Hz (character x/y, working machines, research %, tick). The Swift app reads it and draws the marker.
-4. CPU-aware: skip frames above 80% system CPU; game speed follows load (10 when idle, down to 3 when hot).
-5. QA by screenshot and by `ps` CPU deltas; record before and after numbers here.
-Baseline and results table:
+Done when: the window is open at 5 Hz or better and every feeder plus the app together stays under 5% of one core. With the window closed, idle cost is roughly 0.
 
 ### Live view grades
 
 | When | QA | Efficiency | Notes |
 |---|---|---|---|
-| 14:55 | A- | B+ | Full screen 1:1, status card top-left, no refresh option, original hard-hat figure moves live (5 Hz feed), basemap re-renders only on base change. Window open: runner 0.1%, app 0.0 to 0.7%, livefeed 0.1%. Closed: everything near 0. Fixed today: runner built its renderer every 3 s (30% CPU), now only when it renders. |
-| open | | | Opening after a long idle shows the last basemap until the next change or 60 s; first render after an edit takes 21 to 28 s and blocks the runner. Game speed (the Factorio VM, ~64% CPU at 10x) does not yet follow load: that is the biggest remaining cost. |
+| 2026-10-02 14:55 | A- | B+ | Window open: runner 0.1%, app 0 to 0.7%, livefeed 0.1%. Closed: near 0 |
+| | | | |
 
-- Blue science is now the research bottleneck (2026-10-02 14:40). Red and green only techs left: mining-productivity-1, weapon-shooting-speed-2, modular-armor, efficiency-module, explosives, bulk-inserter, circuit-network, landfill, fluid-wagon (queue them so labs never idle). Everything on the silo path from here needs chemical packs: add 'chemical-science-pack' to planner.py TARGETS. Needs engine units (steel, gear, pipe), advanced circuits (tile), and sulfur (a second chemical plant on the petroleum pipe, needs water; none in the east base yet).
-- Wide screenshots (touch .wide) render the whole base, 2,700 entities, 28 s a frame. Off by default. The app shows the square map sharp at about 1:1 over a blurred copy instead of magnifying it. Real fix: incremental basemap (live preview plan, step 2).
+## Cloud-safe work (no game, no Mac)
 
-- Blue science plan (2026-10-02 15:05): planner.py TARGETS now include chemical-science-pack, so the keeper builds pipe, engine-unit, advanced-circuit and chemical-science-pack tiles one per pass. Still missing: sulfur (a chemical plant on the petroleum pipe plus water: the nearest water is the boiler pumps near (57,-7) to (88,-22), about 95 tiles east of the oil block, so pipe the gas there or water here) and plastic for the advanced-circuit tile (the plastic sits in the chemical plant's output slot, not a chest: add it as a provider in planner.py supply). Red-green techs queued so labs stay busy: inserter-capacity-bonus-1, circuit-network, solar-panel-equipment, cliff-explosives, landfill, fluid-wagon.
+- `scripts/stream.py` plus tests with a fake RCON client (plan steps 1 and 2).
+- Pure-function tests for `planner.py` (`tests/` has three test files so far).
+- Docs and roadmap pruning.
+- Not possible: Swift builds, anything that needs RCON, screenshots, CPU numbers.
 
-- Low density structure stuck at 0 (2026-10-02 20:30): three causes stacked. (1) Five of eight NW pumpjacks had no pole beside them, so crude stalled: oilfield2.py now powers every pumpjack, rerun it after a revert. (2) Coal dropped on the ground by a boiler inserter (its boiler had been destroyed) blocked the rebuild at x 47.5 and 43.5, cutting water to six boilers and the grid went low_power: clear `item-on-ground` and corpses there, then `scripts/power.py 10`. (3) Barrels were scarce: `scripts/barrels.py stock 400`. Plastic is the input the LDS tiles wait on; one plant makes 2 a second. Then steel ran out (nothing made it): scripts/steelfeed.py feeds the steel furnaces iron plates every pass, and LDS buffer is capped at 40 crafts (wooden chest = 16 slots). fuelsupply.py had been silently failing since keepbusy ran it after a cd with a relative venv path.
+## Rules that explain most of the repo
 
-## Known macro bottleneck (15:15)
-
-Raw plates. Tiles starve on iron and copper (copper-cable and gear tiles show shortage while the labs hold hundreds of red and only ~23 green). Earlier survey: 21 steel furnaces no_ingredients (ore not arriving), 6 outpost drills unpowered until the west boiler is fueled (keepbusy tops it up every 5th pass), 13 drills waiting on full belts. Next chunk after sulfur: trace ore to plates and raise plate output into the chests the planner draws from.
-
-## Purple prep (v0.4.6)
-
-scripts/ironfarm.py 10 stone: stone drill into steel furnace makes brick by itself, 2 slots fit on the near stone patch (152k ore). Production science needs brick (electric furnace) and stone (rails): about 20k stone total. Tech chain in the queue: advanced-material-processing-2, then production-science-pack. When both are done: add "production-science-pack" to TARGETS and MULT in planner.py, and add the pack to queue.py PACKS only once the tile makes packs.
-
-## Power (v0.4.4)
-
-Tiles read low_power once farms, 12 labs and 20 tiles came online: the grid was about 9 MW. scripts/power.py builds 5 boilers and 10 engines on the east shore (+9 MW), each boiler fed by an inserter from a coal chest that the script tops up from the big stores; keepbusy runs it every 5th pass. Pump must sit at (56.5,-0.5) facing east: can_place_entity accepts dry shore, so confirm water by fluid in the pipe. Next power step if needed: 5 more columns (power.py 10).
-
-## Scaling the blue chain (v0.4.3)
-
-Labs sat idle on blue: one advanced-circuit assembler made 0.125/s against 12 labs. planner.py MULT now builds several tiles per item (adv circuit 3, engine 4, chem pack 4, cable 2, EC 2, red 2, green 3), one new tile per 20 s pass. Plastic plant has a coal chest and inserter (hand-feeding 50 coal lasted 5 s at 10x). Watch cells for BLOCKED skips and raw plate draw.
-
-## Throughput notes (v0.4.2)
-
-At 10x game speed a tile outruns a 60 s refill, so keepbusy now passes every 20 s and tile buffers hold 300 crafts. Iron is fine (18k plates in chests, 16 drills). Copper is the next wall: blue alone needs about 25k copper, the whole path 60k+, and the only near patch is built over. Copper farm placed on the north patch (6 drills, 0 to 6 working). More copper: the (5,-8) and (6,-8) 64-tile regions (1.5M ore, x 320 to 450, y -512 to -450) or mining-productivity techs.
-
-## Blue research running (v0.4.0)
-
-scripts/queue.py keeps the research queue on the silo path (everything whose packs we make, prerequisites first, cheapest first; add purple and yellow to PACKS when their tiles run); keepbusy calls it every 5th pass. planner.py labs now pulls blue, purple and yellow packs from chests too. First blue research: advanced-oil-processing, 12 techs queued. Next: purple (production science) and yellow (utility science) tiles in planner TARGETS, sulfuric acid for processing units, then the silo.
-
-## Blue science automated (2026-10-02 16:10, v0.3.0)
-
-Sulfur plant at (-30.5,-8.5) on the plastic plant's gas pipe, water by underground pipe along y=-5.5 from a new offshore pump at (55.5,-4.5) (a pump's output faces opposite its direction, and it is 1x2). planner.py pulls sulfur from the plant like plastic. The chemical-science-pack tile is working. Next: watch blue packs reach the labs, queue chemical-pack techs, then purple (production science: electric furnace, productivity module, rail) and yellow (utility: processing unit needs sulfuric acid, flying robot frame, low density structure).
-
-## Iron farm (2026-10-02 15:40, v0.2.0)
-
-Built scripts/ironfarm.py: electric drill into steel furnace into inserter into wooden chest, 10 slots on the west patch (16 iron drills now), medium-pole chain joins the outpost to the main grid. Chests collect plates and the planner supply pulls from any chest. First minute: 414 plates. Fuel: furnaces burn 20 coal in 90 s at 10x, fuel.py now fills to 50. Next: more slots (west patch has room once the old outpost is cleared around), then sulfur and the blue tiles.
-
-## Plate survey (2026-10-02 15:12)
-
-Chests hold copper 6,972, steel 12,934, coal 60,679 but iron plate only 581 and iron ore 0. Iron is THE bottleneck, not copper or steel. Next chunk: find why iron drills stall (5 no_power, furnaces no_ingredients) and add iron drills plus smelting, scripted as a replay. RAM was 14% free this tick with other sessions open; game held at 2x.
-
-## After a Claude session crash (do this first)
-
-State lives in git and the game, never in the chat. The server, colima and runner survive a session crash; the workers and the loop do not.
-1. `scripts/tick.sh` (health, replays, status). It spawns nohup workers that die when the call ends, so kill those by PID (never `pkill -f`).
-2. Relaunch as Claude background tasks (run_in_background): `scripts/keepbusy.sh`, `.venv/bin/python scripts/livemap.py`, `scripts/livefeed.py`, `scripts/snap.py`, `scripts/research_status.py`, and `scripts/shuttle.sh` (fast crude barrels).
-3. Live window: `open -n menubar/ConveyerMonitor.app --args --open-live`.
-4. Check `.venv/bin/python scripts/ledger.py` (worst gap first), then re-arm the loop: `/loop until game is beat or we hit next major version. keep close eye on claude usage.`
-5. Commit by exact path after every chunk so a crash loses at most one tick.
-
-## Tick (what the loop does every ~20 min)
-
-0. Run `scripts/tick.sh`: one call that does step 1 (health, restarts, replays), sets game speed from CPU load, and prints research, silo path, labs, every tile's status, usage, and what changed since the last tick (it flags a milestone when the silo path advances). Then do ONE chunk. The numbered steps below are what it covers.
-1. `scripts/health.sh --fix`. Prints every moving part, starts what is down, and if the world reverted it replays journal, fuel, oil and tiles. Exit code is the number of open problems. If usage says 90% or more (session or weekly), run /checkpoint and stop the loop. No kill.
-2. Read research.json. Keep the research queue on the silo path (RCON: `F.research_queue = {...}`), cheapest red and green techs first while blue is built.
-3. Do ONE small chunk toward the next milestone. Order: automate blue science (sulfur plant, engine unit tile, advanced circuit tile, blue pack tile through planner.py), then purple, then yellow, then the silo.
-4. At a milestone: `scripts/milestone.py NAME frame` around the build, `finish`, send the GIF, then `scripts/ship_landing.sh "<milestone>"`. Walk the character to the build first so the map centers on it. Stop keepbusy while recording (two step.sh callers shift results).
-5. Commit and push by exact path. Bump VERSION (patch per fix, minor per milestone), then `git tag vX.Y.Z && git push --tags && gh release create vX.Y.Z --generate-notes`. One TLDR line to Joshua.
-
-## Gotchas that cost time
-
-- step.sh takes one caller at a time. keepbusy, planner, oil, fuel, journal use RCON only and are safe beside it.
-- Never `pkill -f` a pattern that appears in your own command line. Use the `[x]` trick or a PID.
-- Every wait loop needs a deadline. A wait on a file's age ran 39 minutes once.
-- A tool result that says "Cannot execute command ... must be used" means a bare function call in Lua. Lua here is 5.2: no `//`.
-- Autosave, a second science runner, Steam and the full game client each caused trouble. Do not start any of them without a RAM check (health.sh prints it, keep 40% free).
-- Screenshots: scripts/terrain.py paints ground under the FLE render; the renderer is patched in runner.py to drop the grid and alert triangles. scripts/realshot.sh is an experiment to get true-graphics shots from the real client.
-
-## Files
-
-health.sh, steelfeed.py, journal.py, oil.py, advcircuit.py, planner.py, keepbusy.sh, ship_landing.sh, milestone.py, world.sh, fuel.py, withdraw.py, feedlabs.py, terrain.py, snap.py, research_status.py (all in scripts/).
-
-# History
-
-
-## Every milestone
-
-Run `scripts/ship_landing.sh "<milestone>"`. It repaints the map, rebuilds the landing page and README progress, commits, deploys to conveyer.heyitsmejosh.com and checks the live page. Open: the map centers on wherever the character stands (now the stone patch), not the main base. Walk the character to the hub before the shot.
-
-## After any restart
-
-The server cannot save (FLE state), so it always boots the 10:55 copy. Run `scripts/withdraw.py coal 600`, `scripts/fuel.py`, then `scripts/oil.py` (refinery + plastic, 100 plastic in under a minute). Script every new build the same way so a crash costs seconds.
-
-## Latest: runs on the real save, memory fixed, goal is a rocket
-
-Fixed: the 18 GB balloon was get_entities() scanning the whole base every observation. Runner caps it at 30 tiles; it idles at about 165 MB. Menu bar stays down after a stop or memory kill and only restarts while the server is up. `scripts/world.sh` puts the server on a copy of a.zip. `scripts/snap.py` copies a screenshot into shots/ and logs a benchmark row (entities, steps, ok, rss) to shots/bench.jsonl every 5 min, and stops when runner.pid is gone.
-
-Base at start (benchmark baseline): 2316 entities, 39 techs researched, 3 labs, 36 assembler-2, 27 electric drills, 41 steel furnaces, 6 boilers, 10 engines. Researching flammables. Open: advanced-circuit, sulfur-processing, solar-energy, concrete. rocket-silo is not researched.
-
-Goal: build a rocket and launch it. Order: keep labs fed so research never stalls, then oil (pumpjack exists), advanced circuits, plastic, sulfur, then utility and production science, then the silo. Do not clear anything in the base. Skills ask for direction as UP/DOWN/LEFT/RIGHT; harvest then mine places a drill; smelt needs the drill already there.
-
-# (older) 2026-10-02 morning
-
-## Latest: running on Joshua's real world (a.zip copy)
-
-Done: smelt is idempotent and checks coal (bootstrap harvests 70 now). `scripts/world.sh` swaps the server onto a copy of the save (`scripts/world.sh back` returns to stock). `runner.py --keep-world` skips FLE's reset, adopts the save's character, keeps biters. runner.lock stops duplicate runners. Memory guard kills the runner at 3 GB and dumps stacks. Menu bar respawns at most every 10 min.
-
-Broken: on the real base (2316 entities) the runner balloons to 18 GB during init and filled swap, which froze the Mac. The server is stopped (`docker stop conveyer-world`) and the menu bar is quit. Find what balloons (likely initialise: _generate_chunks radius 25, or score/entity serialisation over the whole base), fix it, then `scripts/world.sh` and run. Joshua's character is not in the save, so the agent spawns at his last position (-51,-35).
-
-Goal: agent keeps building the base, mines iron and steel, fights biters with guns and grenades. Send Joshua logs and screenshots at milestones.
-
-# (older) Conveyer loop handoff (2026-10-01, evening)
-
-## What the loop is
-
-A Claude `/loop` that wakes every 10 to 20 minutes, runs `scripts/tick.sh`, does one chunk of work toward v2.0.0 (a legit launch, no console help), bumps VERSION, tags, pushes and releases. Between ticks the game keeps running on its own: `keepbusy.sh` builds and feeds tiles every 20 seconds, so the factory does not need Claude to move. Five background tasks must stay alive as Claude background tasks (children started with nohup die when the tool call ends): `keepbusy.sh`, `livemap.py`, `livefeed.py`, `snap.py`, one `research_status.py`. Refresh any older than about 20 minutes.
-
-## Where things stand
-
-v1.1.0 (2026-10-02, evening). v1.0.0 launched a rocket with a satellite with help (`scripts/assist.py`, `scripts/silo.py`). Red to purple science is automated, 42 tiles. Legit pieces built: low density structure, solar panel and radar tiles, a sulfuric acid plant, four processing unit assemblers (`scripts/acid.py`), a battery plant. The wall is oil: one pumpjack at 44 percent yield feeds the refinery through a 320 tile pipe, and joining more pumpjacks to that pipe kills all flow (tested eight ways). New approach, built and being verified: the four rich wells fill barrels at the field and the loop shuttles them to an emptier beside the refinery (`scripts/barrels.py`, `barrels.py move` runs every pass).
-
-## Next, in order
-
-1. Confirm barrels deliver crude (refinery duty cycle up from 34 percent), then cut the old long pipe near the refinery.
-2. Advanced oil processing with water at the refinery, heavy and light cracking, solid fuel, rocket fuel, lubricant and electric engines.
-3. Concrete, accumulators, then a real silo assembly, 100 rocket parts and a satellite from tiles, with `.assist` off.
-4. Tests for the planner's pure functions, crash replay for every new build (`health.sh --fix` already calls acid.py and barrels.py).
-5. When the legit launch happens, record the final stretch at 1x to 2x as a video for the landing.
+- **FLE state cannot be saved.** Every crash rolls the world back to the 10:55 copy. The defense is replay scripts, not saves: `scripts/health.sh --fix` runs all of them. Every new build gets its own replay script the same hour it is built.
+- **`step.sh` takes one caller at a time.** Two callers shift every later result by one. The RCON-only scripts are safe to run alongside it.
+- **Never `pkill -f` a pattern that also appears in your own command line.** Kill by PID.
+- **Every wait loop needs a deadline.**
+- **RAM: keep 40% free** (`health.sh` prints it). Never start autosave, Steam or the full game client.
+- **Lua is 5.2:** no `//` operator. A `--` comment inside a joined RCON line silences the rest of it.
+- **Assisted is not legit.** Say "assisted" whenever console help was involved.
 
 ## Restart prompt
 
-Loop paused. Paste this when ready to resume:
-
 ```
-/loop Conveyer until no roadmap tasks, no open issues, all PRs merged, then /checkpoint. Hard stop at 90% usage. Read docs/LOOP-HANDOFF.md and roadmap.md. Note: finishing is out of reach on this budget (huge majors, new games, rented server all blocked). Each tick: cd ~/Documents/Code/conveyer, check off verified-done items, do cheapest open item, bump VERSION, tag, push. Keep keepbusy.sh, livemap.py, livefeed.py, snap.py, research_status.py running as Claude background tasks, refresh any older than 15 minutes. World copy at fle/env/tools/admin/render runs on Joshua's real save, 2316 baseline entities. Any crash: scripts/health.sh --fix, then relaunch background tasks. Lessons: inserter direction is the pickup side; read position after place; assemblers set direction after create; no Lua in joined RCON strings.
+/loop Conveyer live window. Read docs/LOOP-HANDOFF.md. Each tick: cd ~/Documents/Code/conveyer, scripts/tick.sh, do the next unchecked step of "Live window: plan", measure CPU before and after, update the grades table, bump VERSION, tag, push. Keep the background tasks listed in the handoff running as Claude background tasks, refresh any older than 15 minutes. Any crash: scripts/health.sh --fix, then relaunch them. Never join with a real client. Hard stop at 90% usage.
 ```

@@ -25,16 +25,16 @@ Any LLM that takes chat JSONL works the same way: Llama 3.2 1B, Qwen3 0.6B, Gemm
 
 Hold out `data/valid.jsonl`. Score the exact skill name first, then the parameters. Beat the plain base model before trusting it, and run it against the live server before it plays on the real save.
 
-## First result (2026-10-05)
+## Result (2026-10-05)
 
-Qwen2.5-0.5B-Instruct, LoRA, 600 iterations, batch 4, 681 train and 77 valid examples. `python3 eval/score_adapter.py` (run it from the repo root, not `scripts/`, which has a `queue.py` that shadows the stdlib):
+Qwen2.5-0.5B-Instruct, LoRA, 600 iterations, batch 4, 681 train examples. Scored with `scripts/eval_picker.py` on the 79 held-out examples (`.venv/bin/python scripts/eval_picker.py --model Qwen/Qwen2.5-0.5B-Instruct --adapter conveyer-adapter`). `eval/history.jsonl` keeps every run.
 
-| | skill name | name and params |
+| run | skill name | params exact |
 |---|---|---|
-| base model | 1/77 (1%) | 0/77 |
-| LoRA adapter | 59/77 (77%) | 56/77 (73%) |
+| best before (adapter7, 2 Oct) | 59% | 43% |
+| this adapter (5 Oct) | 71% | 63% |
 
-It beats the base model by a wide margin. Not yet run against the live server, so it does not play the real save. Next: look at the 18 misses, then more runs for data.
+Always valid JSON. The misses cluster: it swaps `peek` and `inspect` (near twins after a build), and it picks `belt` with the wrong `from_prototype` (StoneFurnace for BurnerInserter). Not yet run against the live server, so it does not play the real save. Next: more runs for data, and a dry run that prints its pick on live observations without executing.
 
 ## Export
 

@@ -1,0 +1,1 @@
+{"n": 79, "valid_json": 1.0, "skill_name": 0.7088607594936709, "params_exact": 0.6329113924050633, "model": "Qwen/Qwen2.5-0.5B-Instruct", "adapter": "conveyer-adapter", "label": "fp-lora-oct5", "time": "10-05 08:28"}

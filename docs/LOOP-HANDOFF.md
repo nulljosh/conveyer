@@ -1,6 +1,6 @@
 # Conveyer loop handoff
 
-Updated 2026-10-05. v2.1.6. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
+Updated 2026-10-05. v2.1.7. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
 
 ## TLDR
 

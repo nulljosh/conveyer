@@ -6,7 +6,7 @@ The game only makes progress while its window is visible, so run it with the dis
 Assisted label: the policy reads what the player sees on screen, a public-guide table of good topic and genre pairs (GOOD), plus read-only game state (GameManager.state for the idle check,
 company cash and week). It never writes cash, dates or saves. The bank's bailout is a normal in-game choice.
   gdt_play.py [--minutes 30] [--new]"""
-import argparse, json, random, subprocess, sys, time
+import argparse, json, random, re, subprocess, sys, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -26,7 +26,7 @@ GOOD = {
 GOOD = {g: {t.strip() for t in v.replace("Extreme Sports", "Extreme_Sports").replace("Martial Arts", "Martial_Arts").replace("Alternate History", "Alternate_History").replace("Post Apocalyptic", "Post_Apocalyptic").replace("Mad Science", "Mad_Science").replace("Time Travel", "Time_Travel").replace("Wild West", "Wild_West").replace("Virtual Pet", "Virtual_Pet").replace("Game Dev", "Game_Dev").replace("Sci-Fi", "Sci-Fi").split()} for g, v in GOOD.items()}
 GOOD = {g: {t.replace("_", " ") for t in ts} for g, ts in GOOD.items()}
 GENRE_ORDER = ["RPG", "Action", "Adventure", "Strategy", "Simulation", "Casual"]
-DESK_POINTS = [(761, 470), (780, 480), (740, 460), (800, 500)]   # the computer in the garage; later offices differ, the scan tries each
+DESK_POINTS = [(761, 470), (1207, 823), (1166, 782), (780, 480), (960, 760), (740, 460), (800, 500)]   # garage desk, then guesses for the first office   # the computer in the garage; later offices differ, the scan tries each
 
 
 def items(s):
@@ -106,7 +106,10 @@ class Driver:
                 import re
                 m = re.search(r"Marketshare: ([\d.]+)", it["text"]); return float(m.group(1)) if m else 0
             cash = self.cash(s)
-            rich = [o for o in options if cost(o) * 1000 <= cash * 0.15]   # a platform may cost at most 15% of the cash in hand
+            def licence(it):
+                import re
+                m = re.search(r"License cost: ([\d.]+)K", it["text"]); return float(m.group(1)) if m else 0.0
+            rich = [o for o in options if (cost(o) - licence(o)) * 1000 <= cash * 0.15 and licence(o) * 1000 <= cash * 0.05]   # dev cost within 15% of cash, a licence within 5%
             choice = max(rich, key=share) if rich else min(options, key=cost)
         elif kind == "topic":
             def strong(o): return sum(o["text"].strip() in GOOD[g] for g in GOOD)   # topics the game pairs well with the most genres
@@ -122,7 +125,8 @@ class Driver:
 
     def cash(self, s):
         import re
-        m = re.search(r"Cash: (-?[\d.]+)K", s["text"]); return float(m.group(1)) * 1000 if m else 0.0
+        m = re.search(r"Cash: (-?[\d.,]+)([KMB]?)", s["text"])   # 937K, 1M, 1.2M
+        return float(m.group(1).replace(",", "")) * {"": 1, "K": 1e3, "M": 1e6, "B": 1e9}[m.group(2)] if m else 0.0
 
     def start_game(self):
         s = gdt.state()
@@ -180,8 +184,13 @@ class Driver:
         if "which one would you like to load" in low:   # cloud and local autosaves differ after a restart: only ever our own studio's
             mine = next((i for i in items(s) if "conveyer games" in i["text"].lower() and len(i["text"]) < 200 and "which one" not in i["text"].lower()), None)
             if mine: self.click(mine, "load our own autosave"); return True
-        if "acquire license?" in low and find(s, "no"):
-            self.click(find(s, "no"), "no licence purchase"); self.repicked = False; return True   # licences cost 50K to 80K: never, at this size
+        if "acquire license?" in low:
+            def exact(word): return next((i for i in items(s) if i["text"].strip().lower() == word), None)   # not find(): "no" also starts "No, thanks"
+            m = re.search(r"pay ([\d,]+)", s["text"]); price = float(m.group(1).replace(",", "")) if m else 1e12
+            yes, no = exact("yes"), exact("no")
+            if yes and price <= self.cash(s) * 0.05:   # a licence is worth it only when it is small change
+                self.click(yes, "buy licence"); self.note(action="licence bought", price=price); return True
+            if no: self.click(no, "no licence purchase"); self.repicked = False; return True
         if "game concept" in low and (find(s, "next") or find(s, "start development")):
             self.unknown_since = None; return self.concept(s)
         if "click to continue" in low and find(s, "click to continue"): it = find(s, "click to continue")
@@ -233,7 +242,7 @@ class Driver:
                      and i["text"].strip().lower() not in ("sign up", "no, thanks", "trash game") and "no (go bankrupt)" not in i["text"].lower()
                      and 0 < len(i["text"].strip()) < 60]
             def price(i):   # "Transfer (29K)" asks for money: an event choice that costs something is taken last (the first run paid a scam 29K)
-                m = _re.search(r"\(([\d.]+)([KM]?)\)", i["text"]); return float(m.group(1)) * {"": 1, "K": 1e3, "M": 1e6}[m.group(2)] if m else 0.0
+                m = _re.search(r"([\d.]+)\s*([KM])\b", i["text"]); return float(m.group(1)) * {"K": 1e3, "M": 1e6}[m.group(2)] if m else 0.0   # "Transfer (29K)", "Move (pay 150K)"
             guess = min(cands, key=price) if cands else None
             if guess: self.click(guess, "guess for unknown dialog"); self.note(action="guessed", screen=rec["screen"], pressed=guess["text"][:40])
         if waited > 120: print("stuck on an unknown screen:", rec["screen"], flush=True); return False

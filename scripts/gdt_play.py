@@ -57,23 +57,46 @@ class Driver:
         self.log = open(out / f"{int(time.time())}.jsonl", "a")
         self.end, self.want_new, self.unknown_since, self.last, self.last_guess = time.time() + minutes * 60, want_new, None, None, 0.0
         self.used = {}      # (kind, name) -> times picked
-        self.rng, self.topic, self.attempts, self.max_attempts, self.last_over, self.repicked = random.Random(7), None, 0, 6, None, False
+        self.rng, self.topic, self.attempts, self.max_attempts, self.last_over, self.repicked, self.same, self.last_click = random.Random(7), None, 0, 6, None, False, 0, None
 
     def note(self, **kw):
         kw["t"] = round(time.time()); self.log.write(json.dumps(kw) + "\n"); self.log.flush()
 
     def click(self, it, why):
+        key = (why, it["text"][:40])
+        self.same = self.same + 1 if key == self.last_click else 0
+        self.last_click = key
+        if self.same >= 12:
+            self.same = 0; s = gdt.state()
+            close = next((i for i in s["items"] if "closeDialogButton" in i["cls"]), None)
+            self.note(action="loop detected", item=key[1], why=why, closing=bool(close))
+            if close: gdt.send("click", i=close["i"], gen=s["gen"]); time.sleep(0.6)
+            return False
         s = gdt.state(); r = gdt.send("click", i=it["i"], gen=s["gen"])
         self.note(action="click", item=it["text"][:40], why=why, ok=r.get("ok")); time.sleep(0.5); return r.get("ok")
 
+    def open_options(self, s, kind):
+        """The choices a picker is showing right now, found by what they look like, not by list position (the picker may already be open)."""
+        central = [i for i in items(s) if 300 < i["x"] < 1650 and 180 < i["y"] < 960 and i["kind"] == "button" and i["text"].strip()]
+        if kind == "platform":   # the list scrolls once there are more than three platforms, so take the off-screen ones too
+            return [i for i in s["items"] if i["kind"] == "button" and "dev. cost" in i["text"].lower() and i["text"].lower().count("dev. cost") == 1]
+        skip = ("pick ", "next", "start development", "trash", "finish", "ok", "close")
+        out = []
+        for i in central:
+            t = i["text"].strip()
+            on_slot = 900 < i["x"] < 1020 and any(abs(i["y"] - y) < 20 for y in (368, 440, 512))   # the three chosen-value buttons sit under the picker
+            if on_slot or len(t) > 24 or "?" in t or t.lower().startswith(skip) or i["x"] > 1400 or not 300 < i["y"] < 800: continue
+            if (t in GENRE_ORDER) == (kind == "genre"): out.append(i)
+        return out
+
     def pick(self, kind, picker_text):
-        """Open a picker (topic, genre, platform) and choose from what it lists: the least used, cheapest-first for platforms."""
-        s = gdt.state(); opener = find(s, picker_text.lower())
-        if not opener: return False
-        before = {it["i"] for it in items(s)}
-        self.click(opener, f"open {kind}"); time.sleep(0.4)
-        s = gdt.state()
-        options = [it for it in items(s) if it["i"] not in before and it["text"].strip() and "close" not in it["cls"]]
+        """Choose from a picker (topic, genre, platform), opening it first if it is not already open."""
+        s = gdt.state(); options = self.open_options(s, kind)
+        if not options:
+            opener = find(s, picker_text.lower())
+            if not opener: return False
+            self.click(opener, f"open {kind}"); time.sleep(0.4)
+            s = gdt.state(); options = self.open_options(s, kind)
         if not options: return False
         if kind == "platform":
             def cost(it):   # dev cost plus any licence still to buy, in thousands
@@ -154,6 +177,11 @@ class Driver:
         rec = {"screen": text[:260].replace("\n", " | ")}
         low = text.lower()
         it = None
+        if "which one would you like to load" in low:   # cloud and local autosaves differ after a restart: only ever our own studio's
+            mine = next((i for i in items(s) if "conveyer games" in i["text"].lower() and len(i["text"]) < 200 and "which one" not in i["text"].lower()), None)
+            if mine: self.click(mine, "load our own autosave"); return True
+        if "acquire license?" in low and find(s, "no"):
+            self.click(find(s, "no"), "no licence purchase"); self.repicked = False; return True   # licences cost 50K to 80K: never, at this size
         if "game concept" in low and (find(s, "next") or find(s, "start development")):
             self.unknown_since = None; return self.concept(s)
         if "click to continue" in low and find(s, "click to continue"): it = find(s, "click to continue")

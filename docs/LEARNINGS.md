@@ -59,3 +59,11 @@ view had just reached its third rocket. The map preview exists for exactly this 
 now refuses to run. A true-graphics view needs the save problem fixed first (find what the FLE Lua helpers put in `storage` that cannot be serialized).
 - FLE cannot parse underground belts: while one exists near the engineer every skill call returns "Error getting entities while getting observation" (even a harmless one), and it clears when the undergrounds are removed. Tested 2026-10-04 on the real save. router.py still supports undergrounds (tested, and the pair links correctly in game), but route_belt uses belts only until FLE is fixed.
 - FLE's can_place_entity reads every tile as blocked unless the engineer holds the item, so route_belt asks the game directly (router.scan_lua) and places with create_entity (router.place_lua), like the planner.
+
+## 2026-10-05: first live runs of the trained picker, and a second game
+
+- **The picker plays the opening for real.** On a fresh `iron_plate_throughput` map it found iron, mined with burner drills, smelted, placed an assembler and an inserter, and connected belts: 12 of 13 calls ran, reward 15. It then repeats `belt` forever. The retry (temperature 0.8) and a "that already worked, pick the next step" nudge in the prompt changed nothing, because the picker is greedy and was never trained on what comes after the first belt. The fix is data, not a louder prompt: runs that continue past the belt, or a planner that takes over after the opening.
+- **mlx_lm.server trap.** A request whose `model` is anything other than `default_model` loads the plain base model without the adapter. The base model answered with a made-up skill ("Crafting"). Pass `--model default_model`.
+- **macOS 27 refuses Don't Starve** ("damaged") even after re-signing and clearing the attributes. Uninstalled. FEZ and Papers, Please launch.
+- **Game Dev Tycoon runs through a no-network mod** (`games/gdt/`), and its development only progresses while the window is visible, so a run needs the screen for about two hours. Details in `games/gdt/README.md`.
+- **Colima wedges** after long sessions: the CLI says the daemon is not running while the host agent is alive. `colima stop --force` then `colima start` fixes it, and the Factorio container comes back with it.

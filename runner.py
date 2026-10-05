@@ -233,7 +233,7 @@ def main() -> None:
             image.save("preview.png")
             if not square and WIDE["c"]:
                 (Path(__file__).with_name("frame.json")).write_text(json.dumps(
-                    {"cx": WIDE["c"][0], "cy": WIDE["c"][1], "w": image.size[0], "h": image.size[1], "ppt": 16, "t": time.time()}))
+                    {"cx": float(renderer.offset_x), "cy": float(renderer.offset_y), "w": image.size[0], "h": image.size[1], "ppt": 16, "t": time.time()}))   # the picture is centred where the renderer put its origin (the engineer at render time), not on the view point: claiming the view point shifted every dot and marker by about 14 tiles (#45)
             import resource
             print(f"[runner] frame {image.size[0]}x{image.size[1]} {len(renderer.entities)} entities {time.time() - t0:.1f}s peak {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1048576} MB", flush=True)
             print(f"[runner] screenshot entities: {entity_names}", flush=True)

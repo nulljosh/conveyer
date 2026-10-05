@@ -33,10 +33,13 @@ def view_center():
     try: x, y = [float(v) for v in Path(__file__).with_name(".focus").read_text().split(",")[:2]]; return (x, y)
     except Exception: return VIEW_C
 VIEW_C = (-24.5, 44.0)  # the wide picture is always centered here (the tile area), so a roaming player never shifts it; the player walks inside it  # last wide render: base signature, player position, time
-VIEW_SIG = ("/silent-command local s=game.surfaces[1] local ch=s.find_entities_filtered{type='character'}[1] local n,h=0,0 "
-            "for _,e in pairs(s.find_entities_filtered{position=ch.position,radius=70,force='player'}) do if e.type~='character' then "
-            "n=n+1 h=(h*31+math.floor(e.position.x*2)*7+math.floor(e.position.y*2)*13+#e.name)%1000000007 end end "
-            "rcon.print(n..':'..h..','..ch.position.x..','..ch.position.y)")
+def view_sig_lua(c):
+    """Cheap signature of the entities inside the picture (the 120 x 92 tile rectangle around c), not around the engineer: the stroll must not
+    change it, and a build anywhere in the picture must. Prints 'count:hash,player x,player y'."""
+    return ("/silent-command local s=game.surfaces[1] local ch=s.find_entities_filtered{type='character'}[1] local n,h=0,0 "
+            "for _,e in pairs(s.find_entities_filtered{area={{%g,%g},{%g,%g}},force='player'}) do if e.type~='character' then "
+            "n=n+1 h=(h*31+math.floor(e.position.x*2)*7+math.floor(e.position.y*2)*13+#e.name)%%1000000007 end end "
+            "rcon.print(n..':'..h..','..ch.position.x..','..ch.position.y)") % (c[0] - 60, c[1] - 46, c[0] + 60, c[1] + 46)
 
 CMD_PATH = Path("runner_cmd.json")
 RESULT_PATH = Path("runner_result.json")
@@ -191,7 +194,7 @@ def main() -> None:
             if not square:
                 try:
                     import factorio_rcon as _fr
-                    sig, px, py = _fr.RCONClient("127.0.0.1", 27000, "factorio", timeout=20).send_command(VIEW_SIG).split(",")
+                    sig, px, py = _fr.RCONClient("127.0.0.1", 27000, "factorio", timeout=20).send_command(view_sig_lua(view_center())).split(",")
                     px, py, now = float(px), float(py), time.time()
                     moved = False
                     if WIDE["sig"] is not None and not moved and now - WIDE["t"] < 600 and (sig == WIDE["sig"] or now - WIDE["t"] < 60):

@@ -34,7 +34,7 @@ Qwen2.5-0.5B-Instruct, LoRA, 600 iterations, batch 4, 681 train examples. Scored
 | best before (adapter7, 2 Oct) | 59% | 43% |
 | this adapter (5 Oct) | 71% | 63% |
 
-Always valid JSON. The misses cluster: it swaps `peek` and `inspect` (near twins after a build), and it picks `belt` with the wrong `from_prototype` (StoneFurnace for BurnerInserter). Not yet run against the live server, so it does not play the real save. Next: more runs for data, and a dry run that prints its pick on live observations without executing.
+Always valid JSON. The misses cluster: it swaps `peek` and `inspect` (near twins after a build), and it picks `belt` with the wrong `from_prototype` (StoneFurnace for BurnerInserter). Live dry run (5 Oct, nothing executed): two prompts built from the real engineer's surroundings. Both returned valid JSON with a skill it knows (`inspect` on a fresh run, `place_inserter` after a build), but the second aimed at a StoneFurnace at the position of an assembling machine. It is an opening picker: its training data is early-game find, mine, craft and place, and the late-game base is scripted, so the live world is outside what it saw. It does not play the real save. Next: more runs for data, then play the opening on the test map (`scripts/world.sh back`), which takes the current world down, so it needs a restart anyway.
 
 ## Export
 

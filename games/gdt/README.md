@@ -6,10 +6,12 @@ Install: copy `conveyer-bridge/` into the game's `mods/` folder and add `conveye
 
 Measured 2026-10-05: the game clock runs at about 15 weeks a minute at normal speed, in front or behind another app. The game ends at Y35 M12 W4 and scores itself.
 
-## First run, 2026-10-05: bankrupt in year 3 (not beaten, and the cause is the screen)
+## Run log, 2026-10-05
 
-The driver (`scripts/gdt_play.py`) pressed the routine dialogs and the studio went bankrupt at Y3 M3 with Game #1 never released: its design and technology points sat at 11 and 11 for two game years. The week counter kept running (about 15 a minute, in front or behind another app) but development did not move while the game window was hidden. Development progress is tied to the rendered office, not only to the clock. So **Game Dev Tycoon only progresses while it is visible on a screen**, and a run needs the Mac's display for about two hours at normal speed (35 years is 1,680 weeks; 15 a minute is 112 minutes). The fast-forward key needs a supporter flag, so there is no speed-up.
+**Correction.** The first run's write-up said development stalls while the window is hidden. That was wrong. The game waits for two button presses at the end of a game: the green **Finish** button under the top bar, then **Release Game** in the dialog that follows. The first driver pressed neither, so Game #1 sat at "Finishing..." for two game years until the studio went bankrupt. Whether the game keeps running while hidden is untested (the clock does: about 15 weeks a minute either way).
 
-Not beaten. Unassisted label for the driver: it reads only the visible screen text, and read-only game state (`GameManager.state`) for the idle check. It never writes cash, dates or saves. The bank's bailout (Agree) is a normal in-game choice.
+**Driver** (`scripts/gdt_play.py`): presses routine dialogs, the Finish and Release Game buttons, the bank bailout (Agree), picks our own studio's save slot only (slot 3 holds Joshua's real 2014 save and is never touched), then starts the next game with the least-used topic and genre and the cheapest platform it can afford. It logs every decision to `runs/gdt/` (gitignored).
 
-Open: a visible-screen run (a second display or an overnight run with the screen awake) and a smarter first game. Needs Joshua's say-so because it takes over the screen.
+**Traps found:** Steam must be running or the game never loads mods; the cloud settings file resets `enabledMods`, so enable the mod from the game's Mods menu; a newsletter popup sits in the page text but never on screen; review dialogs animate for about 20 seconds before their Close button appears; the studio burns about 8K a month from the start, so the first game has to ship fast.
+
+**Labels:** unassisted by the rules in the driver's docstring (screen text and read-only state, no writes to cash, dates or saves). The character is a man named Joshua; the studio is Conveyer Games.

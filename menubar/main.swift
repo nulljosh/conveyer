@@ -323,6 +323,9 @@ final class MarkerModel: ObservableObject {
     private var dotsStamp: Date?
     private let dotsPath = NSString(string: "~/Documents/Code/conveyer/live_status.json").expandingTildeInPath
     private var timer: Timer?
+    private var pollEvery = 0.2
+    private var streamSource: DispatchSourceFileSystemObject?
+    private let streamPath = NSString(string: "~/Documents/Code/conveyer/stream.json").expandingTildeInPath
     private var frameStamp: Date?
     private let livePath = NSString(string: "~/Documents/Code/conveyer/live.json").expandingTildeInPath
     private let framePath = NSString(string: "~/Documents/Code/conveyer/frame.json").expandingTildeInPath
@@ -340,17 +343,43 @@ final class MarkerModel: ObservableObject {
     func start() {
         guard timer == nil else { return }
         read()
-        timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in Task { @MainActor in self.read() } }
+        schedulePoll(0.2)
+        watchStream()
+    }
+    func stop() { timer?.invalidate(); timer = nil; ease?.invalidate(); ease = nil; streamSource?.cancel(); streamSource = nil }
+
+    private func schedulePoll(_ every: Double) {
+        timer?.invalidate(); pollEvery = every
+        timer = Timer.scheduledTimer(withTimeInterval: every, repeats: true) { _ in Task { @MainActor in self.read() } }
+    }
+
+    /// stream.py replaces stream.json atomically (rename), so the watch fires on every frame and is re-opened after each one.
+    /// While stream.json is fresh the 0.2 s poll slows to 1 s and only covers the files stream.py does not write; without stream.py it stays at 0.2 s.
+    private func watchStream() {
+        streamSource?.cancel(); streamSource = nil
+        let fd = open(streamPath, O_EVTONLY)
+        guard fd >= 0 else { return }
+        let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .delete, .rename], queue: .main)
+        src.setEventHandler { [weak self] in
+            guard let self else { return }
+            MainActor.assumeIsolated { self.read(); self.watchStream() }
+        }
+        src.setCancelHandler { close(fd) }
+        streamSource = src; src.resume()
+    }
+
+    /// Glide the marker toward pos at 60 Hz, but only while it is not there yet.
+    private func startEase() {
+        guard ease == nil else { return }
         ease = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in Task { @MainActor in
             guard let p = self.pos else { return }
             guard let c = self.shown else { self.shown = p; return }
             let dx = p.x - c.x, dy = p.y - c.y
-            if abs(dx) < 0.005 && abs(dy) < 0.005 { return }   // arrived: no redraws
+            if abs(dx) < 0.005 && abs(dy) < 0.005 { self.ease?.invalidate(); self.ease = nil; return }   // arrived: the timer stops until the next move
             let d = (dx * dx + dy * dy).squareRoot(), k = min(0.12 * d, 1.0) / d   // 12% of the gap per frame, never faster than 60 tiles a second, so even a long trip glides
             self.shown = CGPoint(x: c.x + dx * k, y: c.y + dy * k)
         } }
     }
-    func stop() { timer?.invalidate(); timer = nil; ease?.invalidate(); ease = nil }
 
     private func readDots() {
         guard let m = (try? FileManager.default.attributesOfItem(atPath: dotsPath))?[.modificationDate] as? Date, m != dotsStamp,
@@ -409,6 +438,8 @@ final class MarkerModel: ObservableObject {
     }
 
     private func read() {
+        let fresh = ((try? FileManager.default.attributesOfItem(atPath: streamPath))?[.modificationDate] as? Date).map { -$0.timeIntervalSinceNow < 2 } ?? false
+        if timer != nil && fresh != (pollEvery > 0.5) { schedulePoll(fresh ? 1.0 : 0.2) }
         readDots()
         readMini()
         readHotbar()
@@ -427,6 +458,7 @@ final class MarkerModel: ObservableObject {
         moving = pos != nil
         step += 1
         pos = np
+        startEase()
     }
 }
 

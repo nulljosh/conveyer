@@ -1,0 +1,14 @@
+[
+ {
+  "date": "2026-10-02",
+  "version": "v1.0.0",
+  "assisted": true,
+  "note": "purple and yellow science were console-fed; silo and parts placed by scripts/silo.py"
+ },
+ {
+  "date": "2026-10-02",
+  "version": "v2.0.0",
+  "assisted": false,
+  "note": "no console-fed parts: its own factory built every rocket part"
+ }
+]

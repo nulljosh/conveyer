@@ -8,13 +8,12 @@ ROOT = Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location("progress_svg", ROOT / "scripts" / "progress_svg.py")
 progress_svg = importlib.util.module_from_spec(spec)
 
-# Use temp directory for DATA and OUT
+# Load the module first, then point DATA and OUT at a temp dir: set before loading, the module's own assignments win
+# and the test overwrote and then deleted the real progress.svg and docs/progress.jsonl
+spec.loader.exec_module(progress_svg)
 tmpdir = Path(tempfile.mkdtemp())
 progress_svg.DATA = tmpdir / "progress.jsonl"
 progress_svg.OUT = tmpdir / "progress.svg"
-
-# Load the module
-spec.loader.exec_module(progress_svg)
 
 # Test 1: with only 1 row, render outputs "collecting data"
 now = time.time()

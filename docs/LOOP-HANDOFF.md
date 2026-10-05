@@ -61,6 +61,18 @@ Done when: the window is open at 5 Hz or better and every feeder plus the app to
 - Docs and roadmap pruning.
 - Not possible: Swift builds, anything that needs RCON, screenshots, CPU numbers.
 
+## CI/CD
+
+- **Tests** (`.github/workflows/test.yml`, every PR and push to main):
+  - lint: compile every `.py`, ruff errors only, shellcheck errors only
+  - every `tests/test_*.py` on Python 3.11 and 3.12. A new test file runs automatically.
+  - the stream Lua runs in a real Lua 5.2 against a fake game
+  - fails if a test wrote over a tracked file
+  - the Swift app typechecks on macOS
+  - doc and landing-page links resolve
+- **Deploy** (`.github/workflows/deploy.yml`): after Tests pass on main, publishes `web/` to Cloudflare, but only when `web/` or the wrangler config changed, then checks the live page. Needs the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Without them it skips with a notice.
+- Writing tests: `tests/fakes.py` has `install_rcon()` (a fake `factorio_rcon`, so scripts that connect at import still load) and `FakeRCON` (scripted replies, records every command). Plain asserts, print `ok`, no pytest needed.
+
 ## Rules that explain most of the repo
 
 - **FLE state cannot be saved.** Every crash rolls the world back to the 10:55 copy. The defense is replay scripts, not saves: `scripts/health.sh --fix` runs all of them. Every new build gets its own replay script the same hour it is built.

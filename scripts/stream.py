@@ -97,7 +97,7 @@ def parse_combat(v, now, last_mags, fired_at):
                 key = (p[1], p[2]); m = int(p[3])
                 if key in last_mags and m < last_mags[key]: fired_at[key] = now
                 last_mags[key] = m
-                turrets.append([float(p[1]), float(p[2]), 1 if now - fired_at.get(key, 0) < 2 else 0])
+                turrets.append([float(p[1]), float(p[2]), 1 if key in fired_at and now - fired_at[key] < 2 else 0])
         except (ValueError, IndexError):
             pass   # a truncated row: the next read repaints
     return {"t": now, "player": player, "enemies": enemies, "turrets": turrets}
@@ -136,21 +136,81 @@ def write_json(path, data):
     tmp = path.with_suffix(".tmp"); tmp.write_text(json.dumps(data)); os.replace(tmp, path)   # atomic, the app never reads half a file
 
 
+def log(msg, _last={}):
+    """stderr, at most once a minute per message, so a dead server does not flood the background task's log."""
+    now = time.time()
+    if now - _last.get(msg, 0.0) >= 60: _last[msg] = now; print("stream:", msg, file=sys.stderr)
+
+
 class Writer:
-    """Writes each part's legacy file only when its content changed (the app keys off mtime), plus stream.json."""
+    """Writes each part's legacy file only when its content changed (the app keys off mtime), plus stream.json.
+    A failed write (disk full, permissions) is logged and retried on the next frame, never fatal."""
     def __init__(self, root=ROOT):
         self.root, self.last, self.state, self.beat = root, {}, {}, 0.0
 
     def write(self, parts, now):
         changed = []
         for k, d in parts.items():
+            if k not in FILES or not isinstance(d, dict): continue
             key = {x: y for x, y in d.items() if x not in ("t", "tick")}   # a new timestamp or tick alone is not a change
             if self.last.get(k) == key: continue
+            try: write_json(self.root / FILES[k], d)
+            except OSError as e: log("write %s: %s" % (FILES[k], e)); continue
             self.last[k] = key; self.state[k] = d; changed.append(k)
-            write_json(self.root / FILES[k], d)
         if changed or now - self.beat >= 1.0:   # at least once a second, so livemap.py knows stream.py is alive
-            self.beat = now; write_json(self.root / STREAM.name, {"t": now, **self.state})
+            try: write_json(self.root / STREAM.name, {"t": now, **self.state}); self.beat = now
+            except OSError as e: log("write stream.json: %s" % e)
         return changed
+
+
+def connect():
+    import factorio_rcon as f
+    return f.RCONClient("127.0.0.1", 27000, "factorio", timeout=5)
+
+
+def read_area(path=FRAME):
+    """The view rectangle from frame.json, or None while it is missing, half-written or nonsense (dots wait a frame)."""
+    try:
+        fr = json.loads(path.read_text())
+        if fr["ppt"] <= 0 or fr["w"] <= 0 or fr["h"] <= 0: return None
+        return view_area(fr)
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+class Streamer:
+    """The loop body, separate from time and sockets so tests can drive it with a fake RCON client.
+    step(now) reads what is due and returns how long to sleep. After a failure it drops the connection and backs off
+    1, 2, 4 ... 30 s; one good frame resets that."""
+    MAX_BACKOFF = 30.0
+
+    def __init__(self, connect=connect, writer=None, frame=FRAME):
+        self.connect, self.w, self.frame = connect, writer or Writer(), frame
+        self.rcon, self.last, self.mags, self.fired, self.fails = None, {}, {}, {}, 0
+
+    def drop(self):
+        try: getattr(self.rcon, "close", lambda: None)()
+        except Exception: pass
+        self.rcon = None
+
+    def step(self, now):
+        parts = due(now, self.last)
+        area = read_area(self.frame) if "dots" in parts else None
+        if area is None and "dots" in parts: parts.remove("dots")   # no view yet: ask again next frame
+        if parts:
+            try:
+                self.rcon = self.rcon or self.connect()
+                reply = self.rcon.send_command(build_lua(parts, area))
+                if not isinstance(reply, str): raise ValueError("no reply")
+            except Exception as e:   # server restarting, timeout, refused: reconnect after a pause
+                self.drop(); self.fails += 1
+                log("%s: %s" % (type(e).__name__, e))
+                return min(2.0 ** (self.fails - 1), self.MAX_BACKOFF)
+            self.fails = 0
+            got = parse(reply, now, self.mags, self.fired)
+            self.w.write({k: v for k, v in got.items() if k in parts}, now)   # only what this frame asked for: a stale or shifted reply cannot sneak old parts in
+            for k in parts: self.last[k] = now
+        return max(0.02, min(self.last.get(k, now) + RATES[k] for k in RATES) - now)
 
 
 def watching():
@@ -165,35 +225,17 @@ def runner_alive(gone=[0.0]):
     return time.time() - gone[0] < 60
 
 
-def connect():
-    import factorio_rcon as f
-    return f.RCONClient("127.0.0.1", 27000, "factorio", timeout=5)
-
-
-def frame_once(rcon, parts, mags, fired):
-    try: area = view_area(json.loads(FRAME.read_text()))
-    except Exception: area = None
-    now = time.time()
-    return parse(rcon.send_command(build_lua(parts, area)), now, mags, fired)
-
-
 def main():
     if "--once" in sys.argv:
-        print(json.dumps(frame_once(connect(), list(LUA), {}, {}), indent=1)); return
-    rcon, last, mags, fired, w = None, {}, {}, {}, Writer()
+        reply = connect().send_command(build_lua(list(LUA), read_area()))
+        print(json.dumps(parse(reply or "", time.time(), {}, {}), indent=1)); return
+    st = Streamer()
     while runner_alive():
         if not watching():
-            time.sleep(1.0); continue
-        now = time.time(); parts = due(now, last)
-        if parts:
-            try:
-                rcon = rcon or connect()
-                w.write(frame_once(rcon, parts, mags, fired), now)
-                for k in parts: last[k] = now
-            except Exception as e:   # server restarting: reconnect next lap
-                print("stream:", e, file=sys.stderr); rcon = None; time.sleep(1.0); continue
-        time.sleep(max(0.02, min(last.get(k, 0.0) + RATES[k] for k in RATES) - time.time()))
+            st.drop(); time.sleep(1.0); continue   # nobody looks: hold no socket
+        time.sleep(st.step(time.time()))
 
 
 if __name__ == "__main__":
-    main()
+    try: main()
+    except KeyboardInterrupt: pass

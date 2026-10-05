@@ -51,4 +51,73 @@ with tempfile.TemporaryDirectory() as tmp:
     assert w.write({"pos": {"x": 1.5, "y": 2.0, "tick": 10}}, 0.6) == ["pos"]
     assert json.loads((Path(tmp) / "live.json").read_text())["x"] == 1.5
     assert json.loads((Path(tmp) / "stream.json").read_text())["pos"]["x"] == 1.5
+
+# the view rectangle: missing, half-written or zero-size frame.json means no dots this frame, never a crash
+with tempfile.TemporaryDirectory() as tmp:
+    fp = Path(tmp) / "frame.json"
+    assert S.read_area(fp) is None
+    fp.write_text('{"cx": 0, "cy"')
+    assert S.read_area(fp) is None
+    fp.write_text('{"cx": 0, "cy": 0, "w": 0, "h": 160, "ppt": 16}')
+    assert S.read_area(fp) is None
+    fp.write_text('{"cx": 0, "cy": 0, "w": 320, "h": 160, "ppt": 0}')
+    assert S.read_area(fp) is None
+    fp.write_text('{"cx": 0, "cy": 0, "w": 320, "h": 160, "ppt": 16}')
+    assert S.read_area(fp) == (-10, -5, 10, 5)
+
+# a failed write is skipped and retried next frame, never fatal
+with tempfile.TemporaryDirectory() as tmp:
+    w = S.Writer(Path(tmp) / "missing-dir")
+    assert w.write({"pos": {"x": 1.0, "y": 2.0, "tick": 1}}, 0.0) == []
+    (Path(tmp) / "missing-dir").mkdir()
+    assert w.write({"pos": {"x": 1.0, "y": 2.0, "tick": 1}}, 0.1) == ["pos"]
+    assert w.write({"nope": {}, "pos": "not a dict"}, 0.2) == []   # unknown parts and junk are ignored
+
+# the loop body with a fake server: connect, read, write; then fail, back off, recover
+sys.path.insert(0, str(ROOT / "tests"))
+import fakes
+REPLY = "pos=1.0,2.0,5\ndots=1.0:2.0:0\ncombat=p:1:2\nhotbar=coal,3;\nsilo=0:0:1:working:0:0:1"
+with tempfile.TemporaryDirectory() as tmp:
+    tmp = Path(tmp)
+    conns = []
+    def connect(replies):
+        def c():
+            r = fakes.FakeRCON(replies); conns.append(r); return r
+        return c
+    st = S.Streamer(connect=connect([REPLY]), writer=S.Writer(tmp), frame=tmp / "frame.json")
+    nap = st.step(1000.0)
+    assert 0.02 <= nap <= 0.1 + 1e-9, nap
+    assert {p.name for p in tmp.iterdir()} >= {"live.json", "combat.json", "hotbar.json", "silo.json", "stream.json"}
+    assert "dots=" not in conns[0].sent[0]   # no frame.json yet
+    assert not (tmp / "live_status.json").exists()
+    assert st.last == {k: 1000.0 for k in S.RATES if k != "dots"}   # dots stay due until frame.json exists
+
+    # only position is due 0.1 s later: the Lua asks for nothing else
+    conns[0].replies = ["pos=1.5,2.0,6"]
+    st.step(1000.1)
+    assert "pos=" in conns[0].sent[1] and "combat=" not in conns[0].sent[1]
+    assert json.loads((tmp / "live.json").read_text())["x"] == 1.5
+
+    # the server drops: connection closed, backoff grows 1, 2, 4 ... and stops at 30
+    conns[0].replies = [ConnectionError("refused")]
+    assert st.step(1000.2) == 1.0 and st.rcon is None and conns[0].closed
+    st.connect = lambda: (_ for _ in ()).throw(OSError("down"))
+    naps = [st.step(1000.3 + i) for i in range(7)]
+    assert naps == [2.0, 4.0, 8.0, 16.0, 30.0, 30.0, 30.0], naps
+
+    # it comes back: one good frame resets the backoff
+    st.connect = connect(["pos=9.0,9.0,7"])
+    assert st.step(1010.0) < 1.0 and st.fails == 0
+    assert json.loads((tmp / "live.json").read_text())["x"] == 9.0
+
+    # a reply that is not text counts as a failure, not a crash
+    conns[-1].replies = lambda cmd: None
+    assert st.step(1011.0) == 1.0 and st.fails == 1
+
+    # with a valid frame.json the dots come back too
+    (tmp / "frame.json").write_text('{"cx": 0, "cy": 0, "w": 320, "h": 160, "ppt": 16}')
+    st = S.Streamer(connect=connect([REPLY]), writer=S.Writer(tmp), frame=tmp / "frame.json")
+    st.step(2000.0)
+    assert "area={{-10,-5},{10,5}}" in conns[-1].sent[0]
+    assert json.loads((tmp / "live_status.json").read_text())["d"] == [[1.0, 2.0, 0]]
 print("ok")

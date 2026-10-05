@@ -4,47 +4,85 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  docs:
+  lint:
+    name: Lint (Python syntax, undefined names, shell)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: README file references aren't stale
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Every Python file compiles
+        run: python3 -m compileall -q -x '/(\.venv|venv|vendor|node_modules)/' .
+      - name: "Ruff (errors only: syntax, undefined names, bad comparisons)"
+        run: pip install -q ruff && ruff check --select E9,F63,F7,F82 --output-format github .
+      - name: Shellcheck (errors only)
+        run: shellcheck -S error scripts/*.sh menubar/*.sh step.sh .githooks/pre-commit
+
+  tests:
+    name: Unit tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Lua 5.2 (the game's Lua, for tests/test_stream_lua.py)
+        run: sudo apt-get install -y -q lua5.2 >/dev/null
+      - name: Run every tests/test_*.py
+        run: |
+          fail=0
+          for t in tests/test_*.py; do
+            echo "::group::$t"
+            if python "$t"; then echo "ok $t"; else echo "::error file=$t::$t failed"; fail=1; fi
+            echo "::endgroup::"
+          done
+          exit $fail
+      - name: Tests left the repo clean (no test may write over tracked files)
+        run: git diff --exit-code && test -z "$(git status --porcelain --untracked-files=no)"
+
+  swift:
+    name: Menu bar app typechecks
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: swiftc -typecheck
+        run: swiftc -parse-as-library -typecheck menubar/main.swift
+
+  docs:
+    name: Doc and landing page links
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Relative links in README, CLAUDE.md, docs/ and web/index.html exist
         run: |
           python3 - <<'PY'
-          import re, os, sys
-          refs = re.findall(r'(?:src="|\]\()([^")#?\s]+)', open("README.md").read())
-          bad = [r for r in refs if "://" not in r and not r.startswith(("mailto:", "/")) and not os.path.exists(r)]
-          print("stale README refs:", bad)
+          import re, os, sys, glob
+          bad = []
+          files = ["README.md", "CLAUDE.md", "roadmap.md", *glob.glob("docs/*.md"), "web/index.html"]
+          for f in files:
+              base = os.path.dirname(f)
+              for r in re.findall(r'(?:src="|href="|\]\()([^")#?\s]+)', open(f).read()):
+                  if "://" in r or r.startswith(("mailto:", "/", "data:")): continue
+                  if not os.path.exists(os.path.join(base, r)) and not os.path.exists(r): bad.append(f"{f}: {r}")
+          print("\n".join(bad) or "all links ok")
           sys.exit(bool(bad))
           PY
-
-  export:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: training export check (skips when runs/ is absent)
-        run: python3 tests/test_export.py
-
-  progress_svg:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: progress.svg render check
-        run: python3 tests/test_progress_svg.py
-
-  stream:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: live stream feeder check
-        run: python3 tests/test_stream.py

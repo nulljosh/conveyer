@@ -57,3 +57,5 @@ A client join makes the server save the map for the transfer. The game state can
 ("Cannot save map ... scenario level caused a non-recoverable error") and the world reverts to the last copy. It happened once, at 21:11: the live
 view had just reached its third rocket. The map preview exists for exactly this reason: it reads the game over RCON and never joins. `scripts/realshot.sh`
 now refuses to run. A true-graphics view needs the save problem fixed first (find what the FLE Lua helpers put in `storage` that cannot be serialized).
+- FLE cannot parse underground belts: while one exists near the engineer every skill call returns "Error getting entities while getting observation" (even a harmless one), and it clears when the undergrounds are removed. Tested 2026-10-04 on the real save. router.py still supports undergrounds (tested, and the pair links correctly in game), but route_belt uses belts only until FLE is fixed.
+- FLE's can_place_entity reads every tile as blocked unless the engineer holds the item, so route_belt asks the game directly (router.scan_lua) and places with create_entity (router.place_lua), like the planner.

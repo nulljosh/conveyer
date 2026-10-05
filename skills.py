@@ -339,6 +339,33 @@ p = move_to(Position({position}))
 print(f"SKILL_OK goto: now at {{p}}")
 ''',
     },
+    "route_belt": {
+        "params": ["from_position", "to_position"],
+        "doc": "Lay one transport belt line from the free tile at `from_position` to the free tile at `to_position`, "
+        "routed around obstacles with A* (router.py). Undergrounds are off: FLE cannot observe them. "
+        "Use this instead of placing belt tiles one by one. Both tiles must be open ground. Console placed (the game's create_entity, like the planner's tiles): "
+        "it costs no belts, so it is not a from-scratch build.",
+        "template": '''
+import re, router
+fx, fy = [float(v) for v in re.findall(r"-?\\d+(?:\\.\\d+)?", "{from_position}")[:2]]
+tx, ty = [float(v) for v in re.findall(r"-?\\d+(?:\\.\\d+)?", "{to_position}")[:2]]
+a, b = (int(fx // 1), int(fy // 1)), (int(tx // 1), int(ty // 1))
+pad = 8
+box = (min(a[0], b[0]) - pad, min(a[1], b[1]) - pad, max(a[0], b[0]) + pad, max(a[1], b[1]) + pad)
+import factorio_rcon
+rc = factorio_rcon.RCONClient("127.0.0.1", 27000, "factorio", timeout=60)
+blocked = router.parse_blocked(rc.send_command(router.scan_lua(box)))
+total = (box[2] - box[0] + 1) * (box[3] - box[1] + 1)
+path = router.route(a, b, blocked, bounds=box, max_gap=0)   # belts only: FLE cannot parse underground belts, every observation errors while one exists
+if path is None:
+    raise Exception(f"route_belt: no route from {from_position} to {to_position}; {{len(blocked)}} of {{total}} tiles look blocked, the start or end tile is blocked, or walls are too thick for an underground pair")
+reply = rc.send_command(router.place_lua(path))
+if " failed 0" not in reply:
+    raise Exception(f"route_belt: could not place every tile ({{reply}})")
+pairs = sum(1 for k, _, _ in path if k == "ug_in")
+print(f"SKILL_OK route_belt: {{len(path)}} tiles, {{pairs}} underground pairs, from {{a}} to {{b}}")
+''',
+    },
     "inspect": {
         "params": [],
         "doc": "Print current inventory and nearby entities. Use this when unsure what state "
@@ -408,6 +435,8 @@ def _demo() -> None:
         "target_position": "x=1.0,y=2.0",
         "radius": 5,
     }
+    sample_params["connection"] = "TransportBelt"
+    sample_params["recipe"] = "IronGearWheel"
     sample_params["prototype"] = "BurnerMiningDrill"
     sample_params["from_prototype"] = "BurnerMiningDrill"
     sample_params["from_position"] = "x=0,y=0"

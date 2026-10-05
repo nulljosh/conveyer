@@ -38,7 +38,7 @@ Every feeder already sleeps unless `.watching` is fresh (touched less than 8 s a
 
 ## Live window: plan (one step per tick, commit each)
 
-1. **One feeder.** BUILT 2026-10-05 in the cloud, not yet run against the game. First Mac tick: `.venv/bin/python scripts/stream.py --once`, then run it as a background task and check the window. Wrote `scripts/stream.py` to replace livefeed, livemap and combat. It uses one RCON connection and one Lua call per frame, with tiered rates: position at 10 Hz, dots at 1 Hz, combat at 2 Hz, hotbar and silo at 0.5 Hz. It writes a single `stream.json` atomically. Keep the old files written until the app reads only the new one. *Cloud-safe: write it with a fake RCON client and tests.*
+1. **One feeder.** DONE and verified 2026-10-04 on the live game (10 minutes clean, no errors). Wrote `scripts/stream.py` to replace livefeed, livemap and combat. It uses one RCON connection and one Lua call per frame, with tiered rates: position at 10 Hz, dots at 1 Hz, combat at 2 Hz, hotbar and silo at 0.5 Hz. It writes a single `stream.json` atomically. Keep the old files written until the app reads only the new one. *Cloud-safe: write it with a fake RCON client and tests.*
 2. **Deltas.** The Lua keeps the last machine statuses in `storage` and returns only the ones that changed, plus a full snapshot every 30 s. *Cloud-safe except the final check.*
 3. **App reads one file, and only when it changes.** Swap the 0.2 s poll of 8 files for a `DispatchSource` file watch on `stream.json`. Run the 60 Hz ease timer only while the marker is moving. *Mac only (Swift build).*
 4. **Tiled basemap.** Render 32x32 chunks, cache each chunk's PNG under the hash of its entities, and re-render only the chunks that changed, off the runner thread. This fixes the 28 s block. *Mac plus game.*
@@ -52,7 +52,7 @@ Done when: the window is open at 5 Hz or better and every feeder plus the app to
 | When | QA | Efficiency | Notes |
 |---|---|---|---|
 | 2026-10-02 14:55 | A- | B+ | Window open: runner 0.1%, app 0 to 0.7%, livefeed 0.1%. Closed: near 0 |
-| | | | |
+| 2026-10-04 21:00 | B+ | A | Full screen, window open, measured with `top -l 2` deltas: stream.py 0.5%, app 0%, runner 0% between renders. Fixed: map change check watches the picture (was re-rendering constantly), dots line up (frame.json uses the real centre). Open: the picture centres on the engineer, so the top tile rows can fall off; centre it on the view point |
 
 ## Cloud-safe work (no game, no Mac)
 

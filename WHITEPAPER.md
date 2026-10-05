@@ -1,6 +1,6 @@
 # Conveyer Technical Whitepaper
 
-**v2.0.0** | October 2026
+**v2.1.0** | October 2026
 
 An AI plays Factorio on a real save and launches a rocket. No screenshots, no vision model. Factorio already
 exposes its state as data, so Conveyer reads that and acts on it. On 2 October 2026 it launched a second rocket

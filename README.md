@@ -42,6 +42,10 @@ To play your own save, run `scripts/world.sh`. It boots the server on a copy and
 - **Terminal:** `python3 scripts/tui.py`.
 - **Never join with a real Factorio client.** It forces a map save, the save fails, and the server quits. See [docs/LEARNINGS.md](docs/LEARNINGS.md).
 
+## Rules and tests
+
+Every session follows [docs/RULES.md](docs/RULES.md). CI runs every test on each pull request.
+
 ## How it works
 
 <img src="architecture.svg" width="600">

@@ -70,7 +70,7 @@ The agent plays Joshua's real save through a planner and a set of replay scripts
 | `tick.sh`, `health.sh` | One compact report per loop tick. `health.sh --fix` starts what is down and, after a world revert, replays every build. |
 | `speed.py`, `cpu.sh` | Game speed follows CPU load and free RAM (10, 6, 3, 2x). `cpu.sh` measures each process. |
 | `queue.py` | Keeps the research queue on the rocket-silo path, prerequisites first, cheapest first. |
-| `research_status.py`, `livefeed.py`, `livemap.py`, `snap.py` | The monitor's feeds. Research and labs (`research.json`), player position (`live.json`), machine status dots and the strolling player (`live_status.json`), benchmark rows (`shots/bench.jsonl`). The last three sleep unless the monitor touches `.watching`. |
+| `research_status.py`, `stream.py`, `livemap.py`, `snap.py` | The monitor's feeds. Research and labs (`research.json`), one RCON connection for position, machine status dots, combat, key stock and the silo (`stream.py`, tiered 10 Hz down to 0.5 Hz), the strolling player (`livemap.py`), benchmark rows (`shots/bench.jsonl`). All sleep unless the monitor touches `.watching`. `stream.py` backs off 1 to 30 s when the server is down. |
 | `terrain.py` | Paints real ground under the FLE render, writes `preview_map.png`. |
 | `oil.py`, `sulfur.py`, `advcircuit.py`, `power.py` | The oil block (refinery, plastic plant with an output chest and a coal chest refilled every pass), the sulfur plant with 90 tiles of underground water, one advanced circuit assembler, and steam power columns. All idempotent. |
 | `acid.py` | Sulfuric acid plant beside the sulfur plant, an underground acid line to a free field, and four processing unit assemblers on it. `acid.py feed` moves iron, circuits and advanced circuits into their chests every pass. Idempotent replay. |
@@ -92,11 +92,11 @@ The menu bar app never talks to the game. It reads small files the loop writes, 
 
 | File | Written by | What the window draws |
 |---|---|---|
-| `preview_map.png`, `frame.json` | `runner.py` | The map picture. It centres on `.focus` ("x,y", or "x,y,silo" / "x,y,hold") and never moves the engineer. |
-| `live.json`, `live_status.json`, `engineer.json` | `livefeed.py`, `livemap.py` | The engineer, the machine status dots, the line saying what he is doing. |
-| `hotbar.json`, `silo.json` | `livefeed.py` | The key stock bar, and the silo (parts, status, rocket on the pad). |
+| `preview_map.png`, `frame.json` | `runner.py` | The map picture. `frame.json` records its real centre (the renderer's origin, which is where the engineer stood at render time), its size and 16 px per tile; every overlay maps world positions through it. It re-renders only when the entities inside the picture change (a hash of the picture area, not of the engineer's surroundings). |
+| `live.json`, `live_status.json`, `engineer.json`, `stream.json` | `stream.py`, `livemap.py` | The engineer, the machine status dots, the line saying what he is doing (he patrols the four newest tiles). `stream.json` holds every part in one file. |
+| `hotbar.json`, `silo.json` | `stream.py` | The key stock bar, and the silo (parts, status, rocket on the pad). |
 | `events.json` | `events.py` | The activity feed: ledger moves, research, power, pumpjacks, launches. |
-| `combat.json` | `combat.py` | Enemies, firing turrets. |
+| `combat.json` | `stream.py` | Enemies, firing turrets. |
 | `minimap.png`, `minimap.json` | `minimap.py` | The terrain minimap with base, oil and nests. |
 
 The silo and rocket are the game's own sprites, composited by `scripts/silo_sprites.py` from the Steam install into `assets/silo/` (never committed).
@@ -112,6 +112,10 @@ The silo and rocket are the game's own sprites, composited by `scripts/silo_spri
 ## Never join with the real client
 
 A client join forces a map save. FLE's Lua state cannot be saved, so the server quits and the world reverts. `scripts/realshot.sh` is disabled. See [LEARNINGS.md](LEARNINGS.md).
+
+## CI and rules
+
+`.github/workflows/test.yml` compiles every Python file, lints, runs every `tests/test_*.py` on Python 3.11 and 3.12 (including the stream Lua in a real Lua 5.2), typechecks the Swift app on macOS and checks doc links. `deploy.yml` publishes `web/` to Cloudflare after Tests pass on main. The rules every session follows are in [RULES.md](RULES.md).
 
 ## Video
 

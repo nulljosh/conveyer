@@ -25,6 +25,17 @@ Any LLM that takes chat JSONL works the same way: Llama 3.2 1B, Qwen3 0.6B, Gemm
 
 Hold out `data/valid.jsonl`. Score the exact skill name first, then the parameters. Beat the plain base model before trusting it, and run it against the live server before it plays on the real save.
 
+## First result (2026-10-05)
+
+Qwen2.5-0.5B-Instruct, LoRA, 600 iterations, batch 4, 681 train and 77 valid examples. `python3 eval/eval_picker.py` (run it from the repo root, not `scripts/`, which has a `queue.py` that shadows the stdlib):
+
+| | skill name | name and params |
+|---|---|---|
+| base model | 1/77 (1%) | 0/77 |
+| LoRA adapter | 59/77 (77%) | 56/77 (73%) |
+
+It beats the base model by a wide margin. Not yet run against the live server, so it does not play the real save. Next: look at the 18 misses, then more runs for data.
+
 ## Export
 
 `mlx_lm.fuse --dequantize`, then llama.cpp's `convert_hf_to_gguf.py` to Q8_0, as in Turing's `training/export_gguf.py`. That gives a GGUF that runs anywhere.

@@ -17,7 +17,6 @@ PY
   i=$((i+1)); if [ $((i % 5)) -eq 1 ]; then $W scripts/withdraw.py coal 700 >/dev/null 2>&1; $W scripts/fuel.py >/dev/null 2>&1; $W scripts/journal.py snapshot >/dev/null 2>&1; $W scripts/queue.py >/dev/null 2>&1; $W scripts/power.py >/dev/null 2>&1; fi  # oil.py also tops up the plastic plant's coal
   $W scripts/planner.py step >> planner.log 2>&1   # keep the tiles supplied
   $W scripts/oil.py >/dev/null 2>&1                 # every pass: at 10x the plastic plant eats its coal chest in minutes
-  [ -f .assist ] && $W scripts/assist.py >/dev/null 2>&1   # assisted mode, see scripts/assist.py
   ($W scripts/fuelsupply.py >/dev/null 2>&1)   # solid fuel into the rocket fuel assemblers
   $W scripts/steelfeed.py >/dev/null 2>&1          # iron plates into the steel furnaces (LDS needs 2 steel each)
   $W scripts/barrels.py move >/dev/null 2>&1        # crude by barrel: field to refinery and empties back

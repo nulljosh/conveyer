@@ -27,7 +27,7 @@ Hold out `data/valid.jsonl`. Score the exact skill name first, then the paramete
 
 ## First result (2026-10-05)
 
-Qwen2.5-0.5B-Instruct, LoRA, 600 iterations, batch 4, 681 train and 77 valid examples. `python3 eval/eval_picker.py` (run it from the repo root, not `scripts/`, which has a `queue.py` that shadows the stdlib):
+Qwen2.5-0.5B-Instruct, LoRA, 600 iterations, batch 4, 681 train and 77 valid examples. `python3 eval/score_adapter.py` (run it from the repo root, not `scripts/`, which has a `queue.py` that shadows the stdlib):
 
 | | skill name | name and params |
 |---|---|---|

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Score the skill picker on data/valid.jsonl: exact skill name, then exact params. Base model vs the LoRA adapter.
-python3 eval/eval_picker.py [conveyer-adapter]"""
+python3 eval/score_adapter.py [conveyer-adapter]"""
 import json, sys
 from pathlib import Path
 from mlx_lm import load, generate

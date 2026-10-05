@@ -116,6 +116,12 @@
   <div class="fact"><b>2</b><span>rockets launched (1 with no console-fed parts)</span></div>
 </div>
 
+<section class="copy wrap reveal" id="live">
+  <h2>The running game</h2>
+  <img id="live-frame" src="live-frame.jpg" alt="The latest frame from the running game" style="width:100%;height:auto;border-radius:12px" onerror="this.style.display='none'">
+  <p>The latest frame from the running game, published about every 10 minutes.</p>
+</section>
+
 <section class="copy wrap reveal">
   <h2>How it plays</h2>
   <div class="steps">
@@ -177,6 +183,9 @@ python3 runner.py --env-id open_play
   var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { threshold: .08 });
   els.forEach(function (e) { io.observe(e); });
 })();
+</script>
+<script>
+  setInterval(function () { var i = document.getElementById("live-frame"); if (i) i.src = "live-frame.jpg?t=" + Date.now(); }, 60000);
 </script>
 </body>
 </html>

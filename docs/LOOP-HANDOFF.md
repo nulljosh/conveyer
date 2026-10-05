@@ -1,6 +1,6 @@
 # Conveyer loop handoff
 
-Updated 2026-10-05. v2.1.0. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
+Updated 2026-10-05. v2.1.1. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
 
 ## TLDR
 
@@ -39,7 +39,7 @@ Every feeder already sleeps unless `.watching` is fresh (touched less than 8 s a
 ## Live window: plan (one step per tick, commit each)
 
 1. **One feeder.** DONE and verified 2026-10-04 on the live game (10 minutes clean, no errors). Wrote `scripts/stream.py` to replace livefeed, livemap and combat. It uses one RCON connection and one Lua call per frame, with tiered rates: position at 10 Hz, dots at 1 Hz, combat at 2 Hz, hotbar and silo at 0.5 Hz. It writes a single `stream.json` atomically. Keep the old files written until the app reads only the new one. *Cloud-safe: write it with a fake RCON client and tests.*
-2. **Deltas.** The Lua keeps the last machine statuses in `storage` and returns only the ones that changed, plus a full snapshot every 30 s. *Cloud-safe except the final check.*
+2. **Deltas.** DONE 2026-10-05 (v2.1.1, verified on the live game: 54 machines, full read then deltas). The Lua keeps the last machine statuses in `storage` and returns only the ones that changed, plus a full snapshot every 30 s. *Cloud-safe except the final check.*
 3. **App reads one file, and only when it changes.** Swap the 0.2 s poll of 8 files for a `DispatchSource` file watch on `stream.json`. Run the 60 Hz ease timer only while the marker is moving. *Mac only (Swift build).*
 4. **Tiled basemap.** Render 32x32 chunks, cache each chunk's PNG under the hash of its entities, and re-render only the chunks that changed, off the runner thread. This fixes the 28 s block. *Mac plus game.*
 5. **Game speed follows load.** Run at 10x when the machine is idle and drop to 3x when it is hot (`scripts/speed.py`, `scripts/cpu_guard.sh`). *Mac plus game.*

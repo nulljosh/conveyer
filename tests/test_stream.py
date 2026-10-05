@@ -121,3 +121,22 @@ with tempfile.TemporaryDirectory() as tmp:
     assert "area={{-10,-5},{10,5}}" in conns[-1].sent[0]
     assert json.loads((tmp / "live_status.json").read_text())["d"] == [[1.0, 2.0, 0]]
 print("ok")
+
+# dots deltas: the first read is full, later ones are merged into what is known, a full read every 30 s drops machines that are gone
+with tempfile.TemporaryDirectory() as tmp:
+    tmp = Path(tmp); (tmp / "frame.json").write_text('{"cx": 0, "cy": 0, "w": 320, "h": 160, "ppt": 16}')
+    conns = []
+    def connect():
+        r = fakes.FakeRCON(["dots=F|1.0:2.0:0;3.0:4.0:2"]); conns.append(r); return r
+    st = S.Streamer(connect=connect, writer=S.Writer(tmp), frame=tmp / "frame.json")
+    st.step(0.0)
+    assert "true" in conns[0].sent[0] and json.loads((tmp / "live_status.json").read_text())["d"] == [[1.0, 2.0, 0], [3.0, 4.0, 2]]
+    conns[0].replies = ["dots=D|3.0:4.0:0;5.0:6.0:1"]
+    st.step(1.0)
+    assert json.loads((tmp / "live_status.json").read_text())["d"] == [[1.0, 2.0, 0], [3.0, 4.0, 0], [5.0, 6.0, 1]]
+    conns[0].replies = ["dots=F|5.0:6.0:1"]
+    st.step(31.0)   # 30 s since the last full read: asks for a full snapshot, which replaces everything
+    assert json.loads((tmp / "live_status.json").read_text())["d"] == [[5.0, 6.0, 1]]
+    conns[0].replies = [ConnectionError("x")]
+    st.step(32.0); assert st.need_full   # a failed read means the next dots read is full again
+print("ok")

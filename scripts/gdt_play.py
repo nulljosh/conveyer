@@ -217,6 +217,9 @@ class Driver:
         else:
             it = next((i for i in items(s) if i["text"].strip().lower() in ROUTINE), None)
         if it:
+            if it["text"].strip().lower() == "close" and "reviews for" in low:   # the four final scores are on screen when Close appears
+                m = re.search(r"Reviews for (.+?)\n", s["text"]); scores = re.findall(r"\n(\d+)\n", s["text"][s["text"].find("Reviews for"):])
+                self.note(action="review", game=m.group(1) if m else "?", scores=scores[:4], date=(re.search(r"Y\d+ M\d+ W\d+", s["text"]) or [""])[0], cash=self.cash(s))
             self.click(it, "routine"); self.unknown_since = None; return True
         central = [i for i in items(s) if 300 < i["x"] < 1650 and 180 < i["y"] < 960]
         hud_only = not central   # nothing pressable in the middle of the window: only the top bar and side notes are showing

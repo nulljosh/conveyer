@@ -6,7 +6,7 @@ Find a game an agent can beat, play it, and log honestly how far it got. Factori
 
 ## Where things stand
 
-- **Game Dev Tycoon: playing, not beaten.** The third run was at Year 4, month 8 with 93K cash at 13:45 on 5 Oct. The first two went bankrupt in Year 3. The game ends and scores itself at Y35 M12 W4. That is the win.
+- **Game Dev Tycoon, 16:50 on 5 Oct: Year 21, 57M cash, no bankruptcy in this run.** The session closed here; the driver and `caffeinate` kept running on their own (parent pid 1), so the game should reach Year 35 around 19:00 by itself. Next session: read the newest `runs/gdt/*.jsonl` and `scripts/gdt.py show` to see whether it finished and what the final score was, then write it into `games/gdt/README.md`. Earlier note: The third run was at Year 4, month 8 with 93K cash at 13:45 on 5 Oct. The first two went bankrupt in Year 3. The game ends and scores itself at Y35 M12 W4. That is the win.
 - **How it plays.** `games/gdt/conveyer-bridge/` is a mod with no network and no code execution: it writes the screen to `~/Library/Application Support/conveyer-gdt/state.json` and takes a fixed list of button presses from `cmd.json`. `scripts/gdt_play.py` is the driver. It logs every decision to `runs/gdt/` (gitignored) and restarts after a bankruptcy.
 - **Labels.** Unassisted play: the driver reads screen text and read-only state and never writes cash, dates or saves. Topic and genre pairs come from a public guide table, so say "assisted by guide data" for those.
 - **Never touch save slot 3.** It is Joshua's real 2014 save. Our studio (Conveyer Games) plays in slot 5. A backup of his saves is in `.gdt-save-backup/` (gitignored).

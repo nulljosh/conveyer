@@ -167,6 +167,7 @@ PAGE = """<!doctype html>
 
 <div class="facts reveal">
   <div class="fact"><b>__TECHS__</b><span>techs researched</span></div>
+  <div class="fact"><b>__PACKS__</b><span>science packs made per minute, right now</span></div>
   <div class="fact"><b>__ENT__</b><span>things on the base</span></div>
   <div class="fact"><b>0</b><span>pixels read</span></div>
   <div class="fact"><b>__ROCKETS__</b><span>rockets launched (__LEGIT__ with no console-fed parts)</span></div>
@@ -235,7 +236,7 @@ out = (PAGE.replace("__SILOPCT__", str(spct)).replace("__SILODONE__", str(sd)).r
        .replace("__CUR__", cur).replace("__PCT__", str(pct)).replace("__LABS__", esc(labs))
        .replace("__THEN__", f" &middot; then {queue[0]}" if queue else "")
        .replace("__NEXT3__", "".join(f"<li>{esc(t)}</li>" for t, _ in nxt[:3]))
-       .replace("__TODAY__", today).replace("__TECHS__", str(r.get("techs", ""))).replace("__ROCKETS__", str(rockets)).replace("__ROCKETDETAIL__", rocket_detail).replace("__LEGIT__", str(legit))
+       .replace("__TODAY__", today).replace("__TECHS__", str(r.get("techs", ""))).replace("__PACKS__", str(sum((r.get("packs") or {}).values()))).replace("__ROCKETS__", str(rockets)).replace("__ROCKETDETAIL__", rocket_detail).replace("__LEGIT__", str(legit))
        .replace("__ENT__", f"{entities:,}").replace("__DONE__", done_li).replace("__NEXT__", next_li))
 (WEB / "index.html").write_text(out)
 print("built", len(out), "bytes;", len(nxt), "next items")

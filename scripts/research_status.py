@@ -13,7 +13,8 @@ LUA = ("/silent-command local F=game.forces.player local r=F.current_research lo
        "local seen={} local sn=0 local sd=0 local function walk(t) if seen[t.name] then return end seen[t.name]=true sn=sn+1 if t.researched then sd=sd+1 end for _,p in pairs(t.prerequisites) do walk(p) end end walk(F.technologies['rocket-silo']) "
        "local q={} for _,t in pairs(F.research_queue) do q[#q+1]=t.name end "
        "local labs=game.surfaces[1].find_entities_filtered{name='lab'} local w=0 for _,l in pairs(labs) do if l.status==defines.entity_status.working then w=w+1 end end "
-       "rcon.print(helpers.table_to_json{current=r and r.name or '', percent=math.floor(F.research_progress*100), techs=n, queue=q, labs=#labs, labs_working=w, silo_done=sd, silo_total=sn})")
+       "local ps=F.get_item_production_statistics(game.surfaces[1]) local pk={} for _,pn in ipairs{'automation-science-pack','logistic-science-pack','chemical-science-pack','production-science-pack','utility-science-pack'} do pk[pn]=math.floor(ps.get_flow_count{name=pn,category='input',precision_index=defines.flow_precision_index.one_minute}) end "
+       "rcon.print(helpers.table_to_json{current=r and r.name or '', percent=math.floor(F.research_progress*100), techs=n, queue=q, labs=#labs, labs_working=w, silo_done=sd, silo_total=sn, packs=pk})")
 last = (None, -1, -1, time.time())
 while (ROOT / "runner.pid").exists():
     try:

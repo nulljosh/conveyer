@@ -228,9 +228,13 @@ class Driver:
         waited = now - self.unknown_since
         if waited > 10 and now - self.last_guess > 10:
             self.last_guess = now
-            guess = next((i for i in items(s) if i["kind"] == "button" and 200 < i["y"] < 950 and "mainMenu" not in i["cls"]
-                          and i["text"].strip().lower() not in ("sign up", "no, thanks", "trash game") and "no (go bankrupt)" not in i["text"].lower()
-                          and 0 < len(i["text"].strip()) < 60), None)
+            import re as _re
+            cands = [i for i in items(s) if i["kind"] == "button" and 300 < i["x"] < 1650 and 200 < i["y"] < 950 and "mainMenu" not in i["cls"]
+                     and i["text"].strip().lower() not in ("sign up", "no, thanks", "trash game") and "no (go bankrupt)" not in i["text"].lower()
+                     and 0 < len(i["text"].strip()) < 60]
+            def price(i):   # "Transfer (29K)" asks for money: an event choice that costs something is taken last (the first run paid a scam 29K)
+                m = _re.search(r"\(([\d.]+)([KM]?)\)", i["text"]); return float(m.group(1)) * {"": 1, "K": 1e3, "M": 1e6}[m.group(2)] if m else 0.0
+            guess = min(cands, key=price) if cands else None
             if guess: self.click(guess, "guess for unknown dialog"); self.note(action="guessed", screen=rec["screen"], pressed=guess["text"][:40])
         if waited > 120: print("stuck on an unknown screen:", rec["screen"], flush=True); return False
         return True

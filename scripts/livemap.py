@@ -28,6 +28,9 @@ def focus_targets():
     try: x, y = [float(v) for v in FOCUS.read_text().split(",")[:2]]
     except Exception: return None
     return [(x + 9 * math.cos(a * math.pi / 4), y + 9 * math.sin(a * math.pi / 4)) for a in range(8)]
+def streaming() -> bool:
+    try: return time.time() - (ROOT / "stream.json").stat().st_mtime < 3
+    except OSError: return False
 COMBAT = ROOT / "combat.json"
 ARMOR = "/silent-command local c=game.surfaces[1].find_entities_filtered{type='character'}[1] if c then c.destructible=false end"   # demo: the engineer cannot die on patrol (console assist, labelled as such); a dead character would break every loop that finds him
 def attack_target():
@@ -106,7 +109,7 @@ while (ROOT / "runner.pid").exists():
                         if tour_i >= len(tour): tour = []
                 else: ti += 1
             else: arrived = None
-        if time.time() - lastmap < 0.8: time.sleep(0.25); continue
+        if time.time() - lastmap < 0.8 or streaming(): time.sleep(0.25); continue   # stream.py reads the dots when it runs
         lastmap = time.time()
         fr = json.loads(FRAME.read_text()); hw, hh = fr["w"] / fr["ppt"] / 2, fr["h"] / fr["ppt"] / 2
         rcon = rcon or f.RCONClient("127.0.0.1", 27000, "factorio", timeout=8)

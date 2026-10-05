@@ -18,7 +18,8 @@ Updated 2026-10-05. v2.1.0. Loop paused. Read this file top to bottom. If you ha
 | Back after a Claude crash | The server survives a Claude crash but the workers die with the session. Start with `scripts/tick.sh`, then relaunch the tasks below |
 
 Background tasks: run each one as a Claude background task, never with nohup, and refresh any that are older than 15 minutes:
-`scripts/keepbusy.sh`, `.venv/bin/python scripts/livemap.py`, `scripts/livefeed.py`, `scripts/combat.py`, `scripts/snap.py`, `scripts/research_status.py`, `scripts/shuttle.sh`.
+`scripts/keepbusy.sh`, `.venv/bin/python scripts/livemap.py`, `.venv/bin/python scripts/stream.py`, `scripts/snap.py`, `scripts/research_status.py`, `scripts/shuttle.sh`.
+`stream.py` replaces `livefeed.py` and `combat.py`. Don't run them alongside it. If the window looks wrong, stop `stream.py` and go back to those two; `livemap.py` picks its dots up again on its own within 3 s.
 
 ## Live window: where it stands
 
@@ -37,7 +38,7 @@ Every feeder already sleeps unless `.watching` is fresh (touched less than 8 s a
 
 ## Live window: plan (one step per tick, commit each)
 
-1. **One feeder.** Write `scripts/stream.py` to replace livefeed, livemap and combat. It uses one RCON connection and one Lua call per frame, with tiered rates: position at 10 Hz, dots at 1 Hz, combat at 2 Hz, hotbar and silo at 0.5 Hz. It writes a single `stream.json` atomically. Keep the old files written until the app reads only the new one. *Cloud-safe: write it with a fake RCON client and tests.*
+1. **One feeder.** BUILT 2026-10-05 in the cloud, not yet run against the game. First Mac tick: `.venv/bin/python scripts/stream.py --once`, then run it as a background task and check the window. Wrote `scripts/stream.py` to replace livefeed, livemap and combat. It uses one RCON connection and one Lua call per frame, with tiered rates: position at 10 Hz, dots at 1 Hz, combat at 2 Hz, hotbar and silo at 0.5 Hz. It writes a single `stream.json` atomically. Keep the old files written until the app reads only the new one. *Cloud-safe: write it with a fake RCON client and tests.*
 2. **Deltas.** The Lua keeps the last machine statuses in `storage` and returns only the ones that changed, plus a full snapshot every 30 s. *Cloud-safe except the final check.*
 3. **App reads one file, and only when it changes.** Swap the 0.2 s poll of 8 files for a `DispatchSource` file watch on `stream.json`. Run the 60 Hz ease timer only while the marker is moving. *Mac only (Swift build).*
 4. **Tiled basemap.** Render 32x32 chunks, cache each chunk's PNG under the hash of its entities, and re-render only the chunks that changed, off the runner thread. This fixes the 28 s block. *Mac plus game.*

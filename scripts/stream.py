@@ -22,10 +22,11 @@ CHAR = ("local c=storage.cv_char if not (c and c.valid) then c=game.surfaces[1].
         "if not c then return '' end ")
 LUA = {
     "pos": CHAR + "return c.position.x..','..c.position.y..','..game.tick",
-    "dots": ("local s=game.surfaces[1] local S=defines.entity_status local o={} "
+    "dots": ("local s=game.surfaces[1] local S=defines.entity_status local prev=storage.cv_dots or {} local cur={} local o={} "
              "for _,e in pairs(s.find_entities_filtered{area={{X1,Y1},{X2,Y2}},force='player',type={'assembling-machine','furnace','lab','mining-drill','boiler','generator','chemical-plant','oil-refinery','rocket-silo'}}) do "
              "local st=e.status local k=1 if st==S.working or st==S.normal then k=0 elseif st==S.no_power or st==S.no_fuel or st==S.full_output or st==S.low_power or st==S.no_minable_resources or st==S.disabled_by_control_behavior then k=2 end "
-             "o[#o+1]=string.format('%.1f:%.1f:%d',e.position.x,e.position.y,k) end return table.concat(o,';')"),
+             "local key=string.format('%.1f:%.1f',e.position.x,e.position.y) cur[key]=k if FULL or prev[key]~=k then o[#o+1]=key..':'..k end end "
+             "storage.cv_dots=cur return (FULL and 'F|' or 'D|')..table.concat(o,';')"),
     "combat": (CHAR + "local s=game.surfaces[1] local p=c.position local o={string.format('p:%.1f:%.1f',p.x,p.y)} "
                "for _,e in pairs(s.find_entities_filtered{position=p,radius=RAD,force='enemy',type={'unit','unit-spawner','turret'}}) do local n=e.name local z=0 "
                "if n:find('behemoth') then z=3 elseif n:find('big') then z=2 elseif n:find('medium') then z=1 end "
@@ -56,14 +57,16 @@ def view_area(frame):
     return frame["cx"] - hw, frame["cy"] - hh, frame["cx"] + hw, frame["cy"] + hh
 
 
-def build_lua(parts, area=None):
-    """One RCON command that runs every requested part and prints 'name=result' lines."""
+def build_lua(parts, area=None, full=True):
+    """One RCON command that runs every requested part and prints 'name=result' lines.
+    The dots part sends only machines whose status changed since its last read unless full is true (then it sends them all)."""
     calls = []
     for k in parts:
         body = LUA[k]
         if k == "dots":
             if area is None: continue
             for tok, v in zip(("X1", "Y1", "X2", "Y2"), area): body = body.replace(tok, "%g" % v)
+            body = body.replace("FULL", "true" if full else "false")
         calls.append("O[#O+1]='%s='..(function() %s end)()" % (k, body))
     return "/silent-command local O={} " + " ".join(calls) + " rcon.print(table.concat(O,'\\n'))"
 
@@ -82,7 +85,12 @@ def parse_pos(v):
 
 
 def parse_dots(v, now):
-    return {"t": now, "d": [[float(a), float(b), int(c)] for a, b, c in (p.split(":") for p in v.split(";") if p)]}
+    """'F|x:y:k;...' is every machine, 'D|...' only the ones that changed (marked delta, Streamer merges it). No prefix means full."""
+    mode, sep, body = v.partition("|")
+    if not sep: body = v
+    out = {"t": now, "d": [[float(a), float(b), int(c)] for a, b, c in (p.split(":") for p in body.split(";") if p)]}
+    if sep and mode == "D": out["delta"] = True
+    return out
 
 
 def parse_combat(v, now, last_mags, fired_at):
@@ -183,15 +191,23 @@ class Streamer:
     step(now) reads what is due and returns how long to sleep. After a failure it drops the connection and backs off
     1, 2, 4 ... 30 s; one good frame resets that."""
     MAX_BACKOFF = 30.0
+    FULL_EVERY = 30.0   # a full dots snapshot at least this often: drops destroyed machines and repairs a lost reply
 
     def __init__(self, connect=connect, writer=None, frame=FRAME):
         self.connect, self.w, self.frame = connect, writer or Writer(), frame
         self.rcon, self.last, self.mags, self.fired, self.fails = None, {}, {}, {}, 0
+        self.dots, self.full_at, self.need_full = {}, float("-inf"), True
 
     def drop(self):
         try: getattr(self.rcon, "close", lambda: None)()
         except Exception: pass
         self.rcon = None
+
+    def merge_dots(self, d, now):
+        """Fold a delta into the machines seen so far (a full snapshot replaces them); returns the usual {t, d} file content."""
+        if d.pop("delta", False): self.dots.update({(x, y): k for x, y, k in d["d"]})
+        else: self.dots = {(x, y): k for x, y, k in d["d"]}; self.full_at, self.need_full = now, False
+        return {"t": now, "d": [[x, y, k] for (x, y), k in self.dots.items()]}
 
     def step(self, now):
         parts = due(now, self.last)
@@ -200,14 +216,18 @@ class Streamer:
         if parts:
             try:
                 self.rcon = self.rcon or self.connect()
-                reply = self.rcon.send_command(build_lua(parts, area))
+                full = self.need_full or now - self.full_at >= self.FULL_EVERY
+                reply = self.rcon.send_command(build_lua(parts, area, full))
                 if not isinstance(reply, str): raise ValueError("no reply")
             except Exception as e:   # server restarting, timeout, refused: reconnect after a pause
-                self.drop(); self.fails += 1
+                self.drop(); self.fails += 1; self.need_full = True
                 log("%s: %s" % (type(e).__name__, e))
                 return min(2.0 ** (self.fails - 1), self.MAX_BACKOFF)
             self.fails = 0
             got = parse(reply, now, self.mags, self.fired)
+            if "dots" in parts:
+                if "dots" in got: got["dots"] = self.merge_dots(got["dots"], now)
+                else: self.need_full = True   # empty or malformed: the next read starts over
             self.w.write({k: v for k, v in got.items() if k in parts}, now)   # only what this frame asked for: a stale or shifted reply cannot sneak old parts in
             for k in parts: self.last[k] = now
         return max(0.02, min(self.last.get(k, now) + RATES[k] for k in RATES) - now)

@@ -19,6 +19,7 @@ if "5.2" not in ver.stdout + ver.stderr:   # Factorio runs 5.2; a newer Lua woul
 
 MOCK = r"""
 storage={}
+MS={1,3,9}
 defines={entity_status={working=1,normal=2,no_power=3,no_fuel=4,full_output=5,low_power=6,no_minable_resources=7,disabled_by_control_behavior=8,waiting=9},
          inventory={chest=1,turret_ammo=2}}
 local function inv(counts) return {get_item_count=function(n) return counts[n] or 0 end} end
@@ -33,18 +34,20 @@ local surf={find_entities_filtered=function(f)
                                    ent{name='biter-spawner',type='unit-spawner',position={x=9,y=9}},ent{name='behemoth-worm-turret',type='turret',position={x=7,y=7}}} end
   if f.type=='ammo-turret' then return {ent{name='gun-turret',position={x=0,y=0},counts={['firearm-magazine']=7}}} end
   if f.type=='container' then return {ent{counts={coal=5,['iron-plate']=2}},ent{counts={coal=1}}} end
-  return {ent{position={x=1,y=2},status=1},ent{position={x=3,y=4},status=3},ent{position={x=5,y=6},status=9}}
+  return {ent{position={x=1,y=2},status=MS[1]},ent{position={x=3,y=4},status=MS[2]},ent{position={x=5,y=6},status=MS[3]}}
 end}
 game={surfaces={surf},tick=1234,forces={player={rockets_launched=2}}}
 rcon={print=function(s) io.write(s) end}
 """
 
 
-def run(setup, parts, area=(-10, -10, 10, 10)):
-    cmd = S.build_lua(parts, area)
+def run(setup, parts, area=(-10, -10, 10, 10), full=True, again=None):
+    cmd = S.build_lua(parts, area, full)
     assert cmd.startswith("/silent-command ")
     with tempfile.NamedTemporaryFile("w", suffix=".lua", delete=False) as f:
         f.write(MOCK + setup + "\n" + cmd[len("/silent-command "):])
+        if again:   # a second read in the same game: storage carries over, setup changes what the machines look like
+            f.write('\nio.write("\\n@@\\n")\n' + again + "\n" + S.build_lua(parts, area, False)[len("/silent-command "):])
     r = subprocess.run([LUA, f.name], capture_output=True, text=True, timeout=10)
     Path(f.name).unlink()
     assert r.returncode == 0, r.stderr
@@ -71,4 +74,9 @@ assert "pos" not in d and "combat" not in d and "silo" not in d and "dots" in d 
 # a dead cached character is replaced by a fresh lookup
 out = run("storage.cv_char={valid=false} CHARS={char} SILOS={silo}", ["pos"])
 assert out.strip() == "pos=1.5,-2.25,1234", out
+
+# dots deltas: a full read lists every machine; the next read lists only the one whose status changed
+first, second = run("CHARS={char} SILOS={silo}", ["dots"], again="MS[2]=1").split("\n@@\n")
+assert first == "dots=F|1.0:2.0:0;3.0:4.0:2;5.0:6.0:1", first
+assert second == "dots=D|3.0:4.0:0", second   # only the machine that went from no_power to working
 print("ok")

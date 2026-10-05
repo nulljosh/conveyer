@@ -80,6 +80,10 @@ end to end, driven entirely by skill calls (no raw code).
   weak at long-horizon strategic play, so scope tasks accordingly rather than assuming the
   loop can just "play well" unsupervised.
 
+## Rules
+
+See [docs/RULES.md](docs/RULES.md). Every session and loop tick follows it.
+
 ## The loop
 
 See [docs/LOOP-HANDOFF.md](docs/LOOP-HANDOFF.md) for current session state, next steps, and the restart prompt.

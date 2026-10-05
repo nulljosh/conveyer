@@ -225,3 +225,6 @@ Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 4
 - [ ] Oxygen Not Included, then Pikmin and Pokemon: reuse the skill layer (pick one skill and JSON params, never code), the planner pattern, the status dots and the follow camera. Train Turing on the logged runs (docs/TRAINING.md)
 - [ ] Build our own versions of these games once the agent can play them
 - [ ] When the legit launch happens: a full video of the final stretch at 1x to 2x (screencapture -v of the live window from the first silo part to liftoff, ffmpeg to mp4), shown on the landing
+
+## Ingested 2026-10-03
+- [ ] QA the landing page. Content is hidden behind the parallax.

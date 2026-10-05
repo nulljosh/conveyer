@@ -42,7 +42,8 @@ def attack_target():
         return (fire[0][0] + 4, fire[0][1] + 4) if fire else None
     except Exception: return None
 def targets():
-    return [(P.OX + (t["cell"] % P.COLS) * P.CW + 3.5, P.OY + (t["cell"] // P.COLS) * P.CH + 5) for t in P.load()]
+    """The engineer patrols the newest tiles, newest first: the build front is where the action is, not a loop over every old tile."""
+    return [(P.OX + (t["cell"] % P.COLS) * P.CW + 3.5, P.OY + (t["cell"] // P.COLS) * P.CH + 5) for t in P.load()[-4:][::-1]]
 
 TOUR = ("/silent-command local o={} for _,e in pairs(game.surfaces[1].find_entities_filtered{position={%g,%g},radius=42,force='player',name={'gun-turret','pumpjack'}}) do "
         "o[#o+1]=e.name..':'..e.position.x..':'..e.position.y end rcon.print(table.concat(o,';'))")

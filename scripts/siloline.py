@@ -34,4 +34,11 @@ local ins=0 for _,e in pairs(s.find_entities_filtered{type='inserter',position={
 out[#out+1]='silo parts='..silo.rocket_parts..' status='..tostring(silo.status)..' powered inserters='..ins..' net silo/pole='..tostring(silo.electric_network_id)..'/'..tostring(pole and pole.electric_network_id)..' '..table.concat(moved,', ')
 rcon.print(table.concat(out,' | '))"""
 LAUNCH = 0 if any((Path(__file__).resolve().parent.parent / n).exists() for n in (".assist", ".hold")) else 1   # a legit launch means no .assist; .hold (a file) also pauses the launch so a camera can be rolling first; either way the script only feeds
-print(c.send_command(" ".join((LUA % (",".join("'%s'" % i for i in ITEMS), KEEP, LAUNCH)).split("\n"))))
+result = c.send_command(" ".join((LUA % (",".join("'%s'" % i for i in ITEMS), KEEP, LAUNCH)).split("\n")))
+print(result)
+if "LAUNCH ok=true" in result:   # the launch ledger the landing page reads (#36); LAUNCH is 1 only without .assist and .hold, so these are legit launches
+    import json, time
+    ledger = Path(__file__).resolve().parent.parent / "data" / "milestones.json"
+    rows = json.loads(ledger.read_text()) if ledger.exists() else []
+    rows.append({"date": time.strftime("%Y-%m-%d"), "version": (Path(__file__).resolve().parent.parent / "VERSION").read_text().strip(), "assisted": False, "note": "launched by the silo line with no console-fed parts"})
+    ledger.write_text(json.dumps(rows, indent=1) + "\n")

@@ -13,6 +13,9 @@ nice = lambda n: esc(n.replace("-", " "))
 r = json.loads((ROOT / "research.json").read_text()) if (ROOT / "research.json").exists() else {}
 bench = (ROOT / "shots" / "bench.jsonl")
 entities = json.loads(bench.read_text().splitlines()[-1])["entities"] if bench.exists() else 0
+ledger = json.loads((ROOT / "data" / "milestones.json").read_text()) if (ROOT / "data" / "milestones.json").exists() else []   # one row per launch, appended by siloline.py (#36)
+rockets, legit = len(ledger), sum(1 for m in ledger if not m.get("assisted"))
+rocket_detail = ", ".join(f"{m['version']} {'assisted' if m.get('assisted') else 'with no console-fed parts'}" for m in ledger) or "none yet"
 
 src = ROOT / "preview_map.png"
 def valid(p):
@@ -159,14 +162,14 @@ PAGE = """<!doctype html>
 <section class="copy wrap reveal">
   <h2>Road to the rocket</h2>
   <div class="meter" role="img" aria-label="__SILOPCT__ percent"><i style="width:__SILOPCT__%"></i></div>
-  <p>__SILOPCT__% of the research the rocket silo needs is done: __SILODONE__ of __SILOTOTAL__ techs. Rockets launched: 2 (v1.0 assisted: purple and yellow science were console-fed; v2.0 with no console-fed parts).</p>
+  <p>__SILOPCT__% of the research the rocket silo needs is done: __SILODONE__ of __SILOTOTAL__ techs. Rockets launched: __ROCKETS__ (__ROCKETDETAIL__).</p>
 </section>
 
 <div class="facts reveal">
   <div class="fact"><b>__TECHS__</b><span>techs researched</span></div>
   <div class="fact"><b>__ENT__</b><span>things on the base</span></div>
   <div class="fact"><b>0</b><span>pixels read</span></div>
-  <div class="fact"><b>2</b><span>rockets launched (the second with no console-fed parts)</span></div>
+  <div class="fact"><b>__ROCKETS__</b><span>rockets launched (__LEGIT__ with no console-fed parts)</span></div>
 </div>
 
 <section class="copy wrap reveal">
@@ -232,7 +235,7 @@ out = (PAGE.replace("__SILOPCT__", str(spct)).replace("__SILODONE__", str(sd)).r
        .replace("__CUR__", cur).replace("__PCT__", str(pct)).replace("__LABS__", esc(labs))
        .replace("__THEN__", f" &middot; then {queue[0]}" if queue else "")
        .replace("__NEXT3__", "".join(f"<li>{esc(t)}</li>" for t, _ in nxt[:3]))
-       .replace("__TODAY__", today).replace("__TECHS__", str(r.get("techs", "")))
+       .replace("__TODAY__", today).replace("__TECHS__", str(r.get("techs", ""))).replace("__ROCKETS__", str(rockets)).replace("__ROCKETDETAIL__", rocket_detail).replace("__LEGIT__", str(legit))
        .replace("__ENT__", f"{entities:,}").replace("__DONE__", done_li).replace("__NEXT__", next_li))
 (WEB / "index.html").write_text(out)
 print("built", len(out), "bytes;", len(nxt), "next items")
@@ -240,7 +243,7 @@ print("built", len(out), "bytes;", len(nxt), "next items")
 # README progress line, between markers. Rockets are 0 until one launches.
 rd = ROOT / "README.md"; t = rd.read_text()
 bar = "#" * (spct // 5) + "-" * (20 - spct // 5)
-block = f"<!-- progress:start -->\n**Road to the rocket: {spct}%** `{bar}` {sd} of {st} techs the silo needs. Rockets launched: 2 (v1.0 assisted: purple and yellow science were console-fed; v2.0 with no console-fed parts).\n<!-- progress:end -->"
+block = f"<!-- progress:start -->\n**Road to the rocket: {spct}%** `{bar}` {sd} of {st} techs the silo needs. Rockets launched: {rockets} ({rocket_detail}).\n<!-- progress:end -->"
 if "<!-- progress:start -->" in t:
     t = re.sub(r"<!-- progress:start -->.*?<!-- progress:end -->", lambda m: block, t, flags=re.S)
 else:

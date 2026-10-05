@@ -13,7 +13,7 @@ Built on [FLE](https://github.com/JackHopkins/factorio-learning-environment), th
 ## Where it is
 
 <!-- progress:start -->
-**Road to the rocket: 100%** `####################` 44 of 44 techs the silo needs. Rockets launched: 2 (v1.0 assisted: purple and yellow science were console-fed; v2.0 with no console-fed parts).
+**Road to the rocket: 100%** `####################` 44 of 44 techs the silo needs. Rockets launched: 2 (v1.0.0 assisted, v2.0.0 with no console-fed parts).
 <!-- progress:end -->
 
 It plays a copy of a real 2,300 entity base and builds the rest itself: a planner lays out assembler tiles, a loop feeds them, and replay scripts rebuild everything after a crash. Two rockets have launched. The first was assisted. The second, at 20:45 on 2 October 2026, had no console-fed parts. A server crash later that night rolled the world back, so the video relaunch is labelled assisted.

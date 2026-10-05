@@ -1,6 +1,6 @@
 # Conveyer loop handoff
 
-Updated 2026-10-05. v2.1.5. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
+Updated 2026-10-05. v2.1.6. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
 
 ## TLDR
 
@@ -42,9 +42,9 @@ Every feeder already sleeps unless `.watching` is fresh (touched less than 8 s a
 2. **Deltas.** DONE 2026-10-05 (v2.1.1, verified on the live game: 54 machines, full read then deltas). The Lua keeps the last machine statuses in `storage` and returns only the ones that changed, plus a full snapshot every 30 s. *Cloud-safe except the final check.*
 3. **App reads one file, and only when it changes.** DONE 2026-10-05 (v2.1.2, typechecks and runs; CPU did not move, see the grades table). The app now wakes on `stream.json` through a file watch, the 0.2 s poll drops to 1 s while stream.json is fresh, and the 60 Hz ease timer only runs while the marker is moving. Original plan: Swap the 0.2 s poll of 8 files for a `DispatchSource` file watch on `stream.json`. Run the 60 Hz ease timer only while the marker is moving. *Mac only (Swift build).*
 3b. **Cut the redraw cost.** DONE 2026-10-05 (v2.1.4): the eased position now lives in its own `Glide` object, so only the camera, marker and minimap redraw at 60 Hz; the hotbar, feed, dots and silo no longer observe it. About 10% to 5.5%. Earlier notes (v2.1.3): found by bisecting the overlays (`sample`, then adding them back one at a time). The hotbar decoded 10 PNGs from disk on every redraw, and it redraws at 60 Hz while the engineer walks because it observes the whole marker model. An icon cache took the window from 30% to about 10%. Still over the 5% goal. What is left, measured: easing at 30 Hz instead of 60 saves about 1.7 points; the rest is the 6 animated TimelineViews and every overlay re-running its body on each marker publish (split the model so the hotbar, feed and minimap stop observing the position). Original notes: The window costs about 30% of a core fullscreen while the marker moves, far over the 5% goal. Find what redraws per frame (`sample <pid> 3`), then try: `drawingGroup()` or a Canvas for the dots and enemies, redraw the map layer only when its picture changes, and cap the marker to 30 fps. Measure with `top -l 4 -s 20 -pid` before and after. *Mac only.*
-4. **Tiled basemap.** Render 32x32 chunks, cache each chunk's PNG under the hash of its entities, and re-render only the chunks that changed, off the runner thread. This fixes the 28 s block. *Mac plus game.*
-5. **Game speed follows load.** Run at 10x when the machine is idle and drop to 3x when it is hot (`scripts/speed.py`, `scripts/cpu_guard.sh`). *Mac plus game.*
-6. **QA.** Take screenshots with `ConveyerMonitor --snapshot out.png --live` and measure CPU with `ps` with the window open and closed. Put the before and after numbers in the grades table below.
+4. **Tiled basemap.** HELD 2026-10-05: it means rewriting `capture_screenshot` in `runner.py` around FLE's renderer internals, and the only way to load it is a runner restart, which rolls the world back to the 10:55 copy (FLE state cannot be saved). Do it only when a restart is needed anyway, then run `scripts/health.sh --fix`. The window works without it: the render only blocks the runner, not the window. Render 32x32 chunks, cache each chunk's PNG under the hash of its entities, and re-render only the chunks that changed, off the runner thread. This fixes the 28 s block. *Mac plus game.*
+5. **Game speed follows load.** DONE (already in place: `keepbusy.sh` calls `speed.py` every cycle, `tick.sh` too; 10x idle, 2x under memory pressure; checked 2026-10-05, load 0.32 per core, 10x). Run at 10x when the machine is idle and drop to 3x when it is hot (`scripts/speed.py`, `scripts/cpu_guard.sh`). *Mac plus game.*
+6. **QA.** DONE 2026-10-05, see the last grades row. Take screenshots with `ConveyerMonitor --snapshot out.png --live` and measure CPU with `ps` with the window open and closed. Put the before and after numbers in the grades table below.
 
 Done when: the window is open at 5 Hz or better and every feeder plus the app together stays under 5% of one core. With the window closed, idle cost is roughly 0.
 
@@ -57,6 +57,7 @@ Done when: the window is open at 5 Hz or better and every feeder plus the app to
 | 2026-10-05 00:40 | B | C | Honest re-measure, fullscreen, window open, engineer walking, `top -l` deltas: app 29% before step 3, 30% after. stream.py 0.6%. The cost is SwiftUI/Core Animation redrawing the whole view every frame while the engineer moves (`sample` shows layout and CA commit, not file reads). Last night's 0% was an idle view. Next: cut the redraw cost (step 3b) |
 | 2026-10-05 01:20 | B+ | B | Same setup after the hotbar icon cache: app about 10% (was 30%). Bisect: map only 3%, plus the animated layers about 9%, plus hotbar 32% before the fix. stream.py 0.6% |
 | 2026-10-05 01:50 | B+ | A- | After splitting the eased position into `Glide`: app 5.4 to 5.5% (was 10%), stream.py 0.6%, total about 6.1%. Goal is under 5%: remaining cost is the animated layers (6 TimelineViews, 10 to 30 Hz) |
+| 2026-10-05 02:40 | A- | B+ | Final QA, fullscreen, window open, engineer walking, `top -l 3` deltas: app 5.0%, stream.py 0.5%, livemap 0.2%, runner 0.0%. Total 5.7% of one core, goal was under 5%. Missed by 0.7. Cheapest remaining lever: ease timer 60 to 30 Hz saves about 1.7 points but makes the glide choppier, so not taken. Window closed: feeders sleep (designed near zero, not re-measured) |
 
 ## Cloud-safe work (no game, no Mac)
 

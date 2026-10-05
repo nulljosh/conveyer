@@ -22,11 +22,12 @@
 	// Everything the player could press right now: buttons, inputs, sliders, and anything with a click handler or a pointer cursor.
 	function scan() {
 		var out = [], found = [], all = document.body.getElementsByTagName('*');
-		for (var i = 0; i < all.length && found.length < 200; i++) {
+		for (var i = 0; i < all.length && found.length < 300; i++) {
 			var el = all[i];
 			if (el.offsetWidth < 2 || el.offsetHeight < 2) continue;
 			var r = el.getBoundingClientRect();
-			if (r.bottom <= 0 || r.right <= 0 || r.top >= innerHeight || r.left >= innerWidth) continue;
+			if (r.right <= 0 || r.left >= innerWidth) continue;
+			var off = r.bottom <= 0 || r.top >= innerHeight;   // scrolled out of view (a long platform list): still listed, flagged, and pressable
 			var cs = getComputedStyle(el);
 			if (cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05) continue;
 			var cls = typeof el.className === 'string' ? el.className : '';
@@ -39,6 +40,7 @@
 			}
 			var kind = slider ? 'slider' : (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') ? 'input' : el.tagName === 'CANVAS' ? 'canvas' : 'button';
 			var item = { i: found.length, kind: kind, text: label(el), id: el.id || '', cls: cls.slice(0, 60), x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), w: Math.round(r.width), h: Math.round(r.height) };
+			if (off) item.off = true;
 			if (slider) { try { item.value = jQuery(el).slider('value'); item.min = jQuery(el).slider('option', 'min'); item.max = jQuery(el).slider('option', 'max'); } catch (e) { } }
 			if (kind === 'input') item.value = String(el.value || '').slice(0, 80);
 			found.push(el); out.push(item);

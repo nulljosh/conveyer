@@ -57,7 +57,7 @@ class Driver:
         self.log = open(out / f"{int(time.time())}.jsonl", "a")
         self.end, self.want_new, self.unknown_since, self.last, self.last_guess = time.time() + minutes * 60, want_new, None, None, 0.0
         self.used = {}      # (kind, name) -> times picked
-        self.rng, self.topic, self.attempts, self.max_attempts, self.last_over, self.repicked, self.same, self.last_click = random.Random(7), None, 0, 6, None, False, 0, None
+        self.rng, self.topic, self.attempts, self.max_attempts, self.last_over, self.repicked, self.same, self.last_click, self.guesses, self.guess_sig = random.Random(7), None, 0, 6, None, False, 0, None, 0, None
 
     def note(self, **kw):
         kw["t"] = round(time.time()); self.log.write(json.dumps(kw) + "\n"); self.log.flush()
@@ -85,7 +85,7 @@ class Driver:
         for i in central:
             t = i["text"].strip()
             on_slot = 900 < i["x"] < 1020 and any(abs(i["y"] - y) < 20 for y in (368, 440, 512))   # the three chosen-value buttons sit under the picker
-            if on_slot or len(t) > 24 or "?" in t or t.lower().startswith(skip) or i["x"] > 1400 or not 300 < i["y"] < 800: continue
+            if on_slot or len(t) > 24 or "?" in t or t.endswith("...") or t.lower().startswith(skip) or i["x"] > 1400 or not 300 < i["y"] < 800: continue
             if (t in GENRE_ORDER) == (kind == "genre"): out.append(i)
         return out
 
@@ -184,6 +184,9 @@ class Driver:
         if "which one would you like to load" in low:   # cloud and local autosaves differ after a restart: only ever our own studio's
             mine = next((i for i in items(s) if "conveyer games" in i["text"].lower() and len(i["text"]) < 200 and "which one" not in i["text"].lower()), None)
             if mine: self.click(mine, "load our own autosave"); return True
+        if "game convention" in low and "do you want to participate" in low:   # booths cost 80K to 1.5M: decline by closing
+            close = next((i for i in s["items"] if "closeDialogButton" in i["cls"]), None)
+            if close: gdt.send("click", i=close["i"], gen=s["gen"]); self.note(action="declined convention"); time.sleep(0.5); return True
         if "acquire license?" in low:
             def exact(word): return next((i for i in items(s) if i["text"].strip().lower() == word), None)   # not find(): "no" also starts "No, thanks"
             m = re.search(r"pay ([\d,]+)", s["text"]); price = float(m.group(1).replace(",", "")) if m else 1e12
@@ -244,6 +247,11 @@ class Driver:
             def price(i):   # "Transfer (29K)" asks for money: an event choice that costs something is taken last (the first run paid a scam 29K)
                 m = _re.search(r"([\d.]+)\s*([KM])\b", i["text"]); return float(m.group(1)) * {"K": 1e3, "M": 1e6}[m.group(2)] if m else 0.0   # "Transfer (29K)", "Move (pay 150K)"
             guess = min(cands, key=price) if cands else None
+            self.guesses = self.guesses + 1 if self.guess_sig == sig else 1
+            self.guess_sig = sig
+            close = next((i for i in s["items"] if "closeDialogButton" in i["cls"]), None)
+            if close and (self.guesses >= 2 or not guess):   # the guess did not move the screen (or there is nothing to press): close the dialog, which declines the offer
+                gdt.send("click", i=close["i"], gen=s["gen"]); self.note(action="closed unknown dialog", screen=rec["screen"]); guess = None
             if guess: self.click(guess, "guess for unknown dialog"); self.note(action="guessed", screen=rec["screen"], pressed=guess["text"][:40])
         if waited > 120: print("stuck on an unknown screen:", rec["screen"], flush=True); return False
         return True

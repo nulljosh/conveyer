@@ -1,11 +1,12 @@
 # Conveyer loop handoff
 
-Updated 2026-10-05. v2.1.8. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
+Updated 2026-10-05 02:40. v2.1.8. Loop paused, decision pending. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
 
 ## TLDR
 
 - **The game is beaten.** v2.0.0 (2 Oct, 20:45) launched a rocket with nothing fed in by console. A crash rolled that world back, so the rocket in the video is labelled assisted.
-- **Next goal: the live window.** Stream the game into `ConveyerMonitor` at 5 Hz or better while staying under 5% of one core. Watching costs nothing while the window is closed.
+- **Live window plan: steps 1-3 done, step 4 held.** Stream consolidates three scripts into one (stream.py, 0.5% CPU), app wakes on stream.json watch not poll, icon cache 30% to 10%, eased position split 10% to 5.5%. Final QA 5.7% of core (goal 5%). Step 4 (tiled basemap) needs runner restart that rolls world back. Skill picker trained (71% skill, 63% params) but doesn't play late-game saves yet. World is beaten.
+- **Open decision: retire world and train model on fresh save.** Or resume the loop with other games (Oxygen Not Included). Ask Joshua.
 - **Hard rule: never join with a real Factorio client.** A join forces a map save, FLE's Lua state cannot be saved, the server dies and the world rolls back. The custom window is the only way to watch.
 
 ## Pick up in 60 seconds

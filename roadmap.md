@@ -222,6 +222,22 @@ Baseline: 2316 entities, 39 techs, 3 labs, 36 assembler-2, 27 electric drills, 4
 - [ ] QA: landing numbers generated from the game (rockets, techs, packs per minute), no typed numbers
 
 ## Next games
+Ranked 2026-10-05, easiest to drive first, ties broken by how close the game is to Factorio (build, automate, survive). All flagged for Mac on Steam. "How we drive it" is a plan from what is known about each game's mod support, checked only where it says checked.
+- [ ] 1. Don't Starve (installed on the LaCie). Lua mods and a console, the same shape as Factorio's Lua. Survival and crafting, real monsters.
+- [ ] 2. Oxygen Not Included (installed). Checked: Unity with Mono, Harmony ships with the game, dev mods folder. An MCP colony mod already exists (LIghtJUNction/OniMods), untested on Mac.
+- [ ] 3. Stardew Valley. C# with the SMAPI mod loader. Farming loop, daily planning.
+- [ ] 4. Terraria. C# with tModLoader. Mining, building, bosses.
+- [ ] 5. Starbound. Lua mods.
+- [ ] 6. Project Zomboid. Lua mods on a Java game. Survival, long horizon.
+- [ ] 7. Game Dev Tycoon. A JavaScript game, mods are plain JS. Menu choices only, a cheap first test of the picker on a second game.
+- [ ] 8. Cities: Skylines. Unity with Mono and an official C# mod API. Heavy on this Mac.
+- [ ] 9. Civilization V. Lua mods, turn based. The Mac port may not launch on this macOS.
+- [ ] 10. Reus, Thronefall, Plague Inc: Evolved. Small strategy games, mod route unknown.
+- [ ] 11. FEZ (installed). Checked: C# on Mono (FEZ.exe), so it can be hooked. Hard to play: 3D rotation puzzles in real time.
+- [ ] 12. FTL. Native code, no Mac mod loader, so screenshots and clicks. Pausable, which helps.
+- [ ] 13. Europa Universalis IV. No runtime API, console only.
+- [ ] 14. Papers, Please (installed). Checked: Unity IL2CPP, no code hooks, so screenshots and clicks. Reading documents by eye is the whole game.
+- [ ] Not checked yet (Steam rate limit): Satisfactory, Don't Starve Together, Undertale, INSIDE. Skipped: Rust and Unturned (multiplayer servers).
 - [ ] Oxygen Not Included, then Pikmin and Pokemon: reuse the skill layer (pick one skill and JSON params, never code), the planner pattern, the status dots and the follow camera. Train Turing on the logged runs (docs/TRAINING.md)
 - [ ] Build our own versions of these games once the agent can play them
 - [ ] When the legit launch happens: a full video of the final stretch at 1x to 2x (screencapture -v of the live window from the first silo part to liftoff, ffmpeg to mp4), shown on the landing

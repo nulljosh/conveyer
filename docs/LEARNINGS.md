@@ -67,3 +67,9 @@ now refuses to run. A true-graphics view needs the save problem fixed first (fin
 - **macOS 27 refuses Don't Starve** ("damaged") even after re-signing and clearing the attributes. Uninstalled. FEZ and Papers, Please launch.
 - **Game Dev Tycoon runs through a no-network mod** (`games/gdt/`), and its development only progresses while the window is visible, so a run needs the screen for about two hours. Details in `games/gdt/README.md`.
 - **Colima wedges** after long sessions: the CLI says the daemon is not running while the host agent is alive. `colima stop --force` then `colima start` fixes it, and the Factorio container comes back with it.
+
+### Claude passes `iron_plate_throughput` through the skill layer (2026-10-05)
+
+Claude picked the skill calls by hand (`scripts/skill.py` against a live `runner.py`) on a clean `iron_plate_throughput` map: find iron, then mine, smelt and collect with burner drills and a furnace. The environment's own check returned **reward 17.0, terminated True** against a quota of 16 iron plates per 60 game seconds. No console help, only the skills in `skills.py`. The starting inventory is the benchmark's normal lab-play kit. The transcript is `runs/claude-iron-plate-pass-2026-10-05.jsonl` (about 8 calls).
+
+What this is and is not: one easy task of FLE's 24 (the 16 a minute iron plate task), passed by Claude, not by the trained model. The trained model stops after the first belt. This run shows the next moves it never learned: more drills into the same furnace, then `collect` from the furnace. Throughput held only while the furnace had room (its output filled at 50 plates and dropped to 0 until I collected), so the pass is a moment, not a steady factory.

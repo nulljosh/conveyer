@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gdt
 
 ROOT = Path(__file__).resolve().parent.parent
-ROUTINE = ("ok", "continue", "close", "done", "got it", "release", "release game", "yes", "finish", ":-(")   # not "No, thanks": the newsletter popup is in the page but never visible
+ROUTINE = ("ok", "continue", "close", "done", "got it", "release", "release game", "yes", "sure", "finish", ":-(")   # not "No, thanks": the newsletter popup is in the page but never visible
 # Topic and genre pairs the game rates well, from public Game Dev Tycoon guides (assisted-by-guide data, not read from the game).
 GOOD = {
     "Action": "Airplanes Aliens Alternate History Assassin Crime Cyberpunk Dungeon Extreme Sports Fantasy Horror Hunting Martial Arts Medieval Military Music Mythology Ninja Post Apocalyptic Prison Rhythm Sci-Fi Space Sports Spy Superheroes UFO Vampire Werewolf Zombies",
@@ -175,6 +175,11 @@ class Driver:
             if self.attempts > self.max_attempts: return False
             return self.start_over()
         self.unknown += 1
+        if self.unknown >= 6:   # an event dialog we have no rule for: press its first button (the first choice is the friendly one in this game), never the newsletter or menu
+            guess = next((i for i in items(s) if i["kind"] == "button" and 200 < i["y"] < 950 and "mainMenu" not in i["cls"]
+                          and i["text"].strip().lower() not in ("sign up", "no, thanks", "trash game") and "no (go bankrupt)" not in i["text"].lower()
+                          and 0 < len(i["text"].strip()) < 60), None)
+            if guess: self.click(guess, "guess for unknown dialog"); self.note(action="guessed", screen=rec["screen"], pressed=guess["text"][:40])
         self.note(action="unknown", **rec, items=[(i["i"], i["text"][:30]) for i in items(s)][:12])
         if self.unknown >= 40:   # dialogs that animate (reviews, sales) take a while before their button appears
             print("stuck on an unknown screen:", rec["screen"]); return False

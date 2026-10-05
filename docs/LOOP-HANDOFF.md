@@ -1,15 +1,29 @@
-# Conveyer loop handoff
+# Conveyer loop handoff (2026-10-05, afternoon)
 
-Updated 2026-10-05 02:40. v2.1.8. Loop paused, decision pending. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
+## What the loop is
 
-## TLDR
+Find a game an agent can beat, play it, and log honestly how far it got. Factorio is beaten (v2.0.0, 2 Oct). The loop now plays **Game Dev Tycoon** through a small mod and keeps the Factorio benchmark runs going on the side.
 
-- **The game is beaten.** v2.0.0 (2 Oct, 20:45) launched a rocket with nothing fed in by console. A crash rolled that world back, so the rocket in the video is labelled assisted.
-- **Live window plan: steps 1-3 done, step 4 held.** Stream consolidates three scripts into one (stream.py, 0.5% CPU), app wakes on stream.json watch not poll, icon cache 30% to 10%, eased position split 10% to 5.5%. Final QA 5.7% of core (goal 5%). Step 4 (tiled basemap) needs runner restart that rolls world back. Skill picker trained (71% skill, 63% params) but doesn't play late-game saves yet. World is beaten.
-- **Open decision: retire world and train model on fresh save.** Or resume the loop with other games (Oxygen Not Included). Ask Joshua.
-- **Hard rule: never join with a real Factorio client.** A join forces a map save, FLE's Lua state cannot be saved, the server dies and the world rolls back. The custom window is the only way to watch.
+## Where things stand
 
-## Pick up in 60 seconds
+- **Game Dev Tycoon: playing, not beaten.** The third run was at Year 4, month 8 with 93K cash at 13:45 on 5 Oct. The first two went bankrupt in Year 3. The game ends and scores itself at Y35 M12 W4. That is the win.
+- **How it plays.** `games/gdt/conveyer-bridge/` is a mod with no network and no code execution: it writes the screen to `~/Library/Application Support/conveyer-gdt/state.json` and takes a fixed list of button presses from `cmd.json`. `scripts/gdt_play.py` is the driver. It logs every decision to `runs/gdt/` (gitignored) and restarts after a bankruptcy.
+- **Labels.** Unassisted play: the driver reads screen text and read-only state and never writes cash, dates or saves. Topic and genre pairs come from a public guide table, so say "assisted by guide data" for those.
+- **Never touch save slot 3.** It is Joshua's real 2014 save. Our studio (Conveyer Games) plays in slot 5. A backup of his saves is in `.gdt-save-backup/` (gitignored).
+- **Factorio benchmark.** Claude passed `iron_plate_throughput` by hand through the skill layer (17 a minute against a quota of 16). The trained picker plays the opening (12 of 13 calls) and then repeats one belt call. It needs data from runs that go past the belt.
+- **Other games.** FEZ and Papers, Please launch but have no bridge. Don't Starve will not open on this macOS. The ranked list is in `roadmap.md` under Next games.
+- **Factorio live window.** Steps 1 to 3 done (5.7% of a core), step 4 held because it needs a runner restart. Details below.
+
+## Next, in order
+
+1. Keep the Game Dev Tycoon run alive to Year 35. Each tick: `scripts/gdt.py show`, driver pid, `/tmp/gdt_play.out`, the log tail. Fix stalls in the driver, restart it, log bankruptcies and review scores.
+2. Better games, so the studio stops scraping by: per-genre development sliders (catch a "Development Stage" dialog and read the slider items), then research.
+3. Factorio picker: collect skill runs that continue past the first belt (`scripts/skill.py` plays one skill at a time), retrain, re-run `iron_plate_throughput`.
+4. FEZ: the HAT mod loader is the way in if a third game is wanted.
+
+Starting Game Dev Tycoon: Steam must be running, then `open steam://run/239820`. If no fresh `state.json` appears, enable Conveyer Bridge in the game's Mods menu and restart the game. The game needs its window on a display that is awake (`caffeinate -d`).
+
+## Factorio: pick up in 60 seconds
 
 | You are | Do |
 |---|---|
@@ -92,5 +106,5 @@ Done when: the window is open at 5 Hz or better and every feeder plus the app to
 ## Restart prompt
 
 ```
-/loop Conveyer live window. Read docs/LOOP-HANDOFF.md. Each tick: cd ~/Documents/Code/conveyer, scripts/tick.sh, do the next unchecked step of "Live window: plan", measure CPU before and after, update the grades table, bump VERSION, tag, push. Keep the background tasks listed in the handoff running as Claude background tasks, refresh any older than 15 minutes. Any crash: scripts/health.sh --fix, then relaunch them. Never join with a real client. Hard stop at 90% usage.
+/loop until we find a game we can beat today. Read docs/LOOP-HANDOFF.md and games/gdt/README.md. Each tick: check the Game Dev Tycoon run (python3 scripts/gdt.py show, pgrep -f gdt_play, /tmp/gdt_play.out, the tail of the newest runs/gdt log); fix stalls in scripts/gdt_play.py and restart it with .venv/bin/python scripts/gdt_play.py --minutes 600; never touch save slot 3; log bankruptcy dates and review scores honestly. Win: the game reaches Y35 M12 W4 and scores itself. Label play unassisted and topic/genre choice assisted by guide data. Hard stop at 90% usage.
 ```

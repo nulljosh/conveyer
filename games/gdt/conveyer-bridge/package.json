@@ -1,0 +1,9 @@
+{
+	"id" : "conveyer-bridge",
+	"name" : "Conveyer Bridge",
+	"version":"0.1.0",
+	"author":"nulljosh",
+	"url":"https://github.com/nulljosh/conveyer",
+	"description" : "Lets the Conveyer agent see what is on screen and press the game's own buttons. No network and no code execution: it writes a state file and accepts a fixed list of actions from a command file.",
+	"main" : "./bridge.js"
+}

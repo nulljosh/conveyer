@@ -300,10 +300,18 @@ struct EngineerData: Decodable { let item: String; let t: Double; let label: Str
 struct CombatData: Decodable { let t: Double; let player: [Double]; let enemies: [[Double]]; let turrets: [[Double]] }  // enemies: [x,y,kind,size], turrets: [x,y,firing]
 struct SiloData: Decodable { let x: Double; let y: Double; let parts: Int; let status: String; let launched: Int; let t: Double; let rocket: Int?; let rocket_status: String? }
 
+/// The eased position, alone in its own object: it changes 60 times a second while the engineer walks, and only the camera, the marker and the minimap need it.
+/// Every view that observed MarkerModel for it used to redraw at that rate (the hotbar decoding icons, the feed, the dots).
+@MainActor
+final class Glide: ObservableObject {
+    @Published var shown: CGPoint?
+}
+
 @MainActor
 final class MarkerModel: ObservableObject {
     @Published var pos: CGPoint?
-    @Published var shown: CGPoint?   // eased toward pos about 60 times a second: the marker and the camera follow this, so neither jumps
+    let glide = Glide()
+    var shown: CGPoint? { get { glide.shown } set { glide.shown = newValue } }   // eased toward pos about 60 times a second: the marker and the camera follow this, so neither jumps
     private var ease: Timer?
     @Published var heading: Double = 90   // degrees, 0 = east, 90 = south (screen y grows down)
     @Published var moving = false
@@ -681,6 +689,8 @@ struct StatusDots: View {
 /// An original marker, not a game sprite: a pin with a heading wedge. It glides between position updates.
 struct PlayerMarker: View {
     @ObservedObject var m: MarkerModel
+    @ObservedObject var glide: Glide
+    init(m: MarkerModel) { self.m = m; glide = m.glide }
     var body: some View {
         GeometryReader { g in
             if let p = m.shown, let f = m.frame {
@@ -862,6 +872,7 @@ struct Triangle: Shape {
 /// Zooms the map layer and slides it so the player stays in the middle, clamped to the picture's edge. Only this view watches the eased position.
 struct CameraRig<Content: View>: View {
     @ObservedObject var m: MarkerModel
+    @ObservedObject var glide: Glide
     let size: CGSize
     let content: Content
     private let zoom: CGFloat = {   // --zoom N on the command line, 1.7 by default; 1.0 is pixel-for-pixel on a 1080p screen, which is what the landing video uses
@@ -869,7 +880,7 @@ struct CameraRig<Content: View>: View {
         if let i = a.firstIndex(of: "--zoom"), i + 1 < a.count, let z = Double(a[i + 1]) { return CGFloat(z) }
         return 1.7
     }()
-    init(m: MarkerModel, size: CGSize, @ViewBuilder content: () -> Content) { self.m = m; self.size = size; self.content = content() }
+    init(m: MarkerModel, size: CGSize, @ViewBuilder content: () -> Content) { self.m = m; glide = m.glide; self.size = size; self.content = content() }
     var body: some View {
         let o = offset()
         content.scaleEffect(zoom).offset(x: o.width, y: o.height)
@@ -896,7 +907,9 @@ struct CameraRig<Content: View>: View {
 /// Whole-base overview in the corner: base (light), oil (orange), enemy nests (red), and a dot where the player stands right now.
 struct MiniMap: View {
     @ObservedObject var m: MarkerModel
+    @ObservedObject var glide: Glide
     let win: CGSize   // the live window's size: the minimap is about a fifth of its width, never more than 40% of its height
+    init(m: MarkerModel, win: CGSize) { self.m = m; glide = m.glide; self.win = win }
     var body: some View {
         if let img = m.mini, let meta = m.miniMeta {
             let aspect = img.size.height / max(img.size.width, 1)

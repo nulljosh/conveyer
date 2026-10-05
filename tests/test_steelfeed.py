@@ -5,6 +5,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "tests"))
+import fakes
+fakes.install_rcon()   # steelfeed imports factorio_rcon at the top; CI has no game
 spec = importlib.util.spec_from_file_location("steelfeed", ROOT / "scripts" / "steelfeed.py")
 steelfeed = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(steelfeed)

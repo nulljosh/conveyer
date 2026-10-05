@@ -66,3 +66,7 @@ recordings/
 .hold
 .speed
 silo.json
+
+# stream.py output and atomic-write scratch files
+stream.json
+*.tmp

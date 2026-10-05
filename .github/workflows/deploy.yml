@@ -1,0 +1,55 @@
+name: Deploy landing page
+# CD: after Tests pass on main, publish web/ to Cloudflare (conveyer.heyitsmejosh.com), then check the live page.
+# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; without them the job says so and skips.
+on:
+  workflow_run:
+    workflows: [Tests]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 2
+      - name: Did web/ or the wrangler config change?
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ] || git diff --name-only HEAD~1 HEAD | grep -qE '^(web/|wrangler\.)'; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"; echo "web/ unchanged, nothing to deploy"
+          fi
+      - name: No Cloudflare token
+        if: steps.changed.outputs.deploy == 'true' && env.HAS_TOKEN != 'true'
+        run: echo "::notice::Skipping deploy, add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repo secrets to enable it"
+      - name: wrangler deploy
+        if: steps.changed.outputs.deploy == 'true' && env.HAS_TOKEN == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+      - name: Live page check
+        if: steps.changed.outputs.deploy == 'true' && env.HAS_TOKEN == 'true'
+        run: |
+          for i in 1 2 3 4 5; do
+            curl -fsS https://conveyer.heyitsmejosh.com/ | grep -q "Road to the rocket" && curl -fsSI https://conveyer.heyitsmejosh.com/base.png >/dev/null && { echo "live page ok"; exit 0; }
+            sleep $((i * 5))
+          done
+          echo "::error::live page check failed"; exit 1

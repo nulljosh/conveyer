@@ -998,7 +998,16 @@ struct Hotbar: View {
         }
     }
 
+    /// The hotbar redraws whenever the marker model publishes (60 times a second while the engineer walks), so a PNG decode per slot per redraw cost about 20% of a core. Decode each icon once.
+    private static var iconCache: [String: NSImage?] = [:]
     private func loadIcon(_ itemName: String, size: CGFloat) -> NSImage? {
+        if let hit = Self.iconCache[itemName] { return hit }
+        let img = decodeIcon(itemName)
+        Self.iconCache[itemName] = .some(img)
+        return img
+    }
+
+    private func decodeIcon(_ itemName: String) -> NSImage? {
         if let bundlePath = Bundle.main.path(forResource: itemName, ofType: "png", inDirectory: "icons"),
            let img = NSImage(contentsOfFile: bundlePath) { return img }
         let steamPath = NSString(string: "~/Library/Application Support/Steam/steamapps/common/Factorio/factorio.app/Contents/data/base/graphics/icons/\(itemName).png").expandingTildeInPath

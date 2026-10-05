@@ -1,6 +1,6 @@
 # Conveyer loop handoff
 
-Updated 2026-10-05. v2.1.2. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
+Updated 2026-10-05. v2.1.3. Loop paused. Read this file top to bottom. If you have time left, read [HISTORY.md](HISTORY.md).
 
 ## TLDR
 
@@ -41,7 +41,7 @@ Every feeder already sleeps unless `.watching` is fresh (touched less than 8 s a
 1. **One feeder.** DONE and verified 2026-10-04 on the live game (10 minutes clean, no errors). Wrote `scripts/stream.py` to replace livefeed, livemap and combat. It uses one RCON connection and one Lua call per frame, with tiered rates: position at 10 Hz, dots at 1 Hz, combat at 2 Hz, hotbar and silo at 0.5 Hz. It writes a single `stream.json` atomically. Keep the old files written until the app reads only the new one. *Cloud-safe: write it with a fake RCON client and tests.*
 2. **Deltas.** DONE 2026-10-05 (v2.1.1, verified on the live game: 54 machines, full read then deltas). The Lua keeps the last machine statuses in `storage` and returns only the ones that changed, plus a full snapshot every 30 s. *Cloud-safe except the final check.*
 3. **App reads one file, and only when it changes.** DONE 2026-10-05 (v2.1.2, typechecks and runs; CPU did not move, see the grades table). The app now wakes on `stream.json` through a file watch, the 0.2 s poll drops to 1 s while stream.json is fresh, and the 60 Hz ease timer only runs while the marker is moving. Original plan: Swap the 0.2 s poll of 8 files for a `DispatchSource` file watch on `stream.json`. Run the 60 Hz ease timer only while the marker is moving. *Mac only (Swift build).*
-3b. **Cut the redraw cost.** The window costs about 30% of a core fullscreen while the marker moves, far over the 5% goal. Find what redraws per frame (`sample <pid> 3`), then try: `drawingGroup()` or a Canvas for the dots and enemies, redraw the map layer only when its picture changes, and cap the marker to 30 fps. Measure with `top -l 4 -s 20 -pid` before and after. *Mac only.*
+3b. **Cut the redraw cost.** PARTLY DONE 2026-10-05 (v2.1.3): found by bisecting the overlays (`sample`, then adding them back one at a time). The hotbar decoded 10 PNGs from disk on every redraw, and it redraws at 60 Hz while the engineer walks because it observes the whole marker model. An icon cache took the window from 30% to about 10%. Still over the 5% goal. What is left, measured: easing at 30 Hz instead of 60 saves about 1.7 points; the rest is the 6 animated TimelineViews and every overlay re-running its body on each marker publish (split the model so the hotbar, feed and minimap stop observing the position). Original notes: The window costs about 30% of a core fullscreen while the marker moves, far over the 5% goal. Find what redraws per frame (`sample <pid> 3`), then try: `drawingGroup()` or a Canvas for the dots and enemies, redraw the map layer only when its picture changes, and cap the marker to 30 fps. Measure with `top -l 4 -s 20 -pid` before and after. *Mac only.*
 4. **Tiled basemap.** Render 32x32 chunks, cache each chunk's PNG under the hash of its entities, and re-render only the chunks that changed, off the runner thread. This fixes the 28 s block. *Mac plus game.*
 5. **Game speed follows load.** Run at 10x when the machine is idle and drop to 3x when it is hot (`scripts/speed.py`, `scripts/cpu_guard.sh`). *Mac plus game.*
 6. **QA.** Take screenshots with `ConveyerMonitor --snapshot out.png --live` and measure CPU with `ps` with the window open and closed. Put the before and after numbers in the grades table below.
@@ -55,6 +55,7 @@ Done when: the window is open at 5 Hz or better and every feeder plus the app to
 | 2026-10-02 14:55 | A- | B+ | Window open: runner 0.1%, app 0 to 0.7%, livefeed 0.1%. Closed: near 0 |
 | 2026-10-04 21:00 | B+ | A | Full screen, window open, measured with `top -l 2` deltas: stream.py 0.5%, app 0%, runner 0% between renders. Fixed: map change check watches the picture (was re-rendering constantly), dots line up (frame.json uses the real centre). Fixed later the same night: the picture is now centred on the view point (all tile rows visible). snap.py also saves a small JPEG every 10 minutes to shots/timelapse/ for a morning timelapse (ffmpeg line in snap.py) |
 | 2026-10-05 00:40 | B | C | Honest re-measure, fullscreen, window open, engineer walking, `top -l` deltas: app 29% before step 3, 30% after. stream.py 0.6%. The cost is SwiftUI/Core Animation redrawing the whole view every frame while the engineer moves (`sample` shows layout and CA commit, not file reads). Last night's 0% was an idle view. Next: cut the redraw cost (step 3b) |
+| 2026-10-05 01:20 | B+ | B | Same setup after the hotbar icon cache: app about 10% (was 30%). Bisect: map only 3%, plus the animated layers about 9%, plus hotbar 32% before the fix. stream.py 0.6% |
 
 ## Cloud-safe work (no game, no Mac)
 

@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gdt
 
 ROOT = Path(__file__).resolve().parent.parent
-ROUTINE = ("ok", "continue", "close", "done", "got it", "release", "release game", "yes", "finish", ":-(")   # not "No, thanks": the newsletter popup is in the page but never visible
+ROUTINE = ("ok", "continue", "close", "done", "got it", "release", "release game", "yes", "sure", "finish", ":-(")   # not "No, thanks": the newsletter popup is in the page but never visible
 # Topic and genre pairs the game rates well, from public Game Dev Tycoon guides (assisted-by-guide data, not read from the game).
 GOOD = {
     "Action": "Airplanes Aliens Alternate History Assassin Crime Cyberpunk Dungeon Extreme Sports Fantasy Horror Hunting Martial Arts Medieval Military Music Mythology Ninja Post Apocalyptic Prison Rhythm Sci-Fi Space Sports Spy Superheroes UFO Vampire Werewolf Zombies",
@@ -55,33 +55,36 @@ class Driver:
     def __init__(self, minutes, want_new):
         out = ROOT / "runs" / "gdt"; out.mkdir(parents=True, exist_ok=True)
         self.log = open(out / f"{int(time.time())}.jsonl", "a")
-        self.end, self.want_new, self.unknown, self.last = time.time() + minutes * 60, want_new, 0, None
+        self.end, self.want_new, self.unknown_since, self.last, self.last_guess = time.time() + minutes * 60, want_new, None, None, 0.0
         self.used = {}      # (kind, name) -> times picked
-        self.rng, self.topic, self.attempts, self.max_attempts, self.last_over = random.Random(7), None, 0, 6, None
+        self.rng, self.topic, self.attempts, self.max_attempts, self.last_over, self.repicked = random.Random(7), None, 0, 6, None, False
 
     def note(self, **kw):
         kw["t"] = round(time.time()); self.log.write(json.dumps(kw) + "\n"); self.log.flush()
 
     def click(self, it, why):
         s = gdt.state(); r = gdt.send("click", i=it["i"], gen=s["gen"])
-        self.note(action="click", item=it["text"][:40], why=why, ok=r.get("ok")); time.sleep(1.0); return r.get("ok")
+        self.note(action="click", item=it["text"][:40], why=why, ok=r.get("ok")); time.sleep(0.5); return r.get("ok")
 
     def pick(self, kind, picker_text):
         """Open a picker (topic, genre, platform) and choose from what it lists: the least used, cheapest-first for platforms."""
         s = gdt.state(); opener = find(s, picker_text.lower())
         if not opener: return False
         before = {it["i"] for it in items(s)}
-        self.click(opener, f"open {kind}"); time.sleep(0.8)
+        self.click(opener, f"open {kind}"); time.sleep(0.4)
         s = gdt.state()
         options = [it for it in items(s) if it["i"] not in before and it["text"].strip() and "close" not in it["cls"]]
         if not options: return False
         if kind == "platform":
-            def cost(it):
+            def cost(it):   # dev cost plus any licence still to buy, in thousands
                 import re
-                m = re.search(r"cost: (\d+)K", it["text"]); return int(m.group(1)) if m else 99
+                return sum(float(x) for x in re.findall(r"cost: ([\d.]+)K", it["text"])) or 99
+            def share(it):
+                import re
+                m = re.search(r"Marketshare: ([\d.]+)", it["text"]); return float(m.group(1)) if m else 0
             cash = self.cash(s)
-            ok = [o for o in options if cost(o) * 1000 <= max(cash + 40000, 0)] or options
-            choice = min(ok, key=cost) if cash < 60000 else max(ok, key=cost)
+            rich = [o for o in options if cost(o) * 1000 <= cash * 0.15]   # a platform may cost at most 15% of the cash in hand
+            choice = max(rich, key=share) if rich else min(options, key=cost)
         elif kind == "topic":
             def strong(o): return sum(o["text"].strip() in GOOD[g] for g in GOOD)   # topics the game pairs well with the most genres
             choice = min(options, key=lambda o: (self.used.get((kind, o["text"]), 0), -strong(o), self.rng.random()))
@@ -107,14 +110,24 @@ class Driver:
                 it = find(gdt.state(), "develop new game")
                 if it: break
         if not it: self.note(action="no desk", why="could not open the new game dialog"); return False
-        self.click(it, "develop new game"); time.sleep(1.2)
+        self.repicked = False
+        self.click(it, "develop new game"); return True
+
+    def concept(self, s):
+        """The new game dialog, whatever state it is in: fill the missing picks, keep the platform affordable, then Next and Start Development."""
+        import re
         for kind, text in (("topic", "pick topic"), ("genre", "pick genre"), ("platform", "pick platform")):
-            if not self.pick(kind, text): self.note(action="pick failed", kind=kind); return False
-        s = gdt.state(); nxt = find(s, "next")
-        if nxt: self.click(nxt, "next to features"); time.sleep(1.2)
-        s = gdt.state(); go = find(s, "start development")
-        if go: self.click(go, "start development"); return True
-        return False
+            if find(s, text): self.pick(kind, text); return True
+        m = re.search(r"Cost: ([\d.]+)K", s["text"]); cost = float(m.group(1)) * 1000 if m else 0
+        cash = self.cash(s)
+        slots = sorted([i for i in items(s) if 900 < i["x"] < 1020 and 340 < i["y"] < 540 and i["kind"] == "button"], key=lambda i: i["y"])
+        if cost > max(cash, 0) + 20000 and len(slots) == 3 and not self.repicked:
+            self.repicked = True; self.note(action="platform too dear", cost=cost, cash=cash)
+            self.pick("platform", slots[2]["text"].strip().lower()); return True
+        nxt = find(s, "next"); go = find(s, "start development")
+        if nxt and nxt["x"] < 1400: self.click(nxt, "next to features"); return True
+        if go: self.repicked = False; self.click(go, "start development"); return True
+        return True
 
     def start_over(self):
         """After a bankruptcy: dismiss it, open the main menu and press New. The company dialog, welcome pages and save slot are handled by step()."""
@@ -134,12 +147,15 @@ class Driver:
     def step(self):
         s = gdt.state()
         if not gdt.alive(s): print("game not answering"); return False
-        sig = (s["gen"], s["text"][:200])
+        import re
+        sig = re.sub(r"\d+", "#", s["text"][:300])   # the same screen even while its numbers animate
         # the newsletter popup is in the page text but never on screen: drop it before classifying the screen
         text = "\n".join(l for l in s["text"].splitlines() if "newsletter" not in l.lower() and l.strip().lower() not in ("sign up no, thanks", "sign up"))
         rec = {"screen": text[:260].replace("\n", " | ")}
         low = text.lower()
         it = None
+        if "game concept" in low and (find(s, "next") or find(s, "start development")):
+            self.unknown_since = None; return self.concept(s)
         if "click to continue" in low and find(s, "click to continue"): it = find(s, "click to continue")
         elif self.want_new and find(s, "new") and find(s, "continue") and find(s, "save"):
             it = find(s, "new"); self.want_new = False
@@ -161,9 +177,11 @@ class Driver:
         else:
             it = next((i for i in items(s) if i["text"].strip().lower() in ROUTINE), None)
         if it:
-            self.click(it, "routine"); self.unknown = 0; return True
-        hud_only = len([l for l in text.splitlines() if l.strip()]) <= 4 or "monthly costs" in text
+            self.click(it, "routine"); self.unknown_since = None; return True
+        central = [i for i in items(s) if 300 < i["x"] < 1650 and 180 < i["y"] < 960]
+        hud_only = not central   # nothing pressable in the middle of the window: only the top bar and side notes are showing
         if hud_only and "game over" not in low:
+            self.unknown_since = None
             if idle():
                 self.note(action="idle", cash=self.cash(s)); self.start_game()
             return True
@@ -174,10 +192,19 @@ class Driver:
             self.last_over = time.time()
             if self.attempts > self.max_attempts: return False
             return self.start_over()
-        self.unknown += 1
-        self.note(action="unknown", **rec, items=[(i["i"], i["text"][:30]) for i in items(s)][:12])
-        if self.unknown >= 40:   # dialogs that animate (reviews, sales) take a while before their button appears
-            print("stuck on an unknown screen:", rec["screen"]); return False
+        # a screen with no rule: wait (dialogs animate before their button shows), guess after 10 s, give up after 2 minutes
+        now = time.time()
+        if self.unknown_since is None or sig != self.last:
+            self.unknown_since, self.last = now, sig
+            self.note(action="unknown", **rec, items=[(i["i"], i["text"][:30]) for i in items(s)][:12])
+        waited = now - self.unknown_since
+        if waited > 10 and now - self.last_guess > 10:
+            self.last_guess = now
+            guess = next((i for i in items(s) if i["kind"] == "button" and 200 < i["y"] < 950 and "mainMenu" not in i["cls"]
+                          and i["text"].strip().lower() not in ("sign up", "no, thanks", "trash game") and "no (go bankrupt)" not in i["text"].lower()
+                          and 0 < len(i["text"].strip()) < 60), None)
+            if guess: self.click(guess, "guess for unknown dialog"); self.note(action="guessed", screen=rec["screen"], pressed=guess["text"][:40])
+        if waited > 120: print("stuck on an unknown screen:", rec["screen"], flush=True); return False
         return True
 
     def run(self):
@@ -186,7 +213,7 @@ class Driver:
                 if not self.step(): break
             except (OSError, ValueError, KeyError):
                 pass
-            time.sleep(1.5)
+            time.sleep(0.6)
 
 
 if __name__ == "__main__":

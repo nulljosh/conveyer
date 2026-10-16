@@ -6,7 +6,7 @@
 
 An LLM plays Factorio. On a real save.
 
-It reads the game as data, not pixels. Each turn it picks one move from a short list. The move checks its own result, and the game answers. [Live](https://conveyer.heyitsmejosh.com).
+It reads the game as data, not pixels. Each turn it picks one move from a short list. The move checks its own result, and the game answers. [Live](https://conveyer.jaybulb.com).
 
 Built on [FLE](https://github.com/JackHopkins/factorio-learning-environment), the Factorio Learning Environment.
 

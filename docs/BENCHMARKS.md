@@ -5,10 +5,10 @@ Generated from real data at every commit by `scripts/benchmarks.py`. Nothing her
 ## Now
 
 - Version: 2.1.8
-- Techs researched: 73 (rocket silo path: 44 of 44)
-- Assembler tiles built by the planner: 55
+- Techs researched: ? (rocket silo path: ? of ?)
+- Assembler tiles built by the planner: 0
 - Entities on the map: 3457
-- Labs working: 0 of 12
+- Labs working: ? of ?
 
 ## Releases
 

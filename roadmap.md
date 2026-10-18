@@ -1,5 +1,7 @@
 # Roadmap
 
+> Priority tier 5 (2026-10-17): exploratory, this year. Order: live blockers, ship pushes, active features, portfolio, exploratory. See ~/Documents/Code/LOOP-HANDOFF.md.
+
 Organized by when it's realistic to do, not by feature area, see priority buckets below.
 History of what already shipped is at the bottom.
 

@@ -1,6 +1,6 @@
 name = "conveyer"
 compatibility_date = "2025-07-01"
-routes = [{ pattern = "conveyer.heyitsmejosh.com", custom_domain = true }]
+routes = [{ pattern = "conveyer.heyitsmejosh.com", custom_domain = true }, { pattern = "conveyer.jaybulb.com", custom_domain = true }]
 
 [assets]
 directory = "web"
